@@ -24,7 +24,7 @@ app.set('trust proxy', 1);
 // CORS — supports comma-separated origins in CLIENT_URL e.g. "https://app.com,https://www.app.com"
 const allowedOrigins = (env.CLIENT_URL || '')
   .split(',')
-  .map((o) => o.trim())
+  .map((o) => o.trim().replace(/\/$/, ''))   // strip trailing slash
   .filter(Boolean);
 
 app.use(helmet());
