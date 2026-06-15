@@ -103,4 +103,18 @@ const changePin = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-module.exports = { register, verifyOtp, login, refresh, setPin, logout, resendOtp, me, forgotPassword, resetPassword, changePassword, changePin };
+const updateProfile = async (req, res, next) => {
+  try {
+    const data = await authService.updateProfile(req.user._id, req.body);
+    return success(res, data, 'Profile updated');
+  } catch (err) { next(err); }
+};
+
+const submitKyc = async (req, res, next) => {
+  try {
+    const data = await authService.submitKyc(req.user._id, req.body);
+    return success(res, data, 'KYC submitted successfully. Under review.');
+  } catch (err) { next(err); }
+};
+
+module.exports = { register, verifyOtp, login, refresh, setPin, logout, resendOtp, me, forgotPassword, resetPassword, changePassword, changePin, updateProfile, submitKyc };

@@ -30,6 +30,12 @@ const userSchema = new mongoose.Schema(
     referralCode: { type: String, unique: true },
     referredBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     agentId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    kyc: {
+      nin: { type: String, select: false },
+      bvn: { type: String, select: false },
+      submittedAt: Date,
+      verifiedAt: Date,
+    },
     twoFactorEnabled: { type: Boolean, default: false },
     lastLoginAt: Date,
     lastLoginIp: String,

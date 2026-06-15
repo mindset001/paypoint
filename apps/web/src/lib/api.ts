@@ -106,6 +106,14 @@ export const electricityApi = {
     api.post('/electricity', { disco, meterNumber, meterType, amount, phone, pin }),
 };
 
+// ── Profile & KYC ────────────────────────────────────────────────────
+export const profileApi = {
+  update: (data: { firstName: string; lastName: string }) =>
+    api.patch('/auth/profile', data),
+  submitKyc: (data: { nin?: string; bvn?: string }) =>
+    api.post('/auth/kyc', data),
+};
+
 // ── Password / PIN ───────────────────────────────────────────────────
 export const securityApi = {
   forgotPassword: (identifier: string) =>

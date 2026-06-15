@@ -101,7 +101,7 @@ const login = async ({ identifier, password, ip }) => {
   await user.save();
 
   const tokens = issueTokens(user);
-  await redis.set(`refresh:${user._id}`, tokens.refreshToken, 'EX', 7 * 24 * 3600);
+  try { await redis.set(`refresh:${user._id}`, tokens.refreshToken, 'EX', 7 * 24 * 3600); } catch {}
 
   return { user: sanitize(user), ...tokens };
 };
@@ -114,16 +114,20 @@ const refreshTokens = async (refreshToken) => {
     throw Object.assign(new Error('Invalid refresh token'), { statusCode: 401 });
   }
 
-  const stored = await redis.get(`refresh:${payload.userId}`);
-  if (stored !== refreshToken) {
-    throw Object.assign(new Error('Refresh token revoked'), { statusCode: 401 });
+  try {
+    const stored = await redis.get(`refresh:${payload.userId}`);
+    if (stored !== null && stored !== refreshToken) {
+      throw Object.assign(new Error('Refresh token revoked'), { statusCode: 401 });
+    }
+  } catch (err) {
+    if (err.statusCode === 401) throw err;
   }
 
   const user = await User.findById(payload.userId);
   if (!user) throw Object.assign(new Error('User not found'), { statusCode: 401 });
 
   const tokens = issueTokens(user);
-  await redis.set(`refresh:${user._id}`, tokens.refreshToken, 'EX', 7 * 24 * 3600);
+  try { await redis.set(`refresh:${user._id}`, tokens.refreshToken, 'EX', 7 * 24 * 3600); } catch {}
   return tokens;
 };
 
@@ -134,7 +138,7 @@ const setPin = async (userId, pin) => {
 };
 
 const logout = async (userId) => {
-  await redis.del(`refresh:${userId}`);
+  try { await redis.del(`refresh:${userId}`); } catch {}
   return { message: 'Logged out successfully' };
 };
 
@@ -167,6 +171,7 @@ const sanitize = (user) => ({
   role: user.role,
   status: user.status,
   referralCode: user.referralCode,
+  kycSubmittedAt: user.kyc?.submittedAt ?? null,
 });
 
 const forgotPassword = async (identifier) => {
@@ -224,4 +229,27 @@ const changePin = async (userId, currentPin, newPin) => {
   return { message: 'PIN changed successfully' };
 };
 
-module.exports = { register, verifyOtp, login, refreshTokens, setPin, logout, resendOtp, forgotPassword, resetPassword, changePassword, changePin };
+const updateProfile = async (userId, { firstName, lastName }) => {
+  const update = {};
+  if (firstName) update.firstName = firstName.trim();
+  if (lastName)  update.lastName  = lastName.trim();
+  const user = await User.findByIdAndUpdate(userId, update, { new: true });
+  if (!user) throw Object.assign(new Error('User not found'), { statusCode: 404 });
+  return sanitize(user);
+};
+
+const submitKyc = async (userId, { nin, bvn }) => {
+  if (!nin && !bvn) throw Object.assign(new Error('Provide NIN or BVN'), { statusCode: 400 });
+  if (nin && !/^\d{11}$/.test(nin)) throw Object.assign(new Error('NIN must be 11 digits'), { statusCode: 400 });
+  if (bvn && !/^\d{11}$/.test(bvn)) throw Object.assign(new Error('BVN must be 11 digits'), { statusCode: 400 });
+
+  const update = { status: 'pending_kyc', 'kyc.submittedAt': new Date() };
+  if (nin) update['kyc.nin'] = nin;
+  if (bvn) update['kyc.bvn'] = bvn;
+
+  const user = await User.findByIdAndUpdate(userId, update, { new: true });
+  if (!user) throw Object.assign(new Error('User not found'), { statusCode: 404 });
+  return sanitize(user);
+};
+
+module.exports = { register, verifyOtp, login, refreshTokens, setPin, logout, resendOtp, forgotPassword, resetPassword, changePassword, changePin, updateProfile, submitKyc };

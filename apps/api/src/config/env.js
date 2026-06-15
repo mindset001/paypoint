@@ -40,6 +40,8 @@ const env = {
   SMTP_USER: process.env.SMTP_USER,
   SMTP_PASS: process.env.SMTP_PASS,
   EMAIL_FROM: process.env.EMAIL_FROM || 'noreply@paypoint.ng',
+
+  SENTRY_DSN: process.env.SENTRY_DSN,
 };
 
 const required = ['JWT_ACCESS_SECRET', 'JWT_REFRESH_SECRET'];

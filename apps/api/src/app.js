@@ -4,6 +4,7 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 const env = require('./config/env');
+const Sentry = require('@sentry/node');
 const { notFound, globalError } = require('./middlewares/error.middleware');
 
 const authRoutes = require('./modules/auth/auth.routes');
@@ -65,6 +66,7 @@ app.use('/api/v1/admin', adminRoutes);
 app.use('/api/v1/notifications', notificationRoutes);
 
 app.use(notFound);
+Sentry.setupExpressErrorHandler(app);
 app.use(globalError);
 
 module.exports = app;

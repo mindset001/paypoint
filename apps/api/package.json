@@ -8,6 +8,7 @@
     "start": "node src/server.js"
   },
   "dependencies": {
+    "@sentry/node": "^10.58.0",
     "axios": "^1.6.8",
     "bcryptjs": "^2.4.3",
     "bull": "^4.12.2",
