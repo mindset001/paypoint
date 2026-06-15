@@ -21,11 +21,21 @@ const app = express();
 
 app.set('trust proxy', 1);
 
+// CORS — supports comma-separated origins in CLIENT_URL e.g. "https://app.com,https://www.app.com"
+const allowedOrigins = (env.CLIENT_URL || '')
+  .split(',')
+  .map((o) => o.trim())
+  .filter(Boolean);
+
 app.use(helmet());
 app.use(cors({
-  origin: env.CLIENT_URL,
+  origin: (origin, cb) => {
+    // Allow server-to-server (no origin) and listed origins
+    if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
+    cb(new Error(`CORS: origin ${origin} not allowed`));
+  },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
 }));
 app.use(express.json({ limit: '10kb' }));
 app.use(morgan(env.NODE_ENV === 'production' ? 'combined' : 'dev'));
@@ -39,6 +49,8 @@ const globalLimiter = rateLimit({
 });
 app.use('/api', globalLimiter);
 
+// Root + health — both respond so platform health checks always pass
+app.get('/',       (req, res) => res.json({ service: 'PayPoint API', status: 'ok', version: '1.0.0' }));
 app.get('/health', (req, res) => res.json({ status: 'ok', env: env.NODE_ENV }));
 
 app.use('/api/v1/auth', authRoutes);
