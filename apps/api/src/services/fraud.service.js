@@ -6,14 +6,19 @@ const VELOCITY_WINDOW = 3600; // 1 hour
 const DUPLICATE_WINDOW = 60;  // 60 seconds
 
 const checkVelocity = async (userId) => {
-  const key = `velocity:${userId}`;
-  const count = await redis.incr(key);
-  if (count === 1) await redis.expire(key, VELOCITY_WINDOW);
-  if (count > VELOCITY_LIMIT) {
-    throw Object.assign(
-      new Error('Too many transactions. Please wait before trying again.'),
-      { statusCode: 429 }
-    );
+  try {
+    const key = `velocity:${userId}`;
+    const count = await redis.incr(key);
+    if (count === 1) await redis.expire(key, VELOCITY_WINDOW);
+    if (count > VELOCITY_LIMIT) {
+      throw Object.assign(
+        new Error('Too many transactions. Please wait before trying again.'),
+        { statusCode: 429 }
+      );
+    }
+  } catch (err) {
+    if (err.statusCode === 429) throw err;
+    // Redis unavailable — skip velocity check, duplicate check still runs
   }
 };
 

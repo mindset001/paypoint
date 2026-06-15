@@ -1,25 +1,27 @@
 const crypto = require('crypto');
-const redis = require('../config/redis');
+const Otp = require('../models/Otp');
 
-const OTP_TTL = 600; // 10 minutes
+const OTP_TTL_SECONDS = 600; // 10 minutes
 
-const generate = () => {
-  return Math.floor(100000 + Math.random() * 900000).toString();
+const generate = () => Math.floor(100000 + Math.random() * 900000).toString();
+
+const save = async (key, code) => {
+  const expiresAt = new Date(Date.now() + OTP_TTL_SECONDS * 1000);
+  await Otp.findOneAndUpdate(
+    { key },
+    { key, code, expiresAt },
+    { upsert: true, new: true }
+  );
 };
 
-const save = async (key, otp) => {
-  await redis.set(`otp:${key}`, otp, 'EX', OTP_TTL);
-};
-
-const verify = async (key, otp) => {
-  const stored = await redis.get(`otp:${key}`);
-  if (!stored || stored !== otp) return false;
-  await redis.del(`otp:${key}`);
+const verify = async (key, code) => {
+  const record = await Otp.findOne({ key, expiresAt: { $gt: new Date() } });
+  if (!record || record.code !== code) return false;
+  await Otp.deleteOne({ key });
   return true;
 };
 
-const generateRef = () => {
-  return `PAY-${Date.now()}-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
-};
+const generateRef = () =>
+  `PAY-${Date.now()}-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
 
 module.exports = { generate, save, verify, generateRef };
