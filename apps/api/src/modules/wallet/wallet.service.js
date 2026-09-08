@@ -40,42 +40,65 @@ const credit = async (userId, amountKobo, session) => {
 const CALLBACK_URL = (provider) =>
   `${env.CLIENT_URL}/wallet/callback?provider=${provider}`;
 
+const FUND_PROVIDERS = ['paystack', 'flutterwave', 'monnify'];
+
 const initiateWalletFund = async (userId, amountNGN, email, provider = 'paystack') => {
+  if (!FUND_PROVIDERS.includes(provider)) {
+    throw Object.assign(new Error('Unsupported payment provider'), { statusCode: 400 });
+  }
+
   const amountKobo = Math.round(amountNGN * 100);
   if (amountKobo < 10000) throw Object.assign(new Error('Minimum fund amount is ₦100'), { statusCode: 400 });
 
+  const wallet = await Wallet.findOne({ userId });
+  if (!wallet) throw Object.assign(new Error('Wallet not found'), { statusCode: 404 });
+
   const reference = otp.generateRef();
 
-  if (provider === 'paystack') {
-    const Paystack = require('../../providers/paystack/paystack.client');
-    const result = await Paystack.initializeTransaction({
-      email,
-      amount: amountKobo,
-      reference,
-      callbackUrl: CALLBACK_URL('paystack'),
-      metadata: { userId: userId.toString(), amountNGN },
-    });
-    return { provider: 'paystack', authorizationUrl: result.data.authorization_url, reference };
-  }
+  await Transaction.create({
+    reference,
+    userId,
+    walletId: wallet._id,
+    type: 'wallet_fund',
+    direction: 'credit',
+    amount: amountKobo,
+    status: 'pending',
+    balanceBefore: wallet.balance,
+    balanceAfter: wallet.balance,
+    meta: { provider },
+  });
 
-  if (provider === 'flutterwave') {
-    const Flutterwave = require('../../providers/flutterwave/flutterwave.client');
-    const User = require('../../models/User');
-    const user = await User.findById(userId).select('firstName lastName phone');
-    const result = await Flutterwave.initializePayment({
-      txRef: reference,
-      amount: amountNGN,
-      email,
-      phone: user?.phone?.number,
-      name: `${user?.firstName} ${user?.lastName}`,
-      redirectUrl: CALLBACK_URL('flutterwave'),
-      description: `Fund PayPoint wallet — ₦${amountNGN.toLocaleString()}`,
-      meta: { userId: userId.toString() },
-    });
-    return { provider: 'flutterwave', authorizationUrl: result.data.link, reference };
-  }
+  try {
+    if (provider === 'paystack') {
+      const Paystack = require('../../providers/paystack/paystack.client');
+      const result = await Paystack.initializeTransaction({
+        email,
+        amount: amountKobo,
+        reference,
+        callbackUrl: CALLBACK_URL('paystack'),
+        metadata: { userId: userId.toString(), amountNGN },
+      });
+      return { provider: 'paystack', authorizationUrl: result.data.authorization_url, reference };
+    }
 
-  if (provider === 'monnify') {
+    if (provider === 'flutterwave') {
+      const Flutterwave = require('../../providers/flutterwave/flutterwave.client');
+      const User = require('../../models/User');
+      const user = await User.findById(userId).select('firstName lastName phone');
+      const result = await Flutterwave.initializePayment({
+        txRef: reference,
+        amount: amountNGN,
+        email,
+        phone: user?.phone?.number,
+        name: `${user?.firstName} ${user?.lastName}`,
+        redirectUrl: CALLBACK_URL('flutterwave'),
+        description: `Fund PayPoint wallet — ₦${amountNGN.toLocaleString()}`,
+        meta: { userId: userId.toString() },
+      });
+      return { provider: 'flutterwave', authorizationUrl: result.data.link, reference };
+    }
+
+    // provider === 'monnify'
     const Monnify = require('../../providers/monnify/monnify.client');
     const User = require('../../models/User');
     const user = await User.findById(userId).select('firstName lastName');
@@ -88,9 +111,13 @@ const initiateWalletFund = async (userId, amountNGN, email, provider = 'paystack
       redirectUrl: CALLBACK_URL('monnify'),
     });
     return { provider: 'monnify', authorizationUrl: result.responseBody?.checkoutUrl, reference };
+  } catch (err) {
+    await Transaction.findOneAndUpdate(
+      { reference, status: 'pending' },
+      { status: 'failed', failureReason: err.message }
+    );
+    throw err;
   }
-
-  throw Object.assign(new Error('Unsupported payment provider'), { statusCode: 400 });
 };
 
 // ── Virtual Account (Monnify reserved account) ─────────────────────────
@@ -130,63 +157,71 @@ const getOrCreateVirtualAccount = async (userId) => {
   return wallet.reservedAccount;
 };
 
-// ── Internal: credit wallet after successful payment ───────────────────
+// ── Internal: complete a pending wallet-fund Transaction ────────────────
+//
+// Every funding attempt already has a `pending` Transaction row created by
+// initiateWalletFund, keyed by `reference` (the value we generated and handed
+// to the provider). Completion — whether via webhook or the manual /verify
+// call — claims and finishes that specific row instead of re-deriving the
+// user from provider-reported customer details.
 
-const creditFromPayment = async ({ userId, amountKobo, provider, providerReference, channel }) => {
-  const existing = await Transaction.findOne({ 'meta.providerRef': providerReference });
-  if (existing) return; // idempotency
+const completeWalletFund = async ({ reference, providerAmountKobo, providerTransactionId, channel, attempt = 1 }) => {
+  const existing = await Transaction.findOne({ reference });
+  if (!existing) return { outcome: 'unknown' };
+  if (existing.status !== 'pending') return { outcome: 'already_processed', tx: existing };
 
   const session = await mongoose.startSession();
   session.startTransaction();
   try {
-    const wallet = await Wallet.findOne({ userId }).session(session);
-    const before = wallet.balance;
-    wallet.balance += amountKobo;
-    wallet.totalFunded += amountKobo;
-    await wallet.save({ session });
+    const tx = await Transaction.findOneAndUpdate(
+      { reference, status: 'pending' },
+      { status: 'success', providerReference: providerTransactionId, providerStatus: 'success', processedAt: new Date() },
+      { session, new: true }
+    );
 
-    const txRef = otp.generateRef();
-    const [tx] = await Transaction.create([{
-      reference: txRef,
-      userId,
-      walletId: wallet._id,
-      type: 'wallet_fund',
-      direction: 'credit',
-      amount: amountKobo,
-      status: 'success',
-      balanceBefore: before,
-      balanceAfter: wallet.balance,
-      meta: {
-        providerRef: providerReference,
-        paystackReference: provider === 'paystack' ? providerReference : undefined,
-        paystackChannel: provider === 'paystack' ? channel : undefined,
-      },
-      providerReference,
-      providerStatus: 'success',
-      processedAt: new Date(),
-    }], { session });
+    if (!tx) {
+      await session.abortTransaction();
+      return { outcome: 'already_processed' };
+    }
+
+    if (providerAmountKobo != null && providerAmountKobo !== tx.amount) {
+      console.error(`[wallet] amount mismatch on ${reference}: expected ${tx.amount}, provider reported ${providerAmountKobo}`);
+    }
+
+    const { balanceBefore, balanceAfter } = await credit(tx.userId, tx.amount, session);
+
+    await Transaction.findByIdAndUpdate(
+      tx._id,
+      { balanceBefore, balanceAfter, 'meta.channel': channel },
+      { session }
+    );
 
     await ledger.record({
       transactionId: tx._id,
-      userId,
-      walletId: wallet._id,
+      userId: tx.userId,
+      walletId: tx.walletId,
       entry: 'credit',
-      amount: amountKobo,
-      balanceBefore: before,
-      balanceAfter: wallet.balance,
-      description: `Wallet funded via ${provider}${channel ? `/${channel}` : ''} — ₦${(amountKobo / 100).toLocaleString()}`,
+      amount: tx.amount,
+      balanceBefore,
+      balanceAfter,
+      description: `Wallet funded via ${tx.meta?.provider}${channel ? `/${channel}` : ''} — ₦${(tx.amount / 100).toLocaleString()}`,
     }, session);
 
     await session.commitTransaction();
 
-    notify.createNotification(userId, {
+    notify.createNotification(tx.userId, {
       title: 'Wallet Funded 💰',
-      body: `₦${(amountKobo / 100).toLocaleString()} added to your wallet via ${provider}.`,
+      body: `₦${(tx.amount / 100).toLocaleString()} added to your wallet via ${tx.meta?.provider}.`,
       type: 'wallet',
-      meta: { providerReference },
+      meta: { reference },
     });
+
+    return { outcome: 'credited', tx };
   } catch (err) {
     await session.abortTransaction();
+    if (err.errorLabels?.includes('TransientTransactionError') && attempt < 3) {
+      return completeWalletFund({ reference, providerAmountKobo, providerTransactionId, channel, attempt: attempt + 1 });
+    }
     throw err;
   } finally {
     session.endSession();
@@ -197,37 +232,21 @@ const creditFromPayment = async ({ userId, amountKobo, provider, providerReferen
 
 const handlePaystackWebhook = async (event) => {
   if (event.event !== 'charge.success') return;
-  const { reference, amount, channel, customer } = event.data;
-
-  const User = require('../../models/User');
-  const user = await User.findOne({ 'email.address': customer.email });
-  if (!user) return;
-
-  await creditFromPayment({
-    userId: user._id,
-    amountKobo: amount,
-    provider: 'paystack',
-    providerReference: reference,
-    channel,
-  });
+  const { reference, amount, channel, id } = event.data;
+  await completeWalletFund({ reference, providerAmountKobo: amount, providerTransactionId: id, channel });
 };
 
 const handleFlutterwaveWebhook = async (event) => {
   if (event.event !== 'charge.completed') return;
   if (event.data?.status !== 'successful') return;
 
-  const { tx_ref, amount, currency, customer, id: txId } = event.data;
+  const { tx_ref, amount, currency, id } = event.data;
   if (currency !== 'NGN') return;
 
-  const User = require('../../models/User');
-  const user = await User.findOne({ 'email.address': customer.email });
-  if (!user) return;
-
-  await creditFromPayment({
-    userId: user._id,
-    amountKobo: Math.round(amount * 100),
-    provider: 'flutterwave',
-    providerReference: tx_ref,
+  await completeWalletFund({
+    reference: tx_ref,
+    providerAmountKobo: Math.round(amount * 100),
+    providerTransactionId: id,
     channel: event.data.payment_type,
   });
 };
@@ -237,15 +256,10 @@ const handleMonnifyWebhook = async (event) => {
   const body = event.eventData;
   if (!body || body.paymentStatus !== 'PAID') return;
 
-  const User = require('../../models/User');
-  const user = await User.findOne({ 'email.address': body.customer?.email });
-  if (!user) return;
-
-  await creditFromPayment({
-    userId: user._id,
-    amountKobo: Math.round(body.amountPaid * 100),
-    provider: 'monnify',
-    providerReference: body.transactionReference,
+  await completeWalletFund({
+    reference: body.paymentReference,
+    providerAmountKobo: Math.round(body.amountPaid * 100),
+    providerTransactionId: body.transactionReference,
     channel: body.paymentMethod,
   });
 };
@@ -253,44 +267,51 @@ const handleMonnifyWebhook = async (event) => {
 // ── Verify payment from callback page ─────────────────────────────────
 
 const verifyPayment = async (provider, reference, transactionId) => {
+  let result;
+
   if (provider === 'paystack') {
     const Paystack = require('../../providers/paystack/paystack.client');
-    const result = await Paystack.verifyTransaction(reference);
+    result = await Paystack.verifyTransaction(reference);
     if (result.data?.status !== 'success') throw new Error('Payment not successful');
-    const { amount, channel, customer } = result.data;
-    const User = require('../../models/User');
-    const user = await User.findOne({ 'email.address': customer.email });
-    if (user) {
-      await creditFromPayment({ userId: user._id, amountKobo: amount, provider: 'paystack', providerReference: reference, channel });
-    }
-    return { status: 'success', amount: amount / 100, channel };
+    const completion = await completeWalletFund({
+      reference,
+      providerAmountKobo: result.data.amount,
+      providerTransactionId: result.data.id,
+      channel: result.data.channel,
+    });
+    if (completion.outcome === 'unknown') throw Object.assign(new Error('Unknown payment reference'), { statusCode: 404 });
+    return { status: 'success', amount: result.data.amount / 100, channel: result.data.channel };
   }
 
   if (provider === 'flutterwave') {
     const Flutterwave = require('../../providers/flutterwave/flutterwave.client');
-    const result = transactionId
+    result = transactionId
       ? await Flutterwave.verifyById(transactionId)
       : await Flutterwave.verifyByRef(reference);
     const tx = result.data;
     if (tx.status !== 'successful') throw new Error('Payment not successful');
-    const User = require('../../models/User');
-    const user = await User.findOne({ 'email.address': tx.customer.email });
-    if (user) {
-      await creditFromPayment({ userId: user._id, amountKobo: Math.round(tx.amount * 100), provider: 'flutterwave', providerReference: tx.tx_ref, channel: tx.payment_type });
-    }
+    const completion = await completeWalletFund({
+      reference: tx.tx_ref,
+      providerAmountKobo: Math.round(tx.amount * 100),
+      providerTransactionId: tx.id,
+      channel: tx.payment_type,
+    });
+    if (completion.outcome === 'unknown') throw Object.assign(new Error('Unknown payment reference'), { statusCode: 404 });
     return { status: 'success', amount: tx.amount, channel: tx.payment_type };
   }
 
   if (provider === 'monnify') {
     const Monnify = require('../../providers/monnify/monnify.client');
-    const result = await Monnify.verifyTransaction(reference);
+    result = await Monnify.verifyTransaction(reference);
     const body = result.responseBody;
     if (body?.paymentStatus !== 'PAID') throw new Error('Payment not successful');
-    const User = require('../../models/User');
-    const user = await User.findOne({ 'email.address': body.customer?.email });
-    if (user) {
-      await creditFromPayment({ userId: user._id, amountKobo: Math.round(body.amountPaid * 100), provider: 'monnify', providerReference: body.transactionReference, channel: body.paymentMethod });
-    }
+    const completion = await completeWalletFund({
+      reference: body.paymentReference ?? reference,
+      providerAmountKobo: Math.round(body.amountPaid * 100),
+      providerTransactionId: body.transactionReference,
+      channel: body.paymentMethod,
+    });
+    if (completion.outcome === 'unknown') throw Object.assign(new Error('Unknown payment reference'), { statusCode: 404 });
     return { status: 'success', amount: body.amountPaid, channel: body.paymentMethod };
   }
 
