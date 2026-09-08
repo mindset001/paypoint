@@ -5,6 +5,7 @@ const ledger = require('../../../services/ledger.service');
 const fraud = require('../../../services/fraud.service');
 const Transaction = require('../../../models/Transaction');
 const otp = require('../../../utils/otp');
+const referralService = require('../../referral/referral.service');
 
 const PROVIDERS = ['DSTV', 'GOTV', 'STARTIMES'];
 
@@ -41,6 +42,8 @@ const subscribe = async (userId, { provider, smartcardNumber, planCode, amount, 
   try {
     const result = await AidaPay.subscribeCable(provider, smartcardNumber, planCode);
     await Transaction.findByIdAndUpdate(tx._id, { status: 'success', providerReference: result.data?.transactionId, providerResponse: result.data });
+    referralService.creditReferralBonusIfQualifying(userId, tx._id)
+      .catch((err) => console.error('[referral]', err));
     return { message: 'Cable subscription successful', reference: tx.reference };
   } catch (providerErr) {
     await walletService.credit(userId, amountKobo, null);

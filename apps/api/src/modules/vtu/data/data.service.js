@@ -5,6 +5,7 @@ const ledger = require('../../../services/ledger.service');
 const fraud = require('../../../services/fraud.service');
 const Transaction = require('../../../models/Transaction');
 const otp = require('../../../utils/otp');
+const referralService = require('../../referral/referral.service');
 
 const getPlans = async (network) => {
   const result = await AidaPay.getDataPlans(network);
@@ -43,6 +44,8 @@ const buy = async (userId, { network, phone, planId, amount, pin }) => {
   try {
     const result = await AidaPay.buyData(network, phone, planId);
     await Transaction.findByIdAndUpdate(tx._id, { status: 'success', providerReference: result.data?.transactionId, providerResponse: result.data });
+    referralService.creditReferralBonusIfQualifying(userId, tx._id)
+      .catch((err) => console.error('[referral]', err));
     return { message: 'Data purchased successfully', reference: tx.reference };
   } catch (providerErr) {
     await walletService.credit(userId, amountKobo, null);

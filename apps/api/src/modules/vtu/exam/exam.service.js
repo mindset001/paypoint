@@ -5,6 +5,7 @@ const ledger = require('../../../services/ledger.service');
 const fraud = require('../../../services/fraud.service');
 const Transaction = require('../../../models/Transaction');
 const otp = require('../../../utils/otp');
+const referralService = require('../../referral/referral.service');
 
 const getTypes = async () => {
   const result = await AidaPay.getExamTypes();
@@ -33,6 +34,8 @@ const buy = async (userId, { examType, quantity = 1, amount, pin }) => {
   try {
     const result = await AidaPay.buyExamPin(examType, quantity);
     await Transaction.findByIdAndUpdate(tx._id, { status: 'success', providerReference: result.data?.transactionId, providerResponse: result.data, 'meta.examPin': result.data?.pin });
+    referralService.creditReferralBonusIfQualifying(userId, tx._id)
+      .catch((err) => console.error('[referral]', err));
     return { message: 'Exam PIN purchased', reference: tx.reference, pin: result.data?.pin, pins: result.data?.pins };
   } catch (providerErr) {
     await walletService.credit(userId, amountKobo, null);

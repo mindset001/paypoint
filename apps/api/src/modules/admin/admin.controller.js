@@ -91,6 +91,25 @@ const getUserTransactions = async (req, res) => {
   }
 };
 
+const getReferralBonusSettings = async (req, res) => {
+  try {
+    const data = await adminService.getReferralBonusSettings();
+    return success(res, data, 'Referral bonus settings fetched');
+  } catch (err) {
+    return error(res, err.message, 500);
+  }
+};
+
+const updateReferralBonusSettings = async (req, res) => {
+  try {
+    const { basic, standard, premium } = req.body;
+    const data = await adminService.updateReferralBonusSettings({ basic, standard, premium });
+    return success(res, data, 'Referral bonus settings updated');
+  } catch (err) {
+    return error(res, err.message, 400);
+  }
+};
+
 module.exports = {
   getStats,
   getUsers,
@@ -99,4 +118,6 @@ module.exports = {
   updateUserRole,
   getTransactions,
   getUserTransactions,
+  getReferralBonusSettings,
+  updateReferralBonusSettings,
 };

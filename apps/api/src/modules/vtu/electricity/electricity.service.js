@@ -5,6 +5,7 @@ const ledger = require('../../../services/ledger.service');
 const fraud = require('../../../services/fraud.service');
 const Transaction = require('../../../models/Transaction');
 const otp = require('../../../utils/otp');
+const referralService = require('../../referral/referral.service');
 
 const DISCOS = ['IKEDC', 'EKEDC', 'AEDC', 'KAEDC', 'JED', 'PHEDC', 'KEDCO', 'BEDC'];
 
@@ -38,6 +39,8 @@ const pay = async (userId, { disco, meterNumber, meterType, amount, phone, pin }
     const result = await AidaPay.payElectricity(disco, meterNumber, meterType, amount, phone);
     const token = result.data?.token;
     await Transaction.findByIdAndUpdate(tx._id, { status: 'success', providerReference: result.data?.transactionId, providerResponse: result.data, 'meta.token': token });
+    referralService.creditReferralBonusIfQualifying(userId, tx._id)
+      .catch((err) => console.error('[referral]', err));
     return { message: 'Electricity payment successful', reference: tx.reference, token };
   } catch (providerErr) {
     await walletService.credit(userId, amountKobo, null);

@@ -4,6 +4,7 @@ const otp = require('../../utils/otp');
 const jwt = require('../../utils/jwt');
 const redis = require('../../config/redis');
 const crypto = require('crypto');
+const referralService = require('../referral/referral.service');
 
 const generateReferralCode = () => crypto.randomBytes(4).toString('hex').toUpperCase();
 
@@ -40,6 +41,10 @@ const register = async ({ firstName, lastName, email, phone, password, referralC
   });
 
   await Wallet.create({ userId: user._id });
+
+  if (referredBy) {
+    await referralService.createPendingReferral(referredBy, user._id, referralCode);
+  }
 
   const otpCode = otp.generate();
   await otp.save(`phone:${phone}`, otpCode);

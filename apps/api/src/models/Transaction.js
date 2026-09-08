@@ -36,12 +36,14 @@ const transactionSchema = new mongoose.Schema(
       examType: String,
       examPin: String,
       // Wallet funding
-      paystackReference: String,
-      paystackChannel: String,
+      provider: String,
+      channel: String,
       // Transfer
       counterpartyUserId: mongoose.Schema.Types.ObjectId,
       counterpartyName: String,
       narration: String,
+      // Referral
+      refereeId: mongoose.Schema.Types.ObjectId,
     },
     providerReference: String,
     providerStatus: String,

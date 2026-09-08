@@ -17,6 +17,7 @@ const examRoutes = require('./modules/vtu/exam/exam.routes');
 const servicesRoutes = require('./modules/services/services.routes');
 const adminRoutes = require('./modules/admin/admin.routes');
 const notificationRoutes = require('./modules/notifications/notifications.routes');
+const referralRoutes = require('./modules/referral/referral.routes');
 
 const app = express();
 
@@ -64,6 +65,7 @@ app.use('/api/v1/exam', examRoutes);
 app.use('/api/v1/services', servicesRoutes);
 app.use('/api/v1/admin', adminRoutes);
 app.use('/api/v1/notifications', notificationRoutes);
+app.use('/api/v1/referral', referralRoutes);
 
 app.use(notFound);
 Sentry.setupExpressErrorHandler(app);

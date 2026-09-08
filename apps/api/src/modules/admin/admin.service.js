@@ -1,6 +1,7 @@
 const User = require('../../models/User');
 const Wallet = require('../../models/Wallet');
 const Transaction = require('../../models/Transaction');
+const referralService = require('../referral/referral.service');
 
 const getStats = async () => {
   const now = new Date();
@@ -163,6 +164,24 @@ const getUserTransactions = async (userId, { page = 1, limit = 20 } = {}) => {
   return { transactions, total, page, limit, pages: Math.ceil(total / limit) };
 };
 
+const getReferralBonusSettings = async () => {
+  const byTierKobo = await referralService.getBonusByTier();
+  return {
+    basic: byTierKobo.basic / 100,
+    standard: byTierKobo.standard / 100,
+    premium: byTierKobo.premium / 100,
+  };
+};
+
+const updateReferralBonusSettings = async ({ basic, standard, premium }) => {
+  const updatedKobo = await referralService.updateBonusByTier({ basic, standard, premium });
+  return {
+    basic: updatedKobo.basic / 100,
+    standard: updatedKobo.standard / 100,
+    premium: updatedKobo.premium / 100,
+  };
+};
+
 module.exports = {
   getStats,
   getUsers,
@@ -171,4 +190,6 @@ module.exports = {
   updateUserRole,
   getTransactions,
   getUserTransactions,
+  getReferralBonusSettings,
+  updateReferralBonusSettings,
 };
