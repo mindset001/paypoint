@@ -19,6 +19,9 @@ const env = {
   AIDAPAY_API_KEY: process.env.AIDAPAY_API_KEY,
   AIDAPAY_USERNAME: process.env.AIDAPAY_USERNAME,
   AIDAPAY_PASSWORD: process.env.AIDAPAY_PASSWORD,
+  // The 4-digit PIN on AidaPay's own merchant account, required by their
+  // POST /buy — unrelated to a PayPoint user's wallet PIN.
+  AIDAPAY_ACCOUNT_PIN: process.env.AIDAPAY_ACCOUNT_PIN,
 
   PAYSTACK_SECRET_KEY: process.env.PAYSTACK_SECRET_KEY,
   PAYSTACK_PUBLIC_KEY: process.env.PAYSTACK_PUBLIC_KEY,

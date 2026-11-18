@@ -7,17 +7,21 @@ const Transaction = require('../../../models/Transaction');
 const otp = require('../../../utils/otp');
 const referralService = require('../../referral/referral.service');
 
-const PROVIDERS = ['DSTV', 'GOTV', 'STARTIMES'];
-
 const getPlans = async (provider) => {
-  const result = await AidaPay.getCablePlans(provider);
-  return result.data;
+  const providerCode = await AidaPay.resolveProviderCode(AidaPay.SLUGS.cable, provider);
+  const result = await AidaPay.getPackages(providerCode);
+  const packages = result.data?.data ?? [];
+  return packages.map((p) => ({
+    planCode: p.package_api_code,
+    name: p.package_name,
+    amount: Number(p.package_amount),
+  }));
 };
 
 const verifySmartcard = async (provider, smartcardNumber) => {
-  if (!PROVIDERS.includes(provider)) throw Object.assign(new Error('Invalid provider'), { statusCode: 400 });
-  const result = await AidaPay.verifySmartcard(provider, smartcardNumber);
-  return result.data;
+  const providerCode = await AidaPay.resolveProviderCode(AidaPay.SLUGS.cable, provider);
+  const { name } = await AidaPay.verifyRecipient(providerCode, smartcardNumber);
+  return { name, currentPackage: '' };
 };
 
 const subscribe = async (userId, { provider, smartcardNumber, planCode, amount, pin }) => {
@@ -40,8 +44,16 @@ const subscribe = async (userId, { provider, smartcardNumber, planCode, amount, 
   } catch (err) { await session.abortTransaction(); throw err; } finally { session.endSession(); }
 
   try {
-    const result = await AidaPay.subscribeCable(provider, smartcardNumber, planCode);
-    await Transaction.findByIdAndUpdate(tx._id, { status: 'success', providerReference: result.data?.transactionId, providerResponse: result.data });
+    const providerCode = await AidaPay.resolveProviderCode(AidaPay.SLUGS.cable, provider);
+    const result = await AidaPay.buy({ recipient: smartcardNumber, providerCode, ref: tx.reference, packageCode: planCode });
+    const txn = result.data?.data?.transaction_data;
+
+    const charged = Number(txn?.amount_paid ?? txn?.amount);
+    if (Number.isFinite(charged) && Math.abs(charged - amount) > 0.5) {
+      console.error(`[aidapay] price mismatch on ${provider} cable ${tx.reference}: expected ₦${amount}, AidaPay charged ₦${charged}`);
+    }
+
+    await Transaction.findByIdAndUpdate(tx._id, { status: 'success', providerReference: txn?.transaction_hash, providerStatus: txn?.status, providerResponse: result.data });
     referralService.creditReferralBonusIfQualifying(userId, tx._id)
       .catch((err) => console.error('[referral]', err));
     return { message: 'Cable subscription successful', reference: tx.reference };

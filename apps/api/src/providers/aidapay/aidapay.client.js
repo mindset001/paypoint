@@ -1,11 +1,18 @@
 const axios = require('axios');
 const env = require('../../config/env');
 
+// Matches AidaPay's real documented API at {base}/v1 — see their live docs
+// at https://aidapay.ng/api. The previous version of this file targeted
+// endpoints (/topup, /cable, /electricity, /exam, /data/plans/:network)
+// that don't exist on their platform; every service slug, path and request
+// shape below was taken directly from AidaPay's own docs page, not guessed.
+
 const client = axios.create({
   baseURL: env.AIDAPAY_BASE_URL,
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
+    Accept: 'application/json',
     Authorization: `Bearer ${env.AIDAPAY_API_KEY}`,
   },
 });
@@ -21,45 +28,89 @@ client.interceptors.response.use(
   }
 );
 
-// ─── Airtime ───────────────────────────────────────────────────────────────
-const buyAirtime = (network, phone, amount) =>
-  client.post('/topup', { network, phone, amount, type: 'airtime' });
+// Service slugs, per AidaPay's docs — the only ones they document.
+const SLUGS = {
+  airtime: 'airtime-topup',
+  data: 'data-bundle-sme',
+  cable: 'cable-tv-subscription',
+  electricity: 'meter-token',
+  exam: 'education',
+  internet: 'internet',
+};
 
-// ─── Data ──────────────────────────────────────────────────────────────────
-const getDataPlans = (network) =>
-  client.get(`/data/plans/${network}`);
+// ─── Account ─────────────────────────────────────────────────────────────
+const getAccountInfo = () => client.get('/my_account');
 
-const buyData = (network, phone, planId) =>
-  client.post('/topup', { network, phone, planId, type: 'data' });
+// ─── Providers & packages ────────────────────────────────────────────────
+const getProviders = (slug) => client.get(`/service/${slug}`);
+const getPackages = (providerCode) => client.get(`/packages/${encodeURIComponent(providerCode)}`);
 
-// ─── Cable TV ──────────────────────────────────────────────────────────────
-const getCablePlans = (provider) =>
-  client.get(`/cable/plans/${provider}`);
+// Resolve a human-facing name (e.g. "MTN", "DSTV", "IKEDC") to AidaPay's
+// provider_code for a given service slug — their codes aren't predictable
+// enough to hardcode, so this always looks them up live.
+const resolveProviderCode = async (slug, providerName) => {
+  const res = await getProviders(slug);
+  const providers = res.data?.data ?? [];
+  const match = providers.find(
+    (p) => p.provider_name?.toLowerCase() === providerName.toLowerCase()
+  );
+  if (!match) {
+    throw Object.assign(new Error(`${providerName} is not available on AidaPay for this service`), { statusCode: 400 });
+  }
+  return match.provider_code;
+};
 
-const verifySmartcard = (provider, smartcardNumber) =>
-  client.post('/cable/verify', { provider, smartcardNumber });
+// ─── Validation ──────────────────────────────────────────────────────────
+const validateRecipient = (providerCode, recipient) =>
+  client.get(`/validation/${encodeURIComponent(providerCode)}/${encodeURIComponent(recipient)}`);
 
-const subscribeCable = (provider, smartcardNumber, planCode) =>
-  client.post('/cable', { provider, smartcardNumber, planCode });
+// Returns { name } parsed from AidaPay's "Verified : NAME" message —
+// that's all the validation endpoint gives back, there's no separate
+// address/account field.
+const verifyRecipient = async (providerCode, recipient) => {
+  const res = await validateRecipient(providerCode, recipient);
+  const body = res.data?.data;
+  if (!body?.verified) {
+    throw Object.assign(new Error(body?.message || 'Could not verify recipient'), { statusCode: 400 });
+  }
+  const name = String(body.message || '').replace(/^Verified\s*:\s*/i, '').trim();
+  return { name };
+};
 
-// ─── Electricity ───────────────────────────────────────────────────────────
-const verifyMeter = (disco, meterNumber, meterType) =>
-  client.post('/electricity/verify', { disco, meterNumber, meterType });
+// ─── Buy ─────────────────────────────────────────────────────────────────
+// amount is omitted when a package_code is given (data/cable bundles carry
+// their own price) — passing both is what AidaPay's docs show as mutually
+// exclusive use cases, not a combined one.
+const buy = ({ recipient, providerCode, ref, amount, packageCode, isPorted }) => {
+  const body = {
+    recipient,
+    provider_code: providerCode,
+    account_pin: env.AIDAPAY_ACCOUNT_PIN,
+    ref,
+  };
+  if (packageCode) body.package_code = packageCode;
+  else if (amount != null) body.amount = String(amount);
+  if (isPorted) body.isPorted = 'yes';
+  return client.post('/buy', body);
+};
 
-const payElectricity = (disco, meterNumber, meterType, amount, phone) =>
-  client.post('/electricity', { disco, meterNumber, meterType, amount, phone });
+// ─── Status ──────────────────────────────────────────────────────────────
+// Rate-limited by AidaPay to 3 requests / 5 minutes — prefer webhooks.
+const getTransactionStatus = (transactionHashOrRef) =>
+  client.get(`/transaction/${encodeURIComponent(transactionHashOrRef)}`);
 
-// ─── Exam Pins ─────────────────────────────────────────────────────────────
-const getExamTypes = () =>
-  client.get('/exam/types');
-
-const buyExamPin = (examType, quantity = 1) =>
-  client.post('/exam', { examType, quantity });
+// ─── Pricing ─────────────────────────────────────────────────────────────
+const getPricing = () => client.get('/pricing');
 
 module.exports = {
-  buyAirtime,
-  getDataPlans, buyData,
-  getCablePlans, verifySmartcard, subscribeCable,
-  verifyMeter, payElectricity,
-  getExamTypes, buyExamPin,
+  SLUGS,
+  getAccountInfo,
+  getProviders,
+  getPackages,
+  resolveProviderCode,
+  validateRecipient,
+  verifyRecipient,
+  buy,
+  getTransactionStatus,
+  getPricing,
 };

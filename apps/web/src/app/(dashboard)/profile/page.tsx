@@ -74,7 +74,7 @@ export default function ProfilePage() {
 
   return (
     <div>
-      <div className="bg-gradient-to-b from-brand-dark to-brand-navy px-6 pt-14 lg:pt-8 pb-8">
+      <div className="bg-gradient-to-b from-brand-dark to-brand-navy px-6 pt-14 md:pt-8 pb-8">
         <div className="flex items-start gap-4">
           <div className="w-16 h-16 bg-brand-blue rounded-full flex items-center justify-center flex-shrink-0">
             <span className="text-white text-2xl font-black">

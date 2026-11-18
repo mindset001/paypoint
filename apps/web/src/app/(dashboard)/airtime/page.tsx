@@ -51,7 +51,7 @@ export default function AirtimePage() {
   return (
     <div>
       {/* Header */}
-      <div className="bg-gradient-to-br from-yellow-400 to-orange-400 px-6 pt-14 lg:pt-8 pb-8">
+      <div className="bg-gradient-to-br from-yellow-400 to-orange-400 px-6 pt-14 md:pt-8 pb-8">
         <button onClick={() => router.back()} className="text-white mb-4">
           <ArrowLeft size={22} />
         </button>

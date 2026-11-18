@@ -17,7 +17,7 @@ export default function WalletPage() {
   return (
     <div>
       {/* Header */}
-      <div className="bg-gradient-to-br from-brand-dark to-brand-navy px-6 pt-14 lg:pt-8 pb-10">
+      <div className="bg-gradient-to-br from-brand-dark to-brand-navy px-6 pt-14 md:pt-8 pb-10">
         <h1 className="text-white text-xl font-bold mb-6">My Wallet</h1>
         <div className="text-center">
           <p className="text-blue-300 text-sm mb-1">Available Balance</p>

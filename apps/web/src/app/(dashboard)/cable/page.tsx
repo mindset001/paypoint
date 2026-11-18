@@ -64,7 +64,7 @@ export default function CablePage() {
 
   return (
     <div>
-      <div className="bg-gradient-to-br from-purple-600 to-purple-800 px-6 pt-14 lg:pt-8 pb-8">
+      <div className="bg-gradient-to-br from-purple-600 to-purple-800 px-6 pt-14 md:pt-8 pb-8">
         <button onClick={() => router.back()} className="text-white mb-4"><ArrowLeft size={22} /></button>
         <h1 className="text-white text-2xl font-black">Cable TV</h1>
         <p className="text-purple-100 text-sm">DStv, GOtv, Startimes</p>

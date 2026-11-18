@@ -32,9 +32,9 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
       {/* Main content */}
       <div className="flex-1 flex flex-col min-h-screen min-w-0">
-        <main className="flex-1 pb-20 lg:pb-0 overflow-y-auto hide-scrollbar">
+        <main className="flex-1 pb-20 md:pb-0 overflow-y-auto hide-scrollbar">
           {/* Constrain content width on desktop */}
-          <div className="lg:max-w-3xl lg:mx-auto">
+          <div className="md:max-w-3xl md:mx-auto">
             {children}
           </div>
         </main>

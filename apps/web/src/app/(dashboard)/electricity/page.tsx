@@ -55,7 +55,7 @@ export default function ElectricityPage() {
 
   if (token) {
     return (
-      <div className="px-5 pt-12 lg:pt-8 pb-8 flex flex-col items-center text-center gap-4">
+      <div className="px-5 pt-12 md:pt-8 pb-8 flex flex-col items-center text-center gap-4">
         <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
           <CheckCircle size={32} className="text-green-600" />
         </div>
@@ -77,7 +77,7 @@ export default function ElectricityPage() {
 
   return (
     <div>
-      <div className="bg-gradient-to-br from-orange-500 to-orange-700 px-6 pt-14 lg:pt-8 pb-8">
+      <div className="bg-gradient-to-br from-orange-500 to-orange-700 px-6 pt-14 md:pt-8 pb-8">
         <button onClick={() => router.back()} className="text-white mb-4"><ArrowLeft size={22} /></button>
         <h1 className="text-white text-2xl font-black">Electricity</h1>
         <p className="text-orange-100 text-sm">Pay for prepaid & postpaid meters</p>

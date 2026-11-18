@@ -94,7 +94,7 @@ export default function FundWalletPage() {
   return (
     <div className="flex flex-col min-h-screen">
       {/* Header */}
-      <div className="bg-gradient-to-br from-brand-blue to-blue-700 px-6 pt-14 lg:pt-8 pb-8">
+      <div className="bg-gradient-to-br from-brand-blue to-blue-700 px-6 pt-14 md:pt-8 pb-8">
         <button onClick={() => router.back()} className="text-white mb-4">
           <ArrowLeft size={22} />
         </button>

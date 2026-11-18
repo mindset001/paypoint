@@ -55,7 +55,7 @@ export default function NotificationsPage() {
 
   return (
     <div>
-      <div className="bg-gradient-to-b from-brand-dark to-brand-navy px-6 pt-14 lg:pt-8 pb-6">
+      <div className="bg-gradient-to-b from-brand-dark to-brand-navy px-6 pt-14 md:pt-8 pb-6">
         <button onClick={() => router.back()} className="text-white mb-4">
           <ArrowLeft size={22} />
         </button>

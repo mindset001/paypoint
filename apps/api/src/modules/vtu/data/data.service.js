@@ -8,8 +8,15 @@ const otp = require('../../../utils/otp');
 const referralService = require('../../referral/referral.service');
 
 const getPlans = async (network) => {
-  const result = await AidaPay.getDataPlans(network);
-  return result.data;
+  const providerCode = await AidaPay.resolveProviderCode(AidaPay.SLUGS.data, network);
+  const result = await AidaPay.getPackages(providerCode);
+  const packages = result.data?.data ?? [];
+  return packages.map((p) => ({
+    planId: p.package_api_code,
+    name: p.package_name,
+    amount: Number(p.package_amount),
+    validity: '',
+  }));
 };
 
 const buy = async (userId, { network, phone, planId, amount, pin }) => {
@@ -42,8 +49,16 @@ const buy = async (userId, { network, phone, planId, amount, pin }) => {
   finally { session.endSession(); }
 
   try {
-    const result = await AidaPay.buyData(network, phone, planId);
-    await Transaction.findByIdAndUpdate(tx._id, { status: 'success', providerReference: result.data?.transactionId, providerResponse: result.data });
+    const providerCode = await AidaPay.resolveProviderCode(AidaPay.SLUGS.data, network);
+    const result = await AidaPay.buy({ recipient: phone, providerCode, ref: tx.reference, packageCode: planId });
+    const txn = result.data?.data?.transaction_data;
+
+    const charged = Number(txn?.amount_paid ?? txn?.amount);
+    if (Number.isFinite(charged) && Math.abs(charged - amount) > 0.5) {
+      console.error(`[aidapay] price mismatch on ${network} data ${tx.reference}: expected ₦${amount}, AidaPay charged ₦${charged}`);
+    }
+
+    await Transaction.findByIdAndUpdate(tx._id, { status: 'success', providerReference: txn?.transaction_hash, providerStatus: txn?.status, providerResponse: result.data });
     referralService.creditReferralBonusIfQualifying(userId, tx._id)
       .catch((err) => console.error('[referral]', err));
     return { message: 'Data purchased successfully', reference: tx.reference };

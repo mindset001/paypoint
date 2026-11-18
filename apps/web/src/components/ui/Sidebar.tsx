@@ -19,7 +19,7 @@ export function Sidebar() {
   const { user } = useAuthStore();
 
   return (
-    <aside className="hidden lg:flex flex-col w-60 shrink-0 h-screen sticky top-0 bg-white border-r border-gray-100">
+    <aside className="hidden md:flex flex-col w-60 shrink-0 h-screen sticky top-0 bg-white border-r border-gray-100">
       {/* Logo */}
       <div className="px-5 py-5 border-b border-gray-50">
         <Link href="/home" className="flex items-center gap-2.5">

@@ -160,7 +160,7 @@ export default function TransactionsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="bg-brand-dark px-6 pt-14 lg:pt-8 pb-5">
+      <div className="bg-brand-dark px-6 pt-14 md:pt-8 pb-5">
         <h1 className="text-white text-xl font-bold">Transactions</h1>
       </div>
 

@@ -53,7 +53,7 @@ const SERVICES = [
 export default function ServicesPage() {
   return (
     <div>
-      <div className="bg-gradient-to-b from-brand-dark to-brand-navy px-6 pt-14 lg:pt-8 pb-6">
+      <div className="bg-gradient-to-b from-brand-dark to-brand-navy px-6 pt-14 md:pt-8 pb-6">
         <h1 className="text-white text-xl font-bold">Services</h1>
         <p className="text-blue-300 text-sm mt-1">Everything you need, one wallet</p>
       </div>

@@ -58,11 +58,19 @@ const buy = async (userId, { network, phone, amount, pin }) => {
   }
 
   try {
-    const result = await AidaPay.buyAirtime(network, phone, amount);
+    const providerCode = await AidaPay.resolveProviderCode(AidaPay.SLUGS.airtime, network);
+    const result = await AidaPay.buy({ recipient: phone, providerCode, ref: tx.reference, amount });
+    const txn = result.data?.data?.transaction_data;
+
+    const charged = Number(txn?.amount_paid ?? txn?.amount);
+    if (Number.isFinite(charged) && Math.abs(charged - amount) > 0.5) {
+      console.error(`[aidapay] price mismatch on ${network} airtime ${tx.reference}: expected ₦${amount}, AidaPay charged ₦${charged}`);
+    }
+
     await Transaction.findByIdAndUpdate(tx._id, {
       status: 'success',
-      providerReference: result.data?.transactionId,
-      providerStatus: result.data?.status,
+      providerReference: txn?.transaction_hash,
+      providerStatus: txn?.status,
       providerResponse: result.data,
     });
     notify.createNotification(userId, {

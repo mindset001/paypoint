@@ -37,8 +37,12 @@ const credit = async (userId, amountKobo, session) => {
 
 // ── Wallet Funding ─────────────────────────────────────────────────────
 
+// CLIENT_URL may be a comma-separated allowlist (same convention app.js's
+// CORS config uses) — a redirect can only target one URL, so take the first.
+const PRIMARY_CLIENT_URL = (env.CLIENT_URL || '').split(',')[0].trim().replace(/\/$/, '');
+
 const CALLBACK_URL = (provider) =>
-  `${env.CLIENT_URL}/wallet/callback?provider=${provider}`;
+  `${PRIMARY_CLIENT_URL}/wallet/callback?provider=${provider}`;
 
 const FUND_PROVIDERS = ['paystack', 'flutterwave', 'monnify'];
 
@@ -228,12 +232,82 @@ const completeWalletFund = async ({ reference, providerAmountKobo, providerTrans
   }
 };
 
+// ── Internal: credit a deposit paid directly into a reserved/virtual ───
+// account (bank transfer), which has no pending Transaction from
+// initiateWalletFund to claim — resolve the wallet by the account
+// reference/number Monnify echoes back instead.
+
+const creditReservedAccountDeposit = async ({ accountReference, accountNumber, providerTransactionId, providerAmountKobo, channel, attempt = 1 }) => {
+  const query = accountReference
+    ? { 'reservedAccount.reference': accountReference }
+    : { 'reservedAccount.accountNumber': accountNumber };
+  const wallet = await Wallet.findOne(query);
+  if (!wallet) return { outcome: 'unknown' };
+
+  const session = await mongoose.startSession();
+  session.startTransaction();
+  try {
+    const { balanceBefore, balanceAfter } = await credit(wallet.userId, providerAmountKobo, session);
+
+    const ref = otp.generateRef();
+    const [tx] = await Transaction.create([{
+      reference: ref,
+      userId: wallet.userId,
+      walletId: wallet._id,
+      type: 'wallet_fund',
+      direction: 'credit',
+      amount: providerAmountKobo,
+      status: 'success',
+      balanceBefore,
+      balanceAfter,
+      meta: { provider: 'monnify', channel },
+      providerReference: providerTransactionId,
+      providerStatus: 'success',
+      processedAt: new Date(),
+    }], { session });
+
+    await ledger.record({
+      transactionId: tx._id,
+      userId: wallet.userId,
+      walletId: wallet._id,
+      entry: 'credit',
+      amount: providerAmountKobo,
+      balanceBefore,
+      balanceAfter,
+      description: `Wallet funded via monnify/${channel || 'bank_transfer'} — ₦${(providerAmountKobo / 100).toLocaleString()}`,
+    }, session);
+
+    await session.commitTransaction();
+
+    notify.createNotification(wallet.userId, {
+      title: 'Wallet Funded 💰',
+      body: `₦${(providerAmountKobo / 100).toLocaleString()} added to your wallet via bank transfer.`,
+      type: 'wallet',
+      meta: { providerTransactionId },
+    });
+
+    return { outcome: 'credited', tx };
+  } catch (err) {
+    await session.abortTransaction();
+    if (err.code === 11000) return { outcome: 'already_processed' }; // unique providerReference backstop
+    if (err.errorLabels?.includes('TransientTransactionError') && attempt < 3) {
+      return creditReservedAccountDeposit({ accountReference, accountNumber, providerTransactionId, providerAmountKobo, channel, attempt: attempt + 1 });
+    }
+    throw err;
+  } finally {
+    session.endSession();
+  }
+};
+
 // ── Webhook Handlers ───────────────────────────────────────────────────
 
 const handlePaystackWebhook = async (event) => {
   if (event.event !== 'charge.success') return;
   const { reference, amount, channel, id } = event.data;
-  await completeWalletFund({ reference, providerAmountKobo: amount, providerTransactionId: id, channel });
+  const result = await completeWalletFund({ reference, providerAmountKobo: amount, providerTransactionId: id, channel });
+  if (result.outcome === 'unknown') {
+    console.error('[wallet] paystack webhook: no matching transaction for reference', reference);
+  }
 };
 
 const handleFlutterwaveWebhook = async (event) => {
@@ -243,12 +317,15 @@ const handleFlutterwaveWebhook = async (event) => {
   const { tx_ref, amount, currency, id } = event.data;
   if (currency !== 'NGN') return;
 
-  await completeWalletFund({
+  const result = await completeWalletFund({
     reference: tx_ref,
     providerAmountKobo: Math.round(amount * 100),
     providerTransactionId: id,
     channel: event.data.payment_type,
   });
+  if (result.outcome === 'unknown') {
+    console.error('[wallet] flutterwave webhook: no matching transaction for reference', tx_ref);
+  }
 };
 
 const handleMonnifyWebhook = async (event) => {
@@ -256,12 +333,29 @@ const handleMonnifyWebhook = async (event) => {
   const body = event.eventData;
   if (!body || body.paymentStatus !== 'PAID') return;
 
-  await completeWalletFund({
+  const result = await completeWalletFund({
     reference: body.paymentReference,
     providerAmountKobo: Math.round(body.amountPaid * 100),
     providerTransactionId: body.transactionReference,
     channel: body.paymentMethod,
   });
+
+  if (result.outcome === 'unknown') {
+    // Not a reference we initiated via /wallet/fund — likely a direct bank
+    // transfer into the user's reserved account instead.
+    const accountReference = body.product?.reference;
+    const accountNumber = body.destinationAccountInformation?.accountNumber ?? body.accountDetails?.accountNumber;
+    const fallback = await creditReservedAccountDeposit({
+      accountReference,
+      accountNumber,
+      providerTransactionId: body.transactionReference,
+      providerAmountKobo: Math.round(body.amountPaid * 100),
+      channel: body.paymentMethod,
+    });
+    if (fallback.outcome === 'unknown') {
+      console.error('[wallet] monnify webhook: could not resolve any wallet for payload', JSON.stringify(body));
+    }
+  }
 };
 
 // ── Verify payment from callback page ─────────────────────────────────

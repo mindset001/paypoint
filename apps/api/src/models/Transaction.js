@@ -60,7 +60,10 @@ const transactionSchema = new mongoose.Schema(
 transactionSchema.index({ userId: 1, createdAt: -1 });
 transactionSchema.index({ status: 1, createdAt: -1 });
 transactionSchema.index({ type: 1, userId: 1 });
-transactionSchema.index({ providerReference: 1 });
+// unique+sparse: backstops idempotency for completion paths that have no
+// pre-existing pending row to atomically claim (e.g. reserved-account
+// deposits) — a concurrent duplicate insert hits this instead of double-crediting
+transactionSchema.index({ providerReference: 1 }, { unique: true, sparse: true });
 transactionSchema.index({ 'meta.phone': 1, type: 1, createdAt: -1 });
 
 module.exports = mongoose.model('Transaction', transactionSchema);

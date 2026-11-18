@@ -59,7 +59,7 @@ export default function DataPage() {
 
   return (
     <div>
-      <div className="bg-gradient-to-br from-brand-blue to-blue-700 px-6 pt-14 lg:pt-8 pb-8">
+      <div className="bg-gradient-to-br from-brand-blue to-blue-700 px-6 pt-14 md:pt-8 pb-8">
         <button onClick={() => router.back()} className="text-white mb-4"><ArrowLeft size={22} /></button>
         <h1 className="text-white text-2xl font-black">Buy Data</h1>
         <p className="text-blue-100 text-sm">All networks, best prices</p>

@@ -33,7 +33,7 @@ export default function HomePage() {
   return (
     <div className="flex flex-col">
       {/* Header */}
-      <div className="bg-gradient-to-b from-brand-dark to-brand-navy px-6 pt-14 lg:pt-8 pb-6">
+      <div className="bg-gradient-to-b from-brand-dark to-brand-navy px-6 pt-14 md:pt-8 pb-6">
         <div className="flex items-center justify-between mb-6">
           <div>
             <p className="text-blue-300 text-sm">Good day,</p>

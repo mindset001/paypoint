@@ -7,12 +7,33 @@ const Transaction = require('../../../models/Transaction');
 const otp = require('../../../utils/otp');
 const referralService = require('../../referral/referral.service');
 
-const DISCOS = ['IKEDC', 'EKEDC', 'AEDC', 'KAEDC', 'JED', 'PHEDC', 'KEDCO', 'BEDC'];
+// AidaPay's provider_name strings for DisCos don't reliably contain the
+// short codes this app's UI uses (e.g. "EKEDC" appears nowhere in their
+// "Eko Electricity Distribution Company [PHCN]" listing, and KAEDC is just
+// "Kaduna Electric") — resolving by name would wrongly reject both. Mapped
+// directly from AidaPay's live GET /service/meter-token response instead
+// of guessed.
+const DISCO_PROVIDER_CODES = {
+  IKEDC: 'ikedc',
+  EKEDC: 'eedc',
+  AEDC: 'aedc',
+  KAEDC: 'kaduna',
+  JED: 'jed',
+  PHEDC: 'phed',
+  KEDCO: 'kedco',
+  BEDC: 'bedc',
+};
+
+const resolveDiscoCode = (disco) => {
+  const code = DISCO_PROVIDER_CODES[disco];
+  if (!code) throw Object.assign(new Error(`${disco} is not available on AidaPay`), { statusCode: 400 });
+  return code;
+};
 
 const verifyMeter = async (disco, meterNumber, meterType) => {
-  if (!DISCOS.includes(disco)) throw Object.assign(new Error('Invalid DisCo'), { statusCode: 400 });
-  const result = await AidaPay.verifyMeter(disco, meterNumber, meterType);
-  return result.data;
+  const providerCode = resolveDiscoCode(disco);
+  const { name } = await AidaPay.verifyRecipient(providerCode, meterNumber);
+  return { name, address: '' };
 };
 
 const pay = async (userId, { disco, meterNumber, meterType, amount, phone, pin }) => {
@@ -36,12 +57,31 @@ const pay = async (userId, { disco, meterNumber, meterType, amount, phone, pin }
   } catch (err) { await session.abortTransaction(); throw err; } finally { session.endSession(); }
 
   try {
-    const result = await AidaPay.payElectricity(disco, meterNumber, meterType, amount, phone);
-    const token = result.data?.token;
-    await Transaction.findByIdAndUpdate(tx._id, { status: 'success', providerReference: result.data?.transactionId, providerResponse: result.data, 'meta.token': token });
-    referralService.creditReferralBonusIfQualifying(userId, tx._id)
-      .catch((err) => console.error('[referral]', err));
-    return { message: 'Electricity payment successful', reference: tx.reference, token };
+    const providerCode = resolveDiscoCode(disco);
+    const result = await AidaPay.buy({ recipient: meterNumber, providerCode, ref: tx.reference, amount });
+    const txn = result.data?.data?.transaction_data;
+
+    const charged = Number(txn?.amount_paid ?? txn?.amount);
+    if (Number.isFinite(charged) && Math.abs(charged - amount) > 0.5) {
+      console.error(`[aidapay] price mismatch on ${disco} electricity ${tx.reference}: expected ₦${amount}, AidaPay charged ₦${charged}`);
+    }
+
+    // AidaPay's /buy returns status "Processing" for meter tokens — the
+    // token itself arrives later via webhook or GET /transaction/{hash}
+    // (rate-limited, so not polled here), not synchronously in this response.
+    const token = txn?.meter_token ?? null;
+    await Transaction.findByIdAndUpdate(tx._id, {
+      status: token ? 'success' : 'pending',
+      providerReference: txn?.transaction_hash,
+      providerStatus: txn?.status,
+      providerResponse: result.data,
+      'meta.token': token,
+    });
+    if (token) {
+      referralService.creditReferralBonusIfQualifying(userId, tx._id)
+        .catch((err) => console.error('[referral]', err));
+    }
+    return { message: token ? 'Electricity payment successful' : 'Electricity payment is processing', reference: tx.reference, token };
   } catch (providerErr) {
     await walletService.credit(userId, amountKobo, null);
     await Transaction.findByIdAndUpdate(tx._id, { status: 'failed', failureReason: providerErr.message });

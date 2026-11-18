@@ -88,7 +88,7 @@ export default function NotificationsPage() {
   return (
     <div className="flex flex-col min-h-screen">
       {/* Header */}
-      <div className="bg-gradient-to-b from-brand-dark to-brand-navy px-6 pt-14 lg:pt-8 pb-5 sticky top-0 z-10">
+      <div className="bg-gradient-to-b from-brand-dark to-brand-navy px-6 pt-14 md:pt-8 pb-5 sticky top-0 z-10">
         <div className="flex items-center justify-between mb-4">
           <button onClick={() => router.back()} className="text-white p-1 -ml-1">
             <ArrowLeft size={22} />
