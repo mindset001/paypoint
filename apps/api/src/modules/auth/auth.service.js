@@ -5,6 +5,7 @@ const jwt = require('../../utils/jwt');
 const redis = require('../../config/redis');
 const crypto = require('crypto');
 const referralService = require('../referral/referral.service');
+const email = require('../../services/email.service');
 
 const generateReferralCode = () => crypto.randomBytes(4).toString('hex').toUpperCase();
 
@@ -153,6 +154,7 @@ const resendOtp = async (identifier) => {
   const code = otp.generate();
   await otp.save(key, code);
   console.log(`[OTP] ${identifier}: ${code}`);
+  if (!isPhone) await email.sendOtpEmail(identifier, code, { heading: 'Your verification code' });
   return {
     message: 'OTP resent',
     ...(process.env.NODE_ENV !== 'production' && { devOtp: code }),
@@ -188,6 +190,7 @@ const forgotPassword = async (identifier) => {
   const code = otp.generate();
   await otp.save(`reset:${identifier}`, code);
   console.log(`[RESET OTP] ${identifier}: ${code}`);
+  if (!isPhone) await email.sendOtpEmail(user.email.address, code, { heading: 'Your password reset code' });
   return {
     message: 'Reset code sent',
     ...(process.env.NODE_ENV !== 'production' && { devOtp: code }),
