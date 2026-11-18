@@ -22,6 +22,8 @@ const DISCO_PROVIDER_CODES = {
   PHEDC: 'phed',
   KEDCO: 'kedco',
   BEDC: 'bedc',
+  IBEDC: 'ibedc',
+  ENUGU: 'enugu',
 };
 
 const resolveDiscoCode = (disco) => {

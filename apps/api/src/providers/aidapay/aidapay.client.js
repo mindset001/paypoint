@@ -81,7 +81,7 @@ const verifyRecipient = async (providerCode, recipient) => {
 // amount is omitted when a package_code is given (data/cable bundles carry
 // their own price) — passing both is what AidaPay's docs show as mutually
 // exclusive use cases, not a combined one.
-const buy = ({ recipient, providerCode, ref, amount, packageCode, isPorted }) => {
+const buy = async ({ recipient, providerCode, ref, amount, packageCode, isPorted }) => {
   const body = {
     recipient,
     provider_code: providerCode,
@@ -91,7 +91,18 @@ const buy = ({ recipient, providerCode, ref, amount, packageCode, isPorted }) =>
   if (packageCode) body.package_code = packageCode;
   else if (amount != null) body.amount = String(amount);
   if (isPorted) body.isPorted = 'yes';
-  return client.post('/buy', body);
+
+  const res = await client.post('/buy', body);
+  // AidaPay can return HTTP 200 with a body-level failure (e.g. a wrong
+  // account_pin) — axios only rejects on HTTP error status, so this has to
+  // be checked explicitly or a rejected purchase gets treated as a success.
+  if (res.data?.success === false) {
+    throw Object.assign(new Error(res.data?.message || 'AidaPay rejected the purchase'), {
+      statusCode: 502,
+      providerData: res.data,
+    });
+  }
+  return res;
 };
 
 // ─── Status ──────────────────────────────────────────────────────────────

@@ -7,6 +7,7 @@ export interface User {
   role: 'customer' | 'agent' | 'sub_agent' | 'admin' | 'developer';
   status: 'active' | 'suspended' | 'pending_kyc';
   referralCode: string;
+  kycSubmittedAt: string | null;
 }
 
 export interface Wallet {

@@ -11,7 +11,7 @@ import { electricityApi } from '@/lib/api';
 import { getErrorMessage } from '@/lib/utils';
 import { cn } from '@/lib/cn';
 
-const DISCOS = ['IKEDC', 'EKEDC', 'AEDC', 'KAEDC', 'JED', 'PHEDC', 'KEDCO', 'BEDC'];
+const DISCOS = ['IKEDC', 'EKEDC', 'AEDC', 'KAEDC', 'JED', 'PHEDC', 'KEDCO', 'BEDC', 'IBEDC', 'ENUGU'];
 const METER_TYPES = ['prepaid', 'postpaid'];
 const QUICK_AMOUNTS = [1000, 2000, 3000, 5000, 10000, 20000];
 
@@ -87,7 +87,7 @@ export default function ElectricityPage() {
         <div className="bg-surface rounded-3xl p-5 shadow-sm flex flex-col gap-5">
           <div>
             <label className="text-sm font-medium text-ink-muted mb-2 block">DisCo</label>
-            <div className="grid grid-cols-4 gap-1.5">
+            <div className="grid grid-cols-5 gap-1.5">
               {DISCOS.map((d) => (
                 <button key={d} onClick={() => { setDisco(d); setVerified(null); }}
                   className={cn('py-2 rounded-xl text-xs font-bold border-2 transition-all',

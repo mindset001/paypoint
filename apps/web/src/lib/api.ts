@@ -67,7 +67,7 @@ export const walletApi = {
     api.get('/wallet/virtual-account'),
   transfer: (recipient: string, amount: number, pin: string) =>
     api.post('/wallet/transfer', { recipient, amount, pin }),
-  transactions: (params?: { page?: number; limit?: number; type?: string; status?: string }) =>
+  transactions: (params?: { page?: number; limit?: number; type?: string; status?: string; from?: string; to?: string }) =>
     api.get('/wallet/transactions', { params }),
 };
 
