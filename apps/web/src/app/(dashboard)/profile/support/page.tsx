@@ -38,19 +38,19 @@ const FAQS = [
 function FaqItem({ q, a }: { q: string; a: string }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="border-b border-gray-50 last:border-0">
+    <div className="border-b border-line last:border-0">
       <button
         onClick={() => setOpen(!open)}
         className="w-full flex items-center justify-between gap-3 p-4 text-left"
       >
-        <span className="text-sm font-semibold text-gray-900 flex-1">{q}</span>
+        <span className="text-sm font-semibold text-ink flex-1">{q}</span>
         <ChevronDown
           size={16}
-          className={cn('text-gray-400 flex-shrink-0 transition-transform', open && 'rotate-180')}
+          className={cn('text-ink-muted flex-shrink-0 transition-transform', open && 'rotate-180')}
         />
       </button>
       {open && (
-        <p className="text-sm text-gray-500 leading-relaxed px-4 pb-4">{a}</p>
+        <p className="text-sm text-ink-muted leading-relaxed px-4 pb-4">{a}</p>
       )}
     </div>
   );
@@ -73,37 +73,37 @@ export default function SupportPage() {
         {/* Contact channels */}
         <div className="grid grid-cols-3 gap-3">
           {[
-            { icon: MessageCircle, label: 'WhatsApp', sub: 'Chat now', color: 'bg-green-50 text-green-600', href: 'https://wa.me/2348000000000' },
-            { icon: Mail, label: 'Email', sub: 'support@paypoint.ng', color: 'bg-blue-50 text-brand-blue', href: 'mailto:support@paypoint.ng' },
-            { icon: Phone, label: 'Call', sub: '0800-PAYPOINT', color: 'bg-orange-50 text-orange-600', href: 'tel:08000000000' },
+            { icon: MessageCircle, label: 'WhatsApp', sub: 'Chat now', color: 'bg-green-50 dark:bg-green-500/10 text-green-600', href: 'https://wa.me/2348000000000' },
+            { icon: Mail, label: 'Email', sub: 'support@paypoint.ng', color: 'bg-blue-50 dark:bg-blue-500/10 text-brand-blue', href: 'mailto:support@paypoint.ng' },
+            { icon: Phone, label: 'Call', sub: '0800-PAYPOINT', color: 'bg-orange-50 dark:bg-orange-500/10 text-orange-600', href: 'tel:08000000000' },
           ].map(({ icon: Icon, label, sub, color, href }) => (
             <a
               key={label}
               href={href}
-              className="bg-white border border-gray-100 rounded-2xl p-3 flex flex-col items-center gap-2 hover:shadow-md active:scale-95 transition-all"
+              className="bg-surface border border-line rounded-2xl p-3 flex flex-col items-center gap-2 hover:shadow-md active:scale-95 transition-all"
             >
               <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${color}`}>
                 <Icon size={18} />
               </div>
-              <p className="text-xs font-bold text-gray-900">{label}</p>
-              <p className="text-xs text-gray-400 text-center leading-tight">{sub}</p>
+              <p className="text-xs font-bold text-ink">{label}</p>
+              <p className="text-xs text-ink-muted text-center leading-tight">{sub}</p>
             </a>
           ))}
         </div>
 
         {/* FAQ */}
         <div>
-          <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 px-1">
+          <p className="text-xs font-bold text-ink-muted uppercase tracking-widest mb-3 px-1">
             Frequently Asked Questions
           </p>
-          <div className="bg-white rounded-2xl border border-gray-100">
+          <div className="bg-surface rounded-2xl border border-line">
             {FAQS.map((faq) => (
               <FaqItem key={faq.q} {...faq} />
             ))}
           </div>
         </div>
 
-        <p className="text-center text-xs text-gray-300 pb-2">
+        <p className="text-center text-xs text-ink-muted/70 pb-2">
           PayPoint Support · Available 24/7
         </p>
       </div>

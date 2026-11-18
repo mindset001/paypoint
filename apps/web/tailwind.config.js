@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
+  darkMode: 'class',
   content: ['./src/**/*.{js,ts,jsx,tsx,mdx}'],
   theme: {
     extend: {
@@ -19,6 +20,14 @@ module.exports = {
           green: '#16a34a',
           light: '#f8fafc',
         },
+        // Theme-aware surface tokens — one variable flip (see globals.css)
+        // covers both light and dark instead of a `dark:` class per element.
+        canvas:      'var(--canvas)',
+        surface:     'var(--surface)',
+        'surface-2': 'var(--surface-2)',
+        ink:         'var(--ink)',
+        'ink-muted': 'var(--ink-muted)',
+        line:        'var(--line)',
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],

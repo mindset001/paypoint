@@ -3,12 +3,35 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Theme-aware surface tokens ──────────────────────────────────── */
+/* Dark values match the admin panel's existing slate palette, so the
+   dashboard's dark mode feels like the same app, not a different one. */
+
+:root {
+  --canvas: #f9fafb;
+  --surface: #ffffff;
+  --surface-2: #f3f4f6;
+  --ink: #111827;
+  --ink-muted: #6b7280;
+  --line: #f3f4f6;
+}
+
+.dark {
+  --canvas: #020617;
+  --surface: #0f172a;
+  --surface-2: #1e293b;
+  --ink: #f8fafc;
+  --ink-muted: #94a3b8;
+  --line: #1e293b;
+}
+
 @layer base {
   * { -webkit-tap-highlight-color: transparent; }
   html { font-family: 'Inter', system-ui, sans-serif; }
   body {
-    @apply bg-gray-50 text-gray-900;
+    @apply bg-canvas text-ink;
     overscroll-behavior: none;
+    transition: background-color 0.2s ease, color 0.2s ease;
   }
 }
 

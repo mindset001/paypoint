@@ -98,14 +98,14 @@ export default function SecurityPage() {
 
       <div className="px-4 py-5 flex flex-col gap-4">
         {/* Change Password */}
-        <div className="bg-white rounded-2xl p-5 border border-gray-100">
+        <div className="bg-surface rounded-2xl p-5 border border-line">
           <div className="flex items-center gap-3 mb-5">
-            <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
+            <div className="w-10 h-10 bg-blue-50 dark:bg-blue-500/10 rounded-xl flex items-center justify-center">
               <Lock size={18} className="text-brand-blue" />
             </div>
             <div>
-              <p className="font-bold text-gray-900">Change Password</p>
-              <p className="text-xs text-gray-400">Update your login password</p>
+              <p className="font-bold text-ink">Change Password</p>
+              <p className="text-xs text-ink-muted">Update your login password</p>
             </div>
           </div>
 
@@ -116,7 +116,7 @@ export default function SecurityPage() {
               placeholder="Enter current password"
               error={errors.currentPassword?.message}
               suffix={
-                <button type="button" onClick={() => setShowCurrent(!showCurrent)} className="text-gray-400 cursor-pointer hover:text-gray-600">
+                <button type="button" onClick={() => setShowCurrent(!showCurrent)} className="text-ink-muted cursor-pointer hover:text-ink">
                   {showCurrent ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               }
@@ -128,7 +128,7 @@ export default function SecurityPage() {
               placeholder="Min. 8 chars, 1 uppercase, 1 number"
               error={errors.newPassword?.message}
               suffix={
-                <button type="button" onClick={() => setShowNew(!showNew)} className="text-gray-400 cursor-pointer hover:text-gray-600">
+                <button type="button" onClick={() => setShowNew(!showNew)} className="text-ink-muted cursor-pointer hover:text-ink">
                   {showNew ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               }
@@ -152,14 +152,14 @@ export default function SecurityPage() {
         </div>
 
         {/* Change PIN */}
-        <div className="bg-white rounded-2xl p-5 border border-gray-100">
+        <div className="bg-surface rounded-2xl p-5 border border-line">
           <div className="flex items-center gap-3 mb-5">
-            <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center">
+            <div className="w-10 h-10 bg-green-50 dark:bg-green-500/10 rounded-xl flex items-center justify-center">
               <Key size={18} className="text-green-600" />
             </div>
             <div>
-              <p className="font-bold text-gray-900">Change Transaction PIN</p>
-              <p className="text-xs text-gray-400">
+              <p className="font-bold text-ink">Change Transaction PIN</p>
+              <p className="text-xs text-ink-muted">
                 Step {pinStep === 'current' ? 1 : pinStep === 'new' ? 2 : 3} of 3 —{' '}
                 {pinStep === 'current' ? 'verify current' : pinStep === 'new' ? 'enter new' : 'confirm new'}
               </p>
@@ -172,7 +172,7 @@ export default function SecurityPage() {
             {pinStep !== 'current' && (
               <button
                 onClick={() => { setPinStep('current'); setCurrentPin(''); setNewPin(''); }}
-                className="text-sm text-gray-400 underline"
+                className="text-sm text-ink-muted underline"
               >
                 Start over
               </button>

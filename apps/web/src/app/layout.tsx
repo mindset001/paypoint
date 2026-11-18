@@ -26,9 +26,20 @@ export const viewport: Viewport = {
   userScalable: false,
 };
 
+// Runs before paint so the page never flashes the wrong theme on load.
+const THEME_INIT_SCRIPT = `
+  try {
+    var t = localStorage.getItem('theme');
+    if (t === 'dark') document.documentElement.classList.add('dark');
+  } catch (e) {}
+`;
+
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+      </head>
       <body>
         <Providers>
           {children}

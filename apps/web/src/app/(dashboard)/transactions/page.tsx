@@ -1,31 +1,40 @@
 'use client';
 import { useEffect, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { walletApi } from '@/lib/api';
 import { Button } from '@/components/ui/Button';
 import type { Transaction } from '@/types';
 import { Filter, X, Printer, ArrowDownLeft, ArrowUpRight, Calendar } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { formatNGN, formatDate, txTypeLabel } from '@/lib/utils';
+import { EmptyStateIllustration } from '@/components/illustrations/EmptyState';
 
 const TYPE_FILTERS = ['All', 'airtime', 'data', 'cable', 'electricity', 'wallet_fund', 'refund'];
 const STATUS_FILTERS = ['Any', 'success', 'pending', 'failed'];
 
 const statusStyle: Record<string, string> = {
-  success: 'text-green-600 bg-green-50',
-  pending: 'text-yellow-600 bg-yellow-50',
-  failed:  'text-red-500 bg-red-50',
-  reversed:'text-gray-500 bg-gray-100',
+  success: 'text-green-600 bg-green-50 dark:bg-green-500/15',
+  pending: 'text-yellow-600 bg-yellow-50 dark:bg-yellow-500/15',
+  failed:  'text-red-500 bg-red-50 dark:bg-red-500/15',
+  reversed:'text-ink-muted bg-surface-2',
 };
 
 function ReceiptModal({ tx, onClose }: { tx: Transaction; onClose: () => void }) {
   const isCredit = tx.direction === 'credit';
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-4">
-      <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl">
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-4"
+    >
+      <motion.div
+        initial={{ opacity: 0, y: 24, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ type: 'spring', stiffness: 300, damping: 26 }}
+        className="bg-surface rounded-3xl w-full max-w-sm shadow-2xl"
+      >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-gray-100">
-          <h2 className="font-black text-gray-900">Transaction Receipt</h2>
-          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-500">
+        <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-line">
+          <h2 className="font-black text-ink">Transaction Receipt</h2>
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full bg-surface-2 text-ink-muted">
             <X size={16} />
           </button>
         </div>
@@ -33,13 +42,13 @@ function ReceiptModal({ tx, onClose }: { tx: Transaction; onClose: () => void })
         {/* Amount badge */}
         <div className="flex flex-col items-center py-6">
           <div className={cn('w-16 h-16 rounded-2xl flex items-center justify-center mb-3',
-            isCredit ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-500')}>
+            isCredit ? 'bg-green-100 dark:bg-green-500/15 text-green-600' : 'bg-red-100 dark:bg-red-500/15 text-red-500')}>
             {isCredit ? <ArrowDownLeft size={28} /> : <ArrowUpRight size={28} />}
           </div>
-          <p className={cn('text-3xl font-black', isCredit ? 'text-green-600' : 'text-gray-900')}>
+          <p className={cn('text-3xl font-black', isCredit ? 'text-green-600' : 'text-ink')}>
             {isCredit ? '+' : '-'}{formatNGN(tx.amount)}
           </p>
-          <span className={cn('mt-2 text-xs font-semibold px-3 py-1 rounded-full capitalize', statusStyle[tx.status] ?? 'bg-gray-100 text-gray-500')}>
+          <span className={cn('mt-2 text-xs font-semibold px-3 py-1 rounded-full capitalize', statusStyle[tx.status] ?? 'bg-surface-2 text-ink-muted')}>
             {tx.status}
           </span>
         </div>
@@ -58,8 +67,8 @@ function ReceiptModal({ tx, onClose }: { tx: Transaction; onClose: () => void })
             ...(tx.failureReason  ? [['Reason',   tx.failureReason]] : []),
           ].map(([label, value]) => (
             <div key={label} className="flex justify-between items-start gap-2">
-              <span className="text-gray-400 flex-shrink-0">{label}</span>
-              <span className="text-gray-900 font-medium text-right break-all">{value}</span>
+              <span className="text-ink-muted flex-shrink-0">{label}</span>
+              <span className="text-ink font-medium text-right break-all">{value}</span>
             </div>
           ))}
         </div>
@@ -68,33 +77,33 @@ function ReceiptModal({ tx, onClose }: { tx: Transaction; onClose: () => void })
         <div className="px-5 pb-5">
           <button
             onClick={() => window.print()}
-            className="w-full flex items-center justify-center gap-2 border border-gray-200 text-gray-600 font-semibold py-3 rounded-2xl text-sm hover:bg-gray-50 transition-colors"
+            className="w-full flex items-center justify-center gap-2 border border-line text-ink-muted font-semibold py-3 rounded-2xl text-sm hover:bg-surface-2 transition-colors"
           >
             <Printer size={16} /> Print Receipt
           </button>
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }
 
 function TxRow({ tx, onClick }: { tx: Transaction; onClick: () => void }) {
   const isCredit = tx.direction === 'credit';
   return (
-    <button onClick={onClick} className="w-full flex items-center gap-3 py-3 border-b border-gray-50 last:border-0 text-left hover:bg-gray-50 transition-colors px-1 rounded-xl">
+    <button onClick={onClick} className="w-full flex items-center gap-3 py-3 border-b border-line last:border-0 text-left hover:bg-surface-2 transition-colors px-1 rounded-xl">
       <div className={cn('w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0',
-        isCredit ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-500')}>
+        isCredit ? 'bg-green-100 dark:bg-green-500/15 text-green-600' : 'bg-red-100 dark:bg-red-500/15 text-red-500')}>
         {isCredit ? <ArrowDownLeft size={18} /> : <ArrowUpRight size={18} />}
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-gray-900 truncate">{txTypeLabel[tx.type] ?? tx.type}</p>
-        <p className="text-xs text-gray-400 truncate">{formatDate(tx.createdAt)}</p>
+        <p className="text-sm font-semibold text-ink truncate">{txTypeLabel[tx.type] ?? tx.type}</p>
+        <p className="text-xs text-ink-muted truncate">{formatDate(tx.createdAt)}</p>
       </div>
       <div className="text-right flex-shrink-0">
-        <p className={cn('text-sm font-bold', isCredit ? 'text-green-600' : 'text-gray-900')}>
+        <p className={cn('text-sm font-bold', isCredit ? 'text-green-600' : 'text-ink')}>
           {isCredit ? '+' : '-'}{formatNGN(tx.amount)}
         </p>
-        <span className={cn('text-xs capitalize font-medium px-1.5 py-0.5 rounded-full', statusStyle[tx.status] ?? 'bg-gray-100 text-gray-500')}>
+        <span className={cn('text-xs capitalize font-medium px-1.5 py-0.5 rounded-full', statusStyle[tx.status] ?? 'bg-surface-2 text-ink-muted')}>
           {tx.status}
         </span>
       </div>
@@ -159,18 +168,18 @@ export default function TransactionsPage() {
   const hasDateFilter = from || to;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-canvas">
       <div className="bg-brand-dark px-6 pt-14 md:pt-8 pb-5">
         <h1 className="text-white text-xl font-bold">Transactions</h1>
       </div>
 
       {/* Type filter */}
-      <div className="bg-white border-b border-gray-100">
+      <div className="bg-surface border-b border-line">
         <div className="flex gap-1 px-4 py-3 overflow-x-auto hide-scrollbar">
           {TYPE_FILTERS.map((f) => (
             <button key={f} onClick={() => setTypeFilter(f)}
-              className={cn('px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all flex-shrink-0',
-                typeFilter === f ? 'bg-brand-blue text-white' : 'bg-gray-100 text-gray-600')}>
+              className={cn('px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors flex-shrink-0',
+                typeFilter === f ? 'bg-brand-blue text-white' : 'bg-surface-2 text-ink-muted')}>
               {f === 'All' ? 'All Types' : f.charAt(0).toUpperCase() + f.slice(1).replace('_', ' ')}
             </button>
           ))}
@@ -178,59 +187,59 @@ export default function TransactionsPage() {
       </div>
 
       {/* Status + date row */}
-      <div className="bg-white border-b border-gray-100 px-4 py-2 flex items-center gap-2">
+      <div className="bg-surface border-b border-line px-4 py-2 flex items-center gap-2">
         <div className="flex gap-1 flex-1 overflow-x-auto hide-scrollbar">
           {STATUS_FILTERS.map((s) => (
             <button key={s} onClick={() => setStatusFilter(s)}
-              className={cn('px-2.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap flex-shrink-0 transition-all',
-                statusFilter === s ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-500')}>
+              className={cn('px-2.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap flex-shrink-0 transition-colors',
+                statusFilter === s ? 'bg-ink text-canvas' : 'bg-surface-2 text-ink-muted')}>
               {s === 'Any' ? 'Any Status' : s.charAt(0).toUpperCase() + s.slice(1)}
             </button>
           ))}
         </div>
         <button onClick={() => setShowDate(!showDate)}
-          className={cn('flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold flex-shrink-0 transition-all',
-            hasDateFilter ? 'bg-brand-blue text-white' : 'bg-gray-100 text-gray-500')}>
+          className={cn('flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold flex-shrink-0 transition-colors',
+            hasDateFilter ? 'bg-brand-blue text-white' : 'bg-surface-2 text-ink-muted')}>
           <Calendar size={11} /> Date
         </button>
       </div>
 
       {/* Date picker panel */}
       {showDate && (
-        <div className="bg-white border-b border-gray-100 px-4 py-3 flex items-end gap-3">
+        <div className="bg-surface border-b border-line px-4 py-3 flex items-end gap-3">
           <div className="flex-1">
-            <label className="text-xs text-gray-500 block mb-1">From</label>
+            <label className="text-xs text-ink-muted block mb-1">From</label>
             <input type="date" value={from} onChange={(e) => setFrom(e.target.value)}
-              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue" />
+              className="w-full border border-line bg-surface text-ink rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue" />
           </div>
           <div className="flex-1">
-            <label className="text-xs text-gray-500 block mb-1">To</label>
+            <label className="text-xs text-ink-muted block mb-1">To</label>
             <input type="date" value={to} onChange={(e) => setTo(e.target.value)}
-              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue" />
+              className="w-full border border-line bg-surface text-ink rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue" />
           </div>
           <button onClick={applyDate} className="px-4 py-2 bg-brand-blue text-white text-sm font-bold rounded-xl flex-shrink-0">Apply</button>
-          {hasDateFilter && <button onClick={clearDate} className="text-xs text-gray-400 underline flex-shrink-0">Clear</button>}
+          {hasDateFilter && <button onClick={clearDate} className="text-xs text-ink-muted underline flex-shrink-0">Clear</button>}
         </div>
       )}
 
       <div className="px-4 py-4">
-        <div className="bg-white rounded-2xl px-4 divide-y divide-gray-50">
+        <div className="bg-surface rounded-2xl px-4 divide-y divide-line">
           {loading && transactions.length === 0 ? (
             Array(8).fill(0).map((_, i) => (
               <div key={i} className="py-3 flex gap-3 items-center animate-pulse">
-                <div className="w-10 h-10 rounded-full bg-gray-200" />
+                <div className="w-10 h-10 rounded-full bg-surface-2" />
                 <div className="flex-1 space-y-2">
-                  <div className="h-3 bg-gray-200 rounded w-3/4" />
-                  <div className="h-2 bg-gray-100 rounded w-1/2" />
+                  <div className="h-3 bg-surface-2 rounded w-3/4" />
+                  <div className="h-2 bg-surface-2 rounded w-1/2" />
                 </div>
-                <div className="h-3 bg-gray-200 rounded w-16" />
+                <div className="h-3 bg-surface-2 rounded w-16" />
               </div>
             ))
           ) : transactions.length === 0 ? (
-            <div className="py-16 text-center text-gray-400 flex flex-col items-center gap-2">
-              <Filter size={32} className="text-gray-200" />
-              <p className="text-sm font-medium">No transactions found</p>
-              <p className="text-xs text-gray-300">Try adjusting your filters</p>
+            <div className="py-16 flex flex-col items-center text-center gap-2">
+              <EmptyStateIllustration variant="inbox" />
+              <p className="text-sm font-medium text-ink-muted">No transactions found</p>
+              <p className="text-xs text-ink-muted/70">Try adjusting your filters</p>
             </div>
           ) : (
             transactions.map((tx) => (
@@ -248,7 +257,9 @@ export default function TransactionsPage() {
         )}
       </div>
 
-      {selected && <ReceiptModal tx={selected} onClose={() => setSelected(null)} />}
+      <AnimatePresence>
+        {selected && <ReceiptModal tx={selected} onClose={() => setSelected(null)} />}
+      </AnimatePresence>
     </div>
   );
 }

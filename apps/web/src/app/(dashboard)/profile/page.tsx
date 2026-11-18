@@ -7,13 +7,14 @@ import toast from 'react-hot-toast';
 import Link from 'next/link';
 import { profileApi } from '@/lib/api';
 import { getErrorMessage } from '@/lib/utils';
+import { ThemeToggle } from '@/components/ui/ThemeToggle';
 
 const MenuItem = ({ icon: Icon, label, href, danger }: { icon: React.ElementType; label: string; href?: string; danger?: boolean }) => {
   const content = (
-    <div className={`flex items-center gap-3 p-4 ${danger ? 'text-red-500' : 'text-gray-700'}`}>
+    <div className={`flex items-center gap-3 p-4 ${danger ? 'text-red-500' : 'text-ink-muted'}`}>
       <Icon size={20} />
       <span className="flex-1 text-sm font-medium">{label}</span>
-      <ChevronRight size={16} className="text-gray-300" />
+      <ChevronRight size={16} className="text-ink-muted/60" />
     </div>
   );
   if (href) return <Link href={href}>{content}</Link>;
@@ -67,14 +68,17 @@ export default function ProfilePage() {
     : 'Not Submitted';
 
   const kycColor = user?.status === 'pending_kyc'
-    ? 'text-yellow-600 bg-yellow-50'
+    ? 'text-yellow-600 bg-yellow-50 dark:bg-yellow-500/10'
     : user?.kycSubmittedAt
-    ? 'text-green-600 bg-green-50'
-    : 'text-gray-500 bg-gray-100';
+    ? 'text-green-600 bg-green-50 dark:bg-green-500/10'
+    : 'text-ink-muted bg-surface-2';
 
   return (
     <div>
       <div className="bg-gradient-to-b from-brand-dark to-brand-navy px-6 pt-14 md:pt-8 pb-8">
+        <div className="flex justify-end mb-2 md:hidden">
+          <ThemeToggle className="bg-white/10 text-white/70 hover:text-white" />
+        </div>
         <div className="flex items-start gap-4">
           <div className="w-16 h-16 bg-brand-blue rounded-full flex items-center justify-center flex-shrink-0">
             <span className="text-white text-2xl font-black">
@@ -129,45 +133,45 @@ export default function ProfilePage() {
 
       <div className="px-5 -mt-4 flex flex-col gap-4 pb-8">
         {/* Referral card */}
-        <div className="bg-white rounded-2xl p-4 flex items-center justify-between shadow-sm">
+        <div className="bg-surface rounded-2xl p-4 flex items-center justify-between shadow-sm">
           <div>
-            <p className="text-xs text-gray-500">Your Referral Code</p>
+            <p className="text-xs text-ink-muted">Your Referral Code</p>
             <p className="text-lg font-black text-brand-blue tracking-widest">{user?.referralCode}</p>
           </div>
-          <button onClick={copyReferral} className="flex items-center gap-1.5 text-sm text-brand-blue font-semibold bg-blue-50 px-3 py-2 rounded-xl">
+          <button onClick={copyReferral} className="flex items-center gap-1.5 text-sm text-brand-blue font-semibold bg-blue-50 dark:bg-blue-500/10 px-3 py-2 rounded-xl">
             <Copy size={14} /> Copy
           </button>
         </div>
 
         {/* Phone */}
-        <div className="bg-white rounded-2xl p-4 shadow-sm">
-          <p className="text-xs text-gray-500 mb-1">Phone Number</p>
+        <div className="bg-surface rounded-2xl p-4 shadow-sm">
+          <p className="text-xs text-ink-muted mb-1">Phone Number</p>
           <div className="flex items-center justify-between">
-            <p className="font-semibold text-gray-900">{user?.phone?.number}</p>
-            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${user?.phone?.verified ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+            <p className="font-semibold text-ink">{user?.phone?.number}</p>
+            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${user?.phone?.verified ? 'bg-green-100 dark:bg-green-500/15 text-green-700 dark:text-green-400' : 'bg-yellow-100 dark:bg-yellow-500/15 text-yellow-700 dark:text-yellow-400'}`}>
               {user?.phone?.verified ? 'Verified' : 'Unverified'}
             </span>
           </div>
         </div>
 
         {/* KYC status card */}
-        <Link href="/profile/kyc" className="bg-white rounded-2xl p-4 shadow-sm flex items-center justify-between">
+        <Link href="/profile/kyc" className="bg-surface rounded-2xl p-4 shadow-sm flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center">
+            <div className="w-10 h-10 bg-purple-50 dark:bg-purple-500/10 rounded-xl flex items-center justify-center">
               <FileCheck size={18} className="text-purple-600" />
             </div>
             <div>
-              <p className="text-sm font-semibold text-gray-900">Identity Verification (KYC)</p>
+              <p className="text-sm font-semibold text-ink">Identity Verification (KYC)</p>
               <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${kycColor}`}>
                 {kycStatus}
               </span>
             </div>
           </div>
-          <ChevronRight size={16} className="text-gray-300" />
+          <ChevronRight size={16} className="text-ink-muted/60" />
         </Link>
 
         {/* Menu */}
-        <div className="bg-white rounded-2xl shadow-sm divide-y divide-gray-50">
+        <div className="bg-surface rounded-2xl shadow-sm divide-y divide-line">
           <MenuItem icon={Shield} label="Security & PIN" href="/profile/security" />
           <MenuItem icon={Bell} label="Notifications" href="/profile/notifications" />
           <MenuItem icon={HelpCircle} label="Help & Support" href="/profile/support" />
@@ -180,7 +184,7 @@ export default function ProfilePage() {
           </button>
         </div>
 
-        <p className="text-center text-xs text-gray-300 mt-2">PayPoint v1.0.0</p>
+        <p className="text-center text-xs text-ink-muted/70 mt-2">PayPoint v1.0.0</p>
       </div>
     </div>
   );

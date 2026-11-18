@@ -49,7 +49,7 @@ export default function TransferPage() {
       </div>
 
       <div className="px-5 -mt-4 pb-8">
-        <div className="bg-white rounded-3xl p-5 shadow-sm flex flex-col gap-5">
+        <div className="bg-surface rounded-3xl p-5 shadow-sm flex flex-col gap-5">
           {!showPin ? (
             <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
               <Input
@@ -59,12 +59,12 @@ export default function TransferPage() {
                 {...register('recipient', { required: 'Recipient is required' })}
               />
               <div>
-                <label className="text-sm font-medium text-gray-700 mb-2 block">Amount (₦)</label>
+                <label className="text-sm font-medium text-ink-muted mb-2 block">Amount (₦)</label>
                 <div className="grid grid-cols-5 gap-1.5 mb-3">
                   {QUICK_AMOUNTS.map((a) => (
                     <button type="button" key={a} onClick={() => setValue('amount', a.toString())}
                       className={cn('py-2 rounded-xl text-xs font-semibold border transition-all',
-                        watch('amount') === a.toString() ? 'border-green-600 bg-green-50 text-green-700' : 'border-gray-100 text-gray-700')}>
+                        watch('amount') === a.toString() ? 'border-green-600 bg-green-50 dark:bg-green-500/10 text-green-700 dark:text-green-400' : 'border-line text-ink-muted')}>
                       ₦{a >= 1000 ? (a/1000)+'k' : a}
                     </button>
                   ))}
@@ -78,12 +78,12 @@ export default function TransferPage() {
           ) : (
             <div className="flex flex-col items-center gap-4">
               <div className="text-center">
-                <p className="text-gray-500 text-sm">Sending to <strong>{formData?.recipient}</strong></p>
-                <p className="text-2xl font-black text-gray-900">₦{parseFloat(formData?.amount || '0').toLocaleString()}</p>
+                <p className="text-ink-muted text-sm">Sending to <strong>{formData?.recipient}</strong></p>
+                <p className="text-2xl font-black text-ink">₦{parseFloat(formData?.amount || '0').toLocaleString()}</p>
               </div>
               <PinInput length={4} onComplete={handlePinComplete} label="Enter Transaction PIN" />
               {loading && <div className="w-6 h-6 border-2 border-green-600 border-t-transparent rounded-full animate-spin" />}
-              <button onClick={() => setShowPin(false)} className="text-sm text-gray-400 underline">Go back</button>
+              <button onClick={() => setShowPin(false)} className="text-sm text-ink-muted underline">Go back</button>
             </div>
           )}
         </div>

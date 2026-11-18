@@ -1,5 +1,6 @@
 'use client';
 import { useState, useRef } from 'react';
+import { motion } from 'framer-motion';
 import { Eye, EyeOff, Plus, ArrowUpRight } from 'lucide-react';
 import { formatNGN } from '@/lib/utils';
 import type { Wallet } from '@/types';
@@ -36,15 +37,18 @@ export function WalletCard({ wallet, loading }: WalletCardProps) {
   };
 
   return (
-    <div
+    <motion.div
       className="perspective-800"
       onMouseMove={handleMouseMove}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={handleMouseLeave}
+      initial={{ opacity: 0, y: 16, scale: 0.97 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ duration: 0.45, ease: 'easeOut' }}
     >
       <div
         ref={cardRef}
-        className="preserve-3d relative rounded-3xl overflow-hidden bg-gradient-to-br from-brand-blue via-blue-600 to-blue-800 p-6 text-white shadow-xl"
+        className="preserve-3d relative rounded-3xl overflow-hidden bg-gradient-to-br from-brand-blue via-blue-600 to-blue-800 p-6 text-white shadow-xl dark:shadow-blue-950/40"
         style={{
           transform: `perspective(800px) rotateX(${tilt.x}deg) rotateY(${tilt.y}deg) ${hovered ? 'scale(1.02)' : 'scale(1)'}`,
           transition: hovered ? 'transform 0.1s ease-out' : 'transform 0.4s ease-out',
@@ -107,6 +111,6 @@ export function WalletCard({ wallet, loading }: WalletCardProps) {
           </div>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }

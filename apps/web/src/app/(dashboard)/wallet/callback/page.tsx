@@ -1,8 +1,10 @@
 'use client';
 import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { CheckCircle, XCircle, RefreshCw, ArrowRight } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { XCircle, RefreshCw, ArrowRight } from 'lucide-react';
 import { walletApi } from '@/lib/api';
+import { SuccessBurst } from '@/components/illustrations/SuccessBurst';
 
 type Status = 'verifying' | 'success' | 'failed';
 
@@ -65,29 +67,32 @@ function CallbackInner() {
   }, []);
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-6 bg-gray-50">
+    <div className="min-h-screen flex flex-col items-center justify-center px-6 bg-canvas">
       {status === 'verifying' && (
         <div className="text-center">
-          <div className="w-20 h-20 bg-blue-50 rounded-3xl flex items-center justify-center mx-auto mb-5">
+          <div className="w-20 h-20 bg-blue-50 dark:bg-blue-500/10 rounded-3xl flex items-center justify-center mx-auto mb-5">
             <RefreshCw size={32} className="text-brand-blue animate-spin" />
           </div>
-          <h1 className="text-gray-900 text-xl font-black mb-2">Verifying payment…</h1>
-          <p className="text-gray-400 text-sm">Please wait, this takes a moment.</p>
+          <h1 className="text-ink text-xl font-black mb-2">Verifying payment…</h1>
+          <p className="text-ink-muted text-sm">Please wait, this takes a moment.</p>
         </div>
       )}
 
       {status === 'success' && (
-        <div className="text-center max-w-xs">
-          <div className="w-20 h-20 bg-green-50 rounded-3xl flex items-center justify-center mx-auto mb-5 animate-scale-in">
-            <CheckCircle size={40} className="text-green-500" />
+        <motion.div
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}
+          className="text-center max-w-xs"
+        >
+          <div className="flex justify-center mb-3">
+            <SuccessBurst />
           </div>
-          <h1 className="text-gray-900 text-2xl font-black mb-2">Payment successful!</h1>
+          <h1 className="text-ink text-2xl font-black mb-2">Payment successful!</h1>
           {amount && (
-            <p className="text-gray-500 text-base mb-1">
+            <p className="text-ink-muted text-base mb-1">
               <span className="text-green-600 font-bold">₦{amount.toLocaleString()}</span> has been added to your wallet.
             </p>
           )}
-          <p className="text-gray-400 text-sm mb-8">Your wallet balance has been updated.</p>
+          <p className="text-ink-muted text-sm mb-8">Your wallet balance has been updated.</p>
           <button
             onClick={() => router.push('/wallet')}
             className="w-full flex items-center justify-center gap-2 bg-brand-blue text-white font-bold py-4 rounded-2xl hover:bg-blue-700 transition-colors shadow-lg shadow-blue-500/20 active:scale-95"
@@ -96,20 +101,20 @@ function CallbackInner() {
           </button>
           <button
             onClick={() => router.push('/home')}
-            className="mt-3 w-full text-gray-500 text-sm font-medium py-2"
+            className="mt-3 w-full text-ink-muted text-sm font-medium py-2"
           >
             Go to Home
           </button>
-        </div>
+        </motion.div>
       )}
 
       {status === 'failed' && (
         <div className="text-center max-w-xs">
-          <div className="w-20 h-20 bg-red-50 rounded-3xl flex items-center justify-center mx-auto mb-5">
+          <div className="w-20 h-20 bg-red-50 dark:bg-red-500/10 rounded-3xl flex items-center justify-center mx-auto mb-5">
             <XCircle size={40} className="text-red-500" />
           </div>
-          <h1 className="text-gray-900 text-2xl font-black mb-2">Payment failed</h1>
-          <p className="text-gray-400 text-sm mb-8">{errMsg || 'Something went wrong with your payment. Please try again.'}</p>
+          <h1 className="text-ink text-2xl font-black mb-2">Payment failed</h1>
+          <p className="text-ink-muted text-sm mb-8">{errMsg || 'Something went wrong with your payment. Please try again.'}</p>
           <button
             onClick={() => router.push('/wallet/fund')}
             className="w-full flex items-center justify-center gap-2 bg-brand-blue text-white font-bold py-4 rounded-2xl hover:bg-blue-700 transition-colors active:scale-95"
@@ -118,7 +123,7 @@ function CallbackInner() {
           </button>
           <button
             onClick={() => router.push('/home')}
-            className="mt-3 w-full text-gray-500 text-sm font-medium py-2"
+            className="mt-3 w-full text-ink-muted text-sm font-medium py-2"
           >
             Go to Home
           </button>

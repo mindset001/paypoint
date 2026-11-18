@@ -105,8 +105,8 @@ export default function FundWalletPage() {
       <div className="px-5 -mt-4 pb-10 space-y-4">
 
         {/* Amount card */}
-        <div className="bg-white rounded-3xl p-5 shadow-sm">
-          <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3">Amount (₦)</p>
+        <div className="bg-surface rounded-3xl p-5 shadow-sm">
+          <p className="text-xs font-semibold text-ink-muted uppercase tracking-widest mb-3">Amount (₦)</p>
 
           <div className="grid grid-cols-3 gap-2 mb-3">
             {QUICK_AMOUNTS.map((a) => (
@@ -114,8 +114,8 @@ export default function FundWalletPage() {
                 className={cn(
                   'py-2.5 rounded-xl text-sm font-semibold border transition-all active:scale-95',
                   amount === a.toString()
-                    ? 'border-brand-blue bg-blue-50 text-brand-blue'
-                    : 'border-gray-100 text-gray-600 bg-gray-50 hover:border-gray-200',
+                    ? 'border-brand-blue bg-blue-50 dark:bg-blue-500/10 text-brand-blue'
+                    : 'border-line text-ink-muted bg-surface-2 hover:border-brand-blue/30',
                 )}>
                 ₦{a.toLocaleString()}
               </button>
@@ -132,8 +132,8 @@ export default function FundWalletPage() {
         </div>
 
         {/* Provider selection */}
-        <div className="bg-white rounded-3xl p-5 shadow-sm">
-          <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3">Payment provider</p>
+        <div className="bg-surface rounded-3xl p-5 shadow-sm">
+          <p className="text-xs font-semibold text-ink-muted uppercase tracking-widest mb-3">Payment provider</p>
 
           <div className="space-y-2">
             {PROVIDERS.map((p) => (
@@ -143,22 +143,22 @@ export default function FundWalletPage() {
                 className={cn(
                   'w-full flex items-center gap-4 p-4 rounded-2xl border-2 transition-all text-left',
                   provider === p.id
-                    ? 'border-brand-blue bg-blue-50/50'
-                    : 'border-gray-100 hover:border-gray-200 bg-gray-50/50',
+                    ? 'border-brand-blue bg-blue-50/50 dark:bg-blue-500/10'
+                    : 'border-line hover:border-brand-blue/30 bg-surface-2/50',
                 )}
               >
-                <div className="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center text-xl shrink-0">
+                <div className="w-10 h-10 rounded-xl bg-surface shadow-sm flex items-center justify-center text-xl shrink-0">
                   {p.logo}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className={cn('font-bold text-sm', provider === p.id ? 'text-brand-blue' : 'text-gray-900')}>
+                  <p className={cn('font-bold text-sm', provider === p.id ? 'text-brand-blue' : 'text-ink')}>
                     {p.name}
                   </p>
-                  <p className="text-gray-400 text-xs mt-0.5">{p.tagline}</p>
+                  <p className="text-ink-muted text-xs mt-0.5">{p.tagline}</p>
                 </div>
                 <div className={cn(
                   'w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all',
-                  provider === p.id ? 'border-brand-blue bg-brand-blue' : 'border-gray-200',
+                  provider === p.id ? 'border-brand-blue bg-brand-blue' : 'border-line',
                 )}>
                   {provider === p.id && <div className="w-2 h-2 bg-white rounded-full" />}
                 </div>
@@ -169,21 +169,21 @@ export default function FundWalletPage() {
 
         {/* Monnify virtual account panel */}
         {provider === 'monnify' && (
-          <div className="bg-white rounded-3xl p-5 shadow-sm">
+          <div className="bg-surface rounded-3xl p-5 shadow-sm">
             <div className="flex items-center gap-2 mb-3">
               <Building2 size={16} className="text-brand-blue" />
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest">Your Virtual Account</p>
+              <p className="text-xs font-semibold text-ink-muted uppercase tracking-widest">Your Virtual Account</p>
             </div>
 
             {!virtualAcct ? (
               <div className="text-center py-4">
-                <p className="text-gray-500 text-sm mb-4">
+                <p className="text-ink-muted text-sm mb-4">
                   Get a dedicated bank account number. Transfer any amount anytime and your wallet is credited instantly.
                 </p>
                 <button
                   onClick={loadVirtualAccount}
                   disabled={vaLoading}
-                  className="flex items-center gap-2 mx-auto text-brand-blue font-semibold text-sm bg-blue-50 hover:bg-blue-100 px-5 py-2.5 rounded-xl transition-colors disabled:opacity-50"
+                  className="flex items-center gap-2 mx-auto text-brand-blue font-semibold text-sm bg-blue-50 dark:bg-blue-500/10 hover:bg-blue-100 dark:hover:bg-blue-500/20 px-5 py-2.5 rounded-xl transition-colors disabled:opacity-50"
                 >
                   {vaLoading ? <RefreshCw size={14} className="animate-spin" /> : <Building2 size={14} />}
                   {vaLoading ? 'Generating…' : 'Get Virtual Account'}
@@ -218,7 +218,7 @@ export default function FundWalletPage() {
             )}
 
             {virtualAcct && (
-              <p className="text-gray-400 text-xs text-center mt-3">
+              <p className="text-ink-muted text-xs text-center mt-3">
                 Transfer any amount to this account — no need to press &quot;Pay&quot; below.
               </p>
             )}
@@ -226,9 +226,9 @@ export default function FundWalletPage() {
         )}
 
         {/* Info */}
-        <div className="bg-gray-50 rounded-2xl p-4 text-xs text-gray-400 space-y-1.5 border border-gray-100">
+        <div className="bg-surface-2 rounded-2xl p-4 text-xs text-ink-muted space-y-1.5 border border-line">
           <div className="flex items-center gap-2">
-            <CreditCard size={13} className="text-gray-400 shrink-0" />
+            <CreditCard size={13} className="text-ink-muted shrink-0" />
             <p>All payments are secured by your chosen provider</p>
           </div>
           <div className="flex items-center gap-2">

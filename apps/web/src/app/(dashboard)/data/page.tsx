@@ -66,14 +66,14 @@ export default function DataPage() {
       </div>
 
       <div className="px-5 -mt-4 pb-8">
-        <div className="bg-white rounded-3xl p-5 shadow-sm flex flex-col gap-5">
+        <div className="bg-surface rounded-3xl p-5 shadow-sm flex flex-col gap-5">
           <div>
-            <label className="text-sm font-medium text-gray-700 mb-2 block">Network</label>
+            <label className="text-sm font-medium text-ink-muted mb-2 block">Network</label>
             <div className="grid grid-cols-4 gap-2">
               {NETWORKS.map((n) => (
                 <button key={n} onClick={() => setNetwork(n)}
                   className={cn('py-2 rounded-xl text-xs font-bold border-2 transition-all',
-                    network === n ? 'border-brand-blue bg-blue-50 text-brand-blue' : 'border-gray-100 text-gray-600')}>
+                    network === n ? 'border-brand-blue bg-blue-50 dark:bg-blue-500/10 text-brand-blue' : 'border-line text-ink-muted')}>
                   {n}
                 </button>
               ))}
@@ -89,21 +89,21 @@ export default function DataPage() {
               />
 
               <div>
-                <label className="text-sm font-medium text-gray-700 mb-2 block">Select Plan</label>
+                <label className="text-sm font-medium text-ink-muted mb-2 block">Select Plan</label>
                 {loadingPlans ? (
                   <div className="grid grid-cols-2 gap-2">
-                    {Array(4).fill(0).map((_, i) => <div key={i} className="h-16 rounded-xl bg-gray-100 animate-pulse" />)}
+                    {Array(4).fill(0).map((_, i) => <div key={i} className="h-16 rounded-xl bg-surface-2 animate-pulse" />)}
                   </div>
                 ) : plans.length === 0 ? (
-                  <p className="text-sm text-gray-400 text-center py-4">No plans available</p>
+                  <p className="text-sm text-ink-muted text-center py-4">No plans available</p>
                 ) : (
                   <div className="grid grid-cols-2 gap-2 max-h-56 overflow-y-auto hide-scrollbar">
                     {plans.map((p) => (
                       <button type="button" key={p.planId} onClick={() => setSelectedPlan(p)}
                         className={cn('p-3 rounded-xl border-2 text-left transition-all',
-                          selectedPlan?.planId === p.planId ? 'border-brand-blue bg-blue-50' : 'border-gray-100')}>
-                        <p className="text-xs font-bold text-gray-900">{p.name}</p>
-                        <p className="text-xs text-gray-500">{p.validity}</p>
+                          selectedPlan?.planId === p.planId ? 'border-brand-blue bg-blue-50 dark:bg-blue-500/10' : 'border-line')}>
+                        <p className="text-xs font-bold text-ink">{p.name}</p>
+                        <p className="text-xs text-ink-muted">{p.validity}</p>
                         <p className="text-sm font-black text-brand-blue mt-1">₦{(p.amount).toLocaleString()}</p>
                       </button>
                     ))}
@@ -116,12 +116,12 @@ export default function DataPage() {
           ) : (
             <div className="flex flex-col items-center gap-4 py-2">
               <div className="text-center mb-2">
-                <p className="text-gray-500 text-sm">Sending <strong>{selectedPlan?.name}</strong> to</p>
-                <p className="font-bold text-gray-900">{phone} ({network})</p>
+                <p className="text-ink-muted text-sm">Sending <strong>{selectedPlan?.name}</strong> to</p>
+                <p className="font-bold text-ink">{phone} ({network})</p>
               </div>
               <PinInput length={4} onComplete={handlePinComplete} label="Enter Transaction PIN" />
               {loading && <div className="w-6 h-6 border-2 border-brand-blue border-t-transparent rounded-full animate-spin" />}
-              <button onClick={() => setShowPin(false)} className="text-sm text-gray-400 underline">Go back</button>
+              <button onClick={() => setShowPin(false)} className="text-sm text-ink-muted underline">Go back</button>
             </div>
           )}
         </div>

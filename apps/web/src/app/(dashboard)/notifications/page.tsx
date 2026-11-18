@@ -8,13 +8,14 @@ import {
 } from 'lucide-react';
 import { notificationsApi } from '@/lib/api';
 import type { Notification } from '@/types';
+import { EmptyStateIllustration } from '@/components/illustrations/EmptyState';
 
 const TYPE_CONFIG = {
-  transaction: { icon: ArrowLeftRight, bg: 'bg-blue-50',   text: 'text-blue-600'   },
-  wallet:      { icon: Wallet,         bg: 'bg-green-50',  text: 'text-green-600'  },
-  security:    { icon: Shield,         bg: 'bg-red-50',    text: 'text-red-600'    },
-  promo:       { icon: Tag,            bg: 'bg-purple-50', text: 'text-purple-600' },
-  system:      { icon: Info,           bg: 'bg-gray-50',   text: 'text-gray-500'   },
+  transaction: { icon: ArrowLeftRight, bg: 'bg-blue-50 dark:bg-blue-500/10',     text: 'text-blue-600'   },
+  wallet:      { icon: Wallet,         bg: 'bg-green-50 dark:bg-green-500/10',   text: 'text-green-600'  },
+  security:    { icon: Shield,         bg: 'bg-red-50 dark:bg-red-500/10',       text: 'text-red-600'    },
+  promo:       { icon: Tag,            bg: 'bg-purple-50 dark:bg-purple-500/10', text: 'text-purple-600' },
+  system:      { icon: Info,           bg: 'bg-surface-2',                      text: 'text-ink-muted'  },
 };
 
 function timeAgo(dateStr: string) {
@@ -138,12 +139,12 @@ export default function NotificationsPage() {
         {loading && notifications.length === 0 && (
           <div className="space-y-3">
             {[...Array(6)].map((_, i) => (
-              <div key={i} className="bg-white rounded-2xl p-4 flex gap-3 animate-pulse">
-                <div className="w-10 h-10 rounded-full bg-gray-100 shrink-0" />
+              <div key={i} className="bg-surface rounded-2xl p-4 flex gap-3 animate-pulse">
+                <div className="w-10 h-10 rounded-full bg-surface-2 shrink-0" />
                 <div className="flex-1 space-y-2 pt-1">
-                  <div className="h-3 bg-gray-100 rounded w-3/4" />
-                  <div className="h-2.5 bg-gray-50 rounded w-full" />
-                  <div className="h-2 bg-gray-50 rounded w-1/3" />
+                  <div className="h-3 bg-surface-2 rounded w-3/4" />
+                  <div className="h-2.5 bg-surface-2 rounded w-full" />
+                  <div className="h-2 bg-surface-2 rounded w-1/3" />
                 </div>
               </div>
             ))}
@@ -152,13 +153,17 @@ export default function NotificationsPage() {
 
         {!loading && notifications.length === 0 && (
           <div className="flex flex-col items-center justify-center py-20 text-center">
-            <div className="w-20 h-20 bg-gray-100 rounded-3xl flex items-center justify-center mb-4">
-              <BellOff size={32} className="text-gray-300" />
-            </div>
-            <p className="text-gray-500 font-semibold">
+            {filter === 'unread' ? (
+              <div className="w-20 h-20 bg-surface-2 rounded-3xl flex items-center justify-center mb-4">
+                <BellOff size={32} className="text-ink-muted" />
+              </div>
+            ) : (
+              <EmptyStateIllustration variant="inbox" className="mb-2" />
+            )}
+            <p className="text-ink font-semibold">
               {filter === 'unread' ? 'All caught up!' : 'No notifications yet'}
             </p>
-            <p className="text-gray-400 text-sm mt-1">
+            <p className="text-ink-muted text-sm mt-1">
               {filter === 'unread'
                 ? 'You have no unread notifications.'
                 : 'Notifications will appear here when you make transactions.'}
@@ -180,7 +185,7 @@ export default function NotificationsPage() {
                 <button
                   key={n._id}
                   onClick={() => markRead(n._id)}
-                  className={`w-full text-left bg-white rounded-2xl p-4 flex gap-3 transition-all active:scale-[0.98] border ${
+                  className={`w-full text-left bg-surface rounded-2xl p-4 flex gap-3 transition-all active:scale-[0.98] border ${
                     n.read ? 'border-transparent' : 'border-brand-blue/20 shadow-sm shadow-blue-500/5'
                   }`}
                 >
@@ -192,15 +197,15 @@ export default function NotificationsPage() {
                   {/* Content */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
-                      <p className={`text-sm leading-tight ${n.read ? 'text-gray-700 font-medium' : 'text-gray-900 font-bold'}`}>
+                      <p className={`text-sm leading-tight ${n.read ? 'text-ink-muted font-medium' : 'text-ink font-bold'}`}>
                         {n.title}
                       </p>
                       {!n.read && (
                         <span className="w-2 h-2 bg-brand-blue rounded-full shrink-0 mt-1" />
                       )}
                     </div>
-                    <p className="text-gray-500 text-xs mt-1 leading-relaxed">{n.body}</p>
-                    <p className="text-gray-300 text-xs mt-1.5">{timeAgo(n.createdAt)}</p>
+                    <p className="text-ink-muted text-xs mt-1 leading-relaxed">{n.body}</p>
+                    <p className="text-ink-muted/70 text-xs mt-1.5">{timeAgo(n.createdAt)}</p>
                   </div>
                 </button>
               );
@@ -222,7 +227,7 @@ export default function NotificationsPage() {
 
         {/* Footer count */}
         {!loading && notifications.length > 0 && (
-          <p className="text-center text-xs text-gray-300 mt-6 pb-4">
+          <p className="text-center text-xs text-ink-muted/70 mt-6 pb-4">
             Showing {notifications.length} of {total} notifications
           </p>
         )}

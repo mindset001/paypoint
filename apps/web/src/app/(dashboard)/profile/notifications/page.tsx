@@ -32,7 +32,7 @@ function Toggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
   return (
     <button
       onClick={onToggle}
-      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors flex-shrink-0 ${on ? 'bg-brand-blue' : 'bg-gray-200'}`}
+      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors flex-shrink-0 ${on ? 'bg-brand-blue' : 'bg-surface-2'}`}
     >
       <span
         className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${on ? 'translate-x-6' : 'translate-x-1'}`}
@@ -64,19 +64,19 @@ export default function NotificationsPage() {
       </div>
 
       <div className="px-4 py-5">
-        <div className="bg-white rounded-2xl border border-gray-100 divide-y divide-gray-50">
+        <div className="bg-surface rounded-2xl border border-line divide-y divide-line">
           {ITEMS.map(({ key, label, desc }) => (
             <div key={key} className="flex items-center gap-4 p-4">
               <div className="flex-1 min-w-0">
-                <p className="font-semibold text-gray-900 text-sm">{label}</p>
-                <p className="text-gray-400 text-xs mt-0.5">{desc}</p>
+                <p className="font-semibold text-ink text-sm">{label}</p>
+                <p className="text-ink-muted text-xs mt-0.5">{desc}</p>
               </div>
               <Toggle on={prefs[key]} onToggle={() => toggle(key)} />
             </div>
           ))}
         </div>
 
-        <p className="text-center text-xs text-gray-300 mt-6">
+        <p className="text-center text-xs text-ink-muted/70 mt-6">
           Notification delivery requires SMS or push permissions.
         </p>
       </div>

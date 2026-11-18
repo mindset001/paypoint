@@ -71,12 +71,12 @@ export default function CablePage() {
       </div>
 
       <div className="px-5 -mt-4 pb-8">
-        <div className="bg-white rounded-3xl p-5 shadow-sm flex flex-col gap-5">
+        <div className="bg-surface rounded-3xl p-5 shadow-sm flex flex-col gap-5">
           <div className="grid grid-cols-3 gap-2">
             {PROVIDERS.map((p) => (
               <button key={p.id} onClick={() => setProvider(p.id)}
                 className={cn('py-3 rounded-xl text-sm font-bold border-2 transition-all',
-                  provider === p.id ? 'border-purple-600 bg-purple-50 text-purple-700' : 'border-gray-100 text-gray-600')}>
+                  provider === p.id ? 'border-purple-600 bg-purple-50 dark:bg-purple-500/10 text-purple-700 dark:text-purple-400' : 'border-line text-ink-muted')}>
                 {p.name}
               </button>
             ))}
@@ -95,24 +95,24 @@ export default function CablePage() {
               </form>
 
               {verified && (
-                <div className="bg-green-50 border border-green-100 rounded-xl p-4 flex items-start gap-3">
+                <div className="bg-green-50 dark:bg-green-500/10 border border-green-100 dark:border-green-500/20 rounded-xl p-4 flex items-start gap-3">
                   <CheckCircle size={20} className="text-green-600 flex-shrink-0 mt-0.5" />
                   <div>
-                    <p className="font-semibold text-gray-900 text-sm">{verified.name}</p>
-                    <p className="text-xs text-gray-500">Current: {verified.currentPackage}</p>
+                    <p className="font-semibold text-ink text-sm">{verified.name}</p>
+                    <p className="text-xs text-ink-muted">Current: {verified.currentPackage}</p>
                   </div>
                 </div>
               )}
 
               {verified && plans.length > 0 && (
                 <div>
-                  <label className="text-sm font-medium text-gray-700 mb-2 block">Select Package</label>
+                  <label className="text-sm font-medium text-ink-muted mb-2 block">Select Package</label>
                   <div className="flex flex-col gap-2 max-h-64 overflow-y-auto hide-scrollbar">
                     {plans.map((p) => (
                       <button key={p.planCode} type="button" onClick={() => setSelectedPlan(p)}
                         className={cn('p-3 rounded-xl border-2 text-left transition-all flex justify-between items-center',
-                          selectedPlan?.planCode === p.planCode ? 'border-purple-600 bg-purple-50' : 'border-gray-100')}>
-                        <span className="text-sm font-semibold text-gray-900">{p.name}</span>
+                          selectedPlan?.planCode === p.planCode ? 'border-purple-600 bg-purple-50 dark:bg-purple-500/10' : 'border-line')}>
+                        <span className="text-sm font-semibold text-ink">{p.name}</span>
                         <span className="text-sm font-black text-purple-700">₦{p.amount.toLocaleString()}</span>
                       </button>
                     ))}
@@ -127,12 +127,12 @@ export default function CablePage() {
           ) : (
             <div className="flex flex-col items-center gap-4">
               <div className="text-center">
-                <p className="text-gray-500 text-sm">Subscribing <strong>{verified?.name}</strong> to</p>
-                <p className="font-bold text-gray-900">{selectedPlan?.name}</p>
+                <p className="text-ink-muted text-sm">Subscribing <strong>{verified?.name}</strong> to</p>
+                <p className="font-bold text-ink">{selectedPlan?.name}</p>
               </div>
               <PinInput length={4} onComplete={handlePinComplete} label="Enter Transaction PIN" />
               {loading && <div className="w-6 h-6 border-2 border-purple-600 border-t-transparent rounded-full animate-spin" />}
-              <button onClick={() => setShowPin(false)} className="text-sm text-gray-400 underline">Go back</button>
+              <button onClick={() => setShowPin(false)} className="text-sm text-ink-muted underline">Go back</button>
             </div>
           )}
         </div>

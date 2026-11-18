@@ -39,7 +39,7 @@ export default function KycPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-canvas">
       <div className="bg-gradient-to-b from-brand-dark to-brand-navy px-6 pt-14 md:pt-8 pb-6">
         <button onClick={() => router.back()} className="text-white mb-4">
           <ArrowLeft size={22} />
@@ -74,8 +74,8 @@ export default function KycPage() {
         )}
 
         {/* Benefits */}
-        <div className="bg-white rounded-2xl p-4 shadow-sm">
-          <p className="text-xs text-gray-500 font-semibold uppercase tracking-wide mb-3">Why verify?</p>
+        <div className="bg-surface rounded-2xl p-4 shadow-sm">
+          <p className="text-xs text-ink-muted font-semibold uppercase tracking-wide mb-3">Why verify?</p>
           {[
             'Higher daily transaction limits',
             'Faster dispute resolution',
@@ -84,22 +84,22 @@ export default function KycPage() {
           ].map((item) => (
             <div key={item} className="flex items-center gap-2 py-1.5">
               <ShieldCheck size={15} className="text-green-500 flex-shrink-0" />
-              <span className="text-sm text-gray-700">{item}</span>
+              <span className="text-sm text-ink-muted">{item}</span>
             </div>
           ))}
         </div>
 
         {/* Form — only show if not yet submitted */}
         {!alreadySubmitted && (
-          <div className="bg-white rounded-2xl p-5 shadow-sm">
+          <div className="bg-surface rounded-2xl p-5 shadow-sm">
             {/* NIN / BVN tabs */}
-            <div className="flex bg-gray-100 rounded-xl p-1 mb-5">
+            <div className="flex bg-surface-2 rounded-xl p-1 mb-5">
               {(['nin', 'bvn'] as Tab[]).map((t) => (
                 <button
                   key={t}
                   onClick={() => { setTab(t); setValue(''); }}
                   className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${
-                    tab === t ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'
+                    tab === t ? 'bg-surface text-ink shadow-sm' : 'text-ink-muted'
                   }`}
                 >
                   {t.toUpperCase()}
@@ -109,7 +109,7 @@ export default function KycPage() {
 
             <div className="flex flex-col gap-4">
               <div>
-                <label className="text-xs text-gray-500 font-medium mb-1.5 block">
+                <label className="text-xs text-ink-muted font-medium mb-1.5 block">
                   {tab === 'nin' ? 'National Identification Number (NIN)' : 'Bank Verification Number (BVN)'}
                 </label>
                 <input
@@ -119,12 +119,12 @@ export default function KycPage() {
                   value={value}
                   onChange={(e) => setValue(e.target.value.replace(/\D/g, '').slice(0, 11))}
                   placeholder="Enter 11-digit number"
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-lg font-mono tracking-widest text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-blue"
+                  className="w-full border border-line bg-surface rounded-xl px-4 py-3 text-lg font-mono tracking-widest text-ink focus:outline-none focus:ring-2 focus:ring-brand-blue"
                 />
-                <p className="text-xs text-gray-400 mt-1">{value.length}/11 digits</p>
+                <p className="text-xs text-ink-muted mt-1">{value.length}/11 digits</p>
               </div>
 
-              <p className="text-xs text-gray-400">
+              <p className="text-xs text-ink-muted">
                 Your information is encrypted and used only for identity verification. We do not share it with third parties.
               </p>
 

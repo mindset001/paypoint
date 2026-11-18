@@ -60,10 +60,10 @@ export default function AirtimePage() {
       </div>
 
       <div className="px-5 -mt-4 pb-8">
-        <div className="bg-white rounded-3xl p-5 shadow-sm flex flex-col gap-5">
+        <div className="bg-surface rounded-3xl p-5 shadow-sm flex flex-col gap-5">
           {/* Network selector */}
           <div>
-            <label className="text-sm font-medium text-gray-700 mb-2 block">Network</label>
+            <label className="text-sm font-medium text-ink-muted mb-2 block">Network</label>
             <div className="grid grid-cols-4 gap-2">
               {NETWORKS.map((n) => (
                 <button
@@ -71,7 +71,7 @@ export default function AirtimePage() {
                   onClick={() => setNetwork(n)}
                   className={cn(
                     'py-2 rounded-xl text-xs font-bold border-2 transition-all',
-                    network === n ? 'border-brand-blue bg-blue-50 text-brand-blue' : 'border-gray-100 text-gray-600',
+                    network === n ? 'border-brand-blue bg-blue-50 dark:bg-blue-500/10 text-brand-blue' : 'border-line text-ink-muted',
                     networkColors[n]?.split(' ')[0] ?? ''
                   )}
                 >
@@ -92,7 +92,7 @@ export default function AirtimePage() {
               />
 
               <div>
-                <label className="text-sm font-medium text-gray-700 mb-2 block">Amount (₦)</label>
+                <label className="text-sm font-medium text-ink-muted mb-2 block">Amount (₦)</label>
                 <div className="grid grid-cols-3 gap-2 mb-3">
                   {QUICK_AMOUNTS.map((a) => (
                     <button
@@ -103,7 +103,7 @@ export default function AirtimePage() {
                         'py-2 rounded-xl text-sm font-semibold border transition-all',
                         watch('amount') === a.toString()
                           ? 'border-brand-blue bg-blue-50 text-brand-blue'
-                          : 'border-gray-100 text-gray-700 bg-gray-50'
+                          : 'border-line text-ink-muted bg-surface-2'
                       )}
                     >
                       ₦{a.toLocaleString()}
@@ -127,12 +127,12 @@ export default function AirtimePage() {
           ) : (
             <div className="flex flex-col items-center gap-4 py-2">
               <div className="text-center mb-2">
-                <p className="text-gray-500 text-sm">Sending <strong>₦{formData?.amount}</strong> airtime to</p>
-                <p className="font-bold text-gray-900">{formData?.phone} ({network})</p>
+                <p className="text-ink-muted text-sm">Sending <strong>₦{formData?.amount}</strong> airtime to</p>
+                <p className="font-bold text-ink">{formData?.phone} ({network})</p>
               </div>
               <PinInput length={4} onComplete={handlePinComplete} label="Enter Transaction PIN" />
               {loading && <div className="w-6 h-6 border-2 border-brand-blue border-t-transparent rounded-full animate-spin" />}
-              <button onClick={() => setShowPin(false)} className="text-sm text-gray-400 underline">Go back</button>
+              <button onClick={() => setShowPin(false)} className="text-sm text-ink-muted underline">Go back</button>
             </div>
           )}
         </div>

@@ -56,12 +56,12 @@ export default function ElectricityPage() {
   if (token) {
     return (
       <div className="px-5 pt-12 md:pt-8 pb-8 flex flex-col items-center text-center gap-4">
-        <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+        <div className="w-16 h-16 bg-green-100 dark:bg-green-500/15 rounded-full flex items-center justify-center">
           <CheckCircle size={32} className="text-green-600" />
         </div>
-        <h2 className="text-xl font-black text-gray-900">Payment Successful!</h2>
-        <div className="bg-orange-50 border border-orange-100 rounded-2xl p-5 w-full">
-          <p className="text-sm text-gray-500 mb-1">Your Electricity Token</p>
+        <h2 className="text-xl font-black text-ink">Payment Successful!</h2>
+        <div className="bg-orange-50 dark:bg-orange-500/10 border border-orange-100 dark:border-orange-500/20 rounded-2xl p-5 w-full">
+          <p className="text-sm text-ink-muted mb-1">Your Electricity Token</p>
           <p className="text-2xl font-black text-orange-600 tracking-widest">{token}</p>
           <button
             onClick={() => { navigator.clipboard.writeText(token); toast.success('Token copied!'); }}
@@ -84,14 +84,14 @@ export default function ElectricityPage() {
       </div>
 
       <div className="px-5 -mt-4 pb-8">
-        <div className="bg-white rounded-3xl p-5 shadow-sm flex flex-col gap-5">
+        <div className="bg-surface rounded-3xl p-5 shadow-sm flex flex-col gap-5">
           <div>
-            <label className="text-sm font-medium text-gray-700 mb-2 block">DisCo</label>
+            <label className="text-sm font-medium text-ink-muted mb-2 block">DisCo</label>
             <div className="grid grid-cols-4 gap-1.5">
               {DISCOS.map((d) => (
                 <button key={d} onClick={() => { setDisco(d); setVerified(null); }}
                   className={cn('py-2 rounded-xl text-xs font-bold border-2 transition-all',
-                    disco === d ? 'border-orange-500 bg-orange-50 text-orange-700' : 'border-gray-100 text-gray-600')}>
+                    disco === d ? 'border-orange-500 bg-orange-50 dark:bg-orange-500/10 text-orange-700 dark:text-orange-400' : 'border-line text-ink-muted')}>
                   {d}
                 </button>
               ))}
@@ -102,7 +102,7 @@ export default function ElectricityPage() {
             {METER_TYPES.map((t) => (
               <button key={t} onClick={() => setMeterType(t)}
                 className={cn('py-2.5 rounded-xl text-sm font-semibold border-2 transition-all capitalize',
-                  meterType === t ? 'border-orange-500 bg-orange-50 text-orange-700' : 'border-gray-100 text-gray-600')}>
+                  meterType === t ? 'border-orange-500 bg-orange-50 dark:bg-orange-500/10 text-orange-700 dark:text-orange-400' : 'border-line text-ink-muted')}>
                 {t}
               </button>
             ))}
@@ -118,11 +118,11 @@ export default function ElectricityPage() {
               </div>
 
               {verified && (
-                <div className="bg-green-50 rounded-xl p-4 flex gap-3 items-start">
+                <div className="bg-green-50 dark:bg-green-500/10 rounded-xl p-4 flex gap-3 items-start">
                   <CheckCircle size={18} className="text-green-600 mt-0.5 flex-shrink-0" />
                   <div>
                     <p className="font-semibold text-sm">{verified.name}</p>
-                    <p className="text-xs text-gray-500">{verified.address}</p>
+                    <p className="text-xs text-ink-muted">{verified.address}</p>
                   </div>
                 </div>
               )}
@@ -137,12 +137,12 @@ export default function ElectricityPage() {
                     {...register('phone', { required: 'Phone is required' })}
                   />
                   <div>
-                    <label className="text-sm font-medium text-gray-700 mb-2 block">Amount (₦)</label>
+                    <label className="text-sm font-medium text-ink-muted mb-2 block">Amount (₦)</label>
                     <div className="grid grid-cols-3 gap-2 mb-3">
                       {QUICK_AMOUNTS.map((a) => (
                         <button type="button" key={a} onClick={() => setValue('amount', a.toString())}
                           className={cn('py-2 rounded-xl text-sm font-semibold border transition-all',
-                            watch('amount') === a.toString() ? 'border-orange-500 bg-orange-50 text-orange-700' : 'border-gray-100 text-gray-700 bg-gray-50')}>
+                            watch('amount') === a.toString() ? 'border-orange-500 bg-orange-50 dark:bg-orange-500/10 text-orange-700 dark:text-orange-400' : 'border-line text-ink-muted bg-surface-2')}>
                           ₦{a.toLocaleString()}
                         </button>
                       ))}
@@ -158,12 +158,12 @@ export default function ElectricityPage() {
           ) : (
             <div className="flex flex-col items-center gap-4">
               <div className="text-center">
-                <p className="text-gray-500 text-sm">₦{watch('amount')} electricity for meter</p>
-                <p className="font-bold text-gray-900">{meterNumber}</p>
+                <p className="text-ink-muted text-sm">₦{watch('amount')} electricity for meter</p>
+                <p className="font-bold text-ink">{meterNumber}</p>
               </div>
               <PinInput length={4} onComplete={handlePinComplete} label="Enter Transaction PIN" />
               {loading && <div className="w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />}
-              <button onClick={() => setShowPin(false)} className="text-sm text-gray-400 underline">Go back</button>
+              <button onClick={() => setShowPin(false)} className="text-sm text-ink-muted underline">Go back</button>
             </div>
           )}
         </div>

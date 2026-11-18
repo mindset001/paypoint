@@ -40,12 +40,12 @@ export default function ExamPage() {
   if (result) {
     return (
       <div className="px-5 pt-12 md:pt-8 pb-8 flex flex-col items-center text-center gap-4">
-        <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center text-3xl">🎓</div>
+        <div className="w-16 h-16 bg-green-100 dark:bg-green-500/15 rounded-full flex items-center justify-center text-3xl">🎓</div>
         <h2 className="text-xl font-black">Purchase Successful!</h2>
-        <div className="bg-green-50 rounded-2xl p-5 w-full flex flex-col gap-3">
+        <div className="bg-green-50 dark:bg-green-500/10 rounded-2xl p-5 w-full flex flex-col gap-3">
           {result.pins.map((p, i) => (
-            <div key={i} className="bg-white rounded-xl p-3 border border-green-100">
-              <p className="text-xs text-gray-400 mb-1">PIN {i + 1}</p>
+            <div key={i} className="bg-surface rounded-xl p-3 border border-green-100 dark:border-green-500/20">
+              <p className="text-xs text-ink-muted mb-1">PIN {i + 1}</p>
               <p className="text-xl font-black tracking-widest text-green-700">{p}</p>
             </div>
           ))}
@@ -64,19 +64,19 @@ export default function ExamPage() {
       </div>
 
       <div className="px-5 -mt-4 pb-8">
-        <div className="bg-white rounded-3xl p-5 shadow-sm flex flex-col gap-5">
+        <div className="bg-surface rounded-3xl p-5 shadow-sm flex flex-col gap-5">
           {!showPin ? (
             <>
               <div>
-                <label className="text-sm font-medium text-gray-700 mb-2 block">Select Exam Type</label>
+                <label className="text-sm font-medium text-ink-muted mb-2 block">Select Exam Type</label>
                 {types.length === 0 ? (
                   <div className="grid grid-cols-2 gap-2">
                     {['WAEC', 'NECO', 'NABTEB', 'JAMB'].map((name) => (
                       <button key={name} onClick={() => setSelected({ id: name.toLowerCase(), name, amount: 3500, description: `${name} result checker` })}
                         className={cn('p-4 rounded-2xl border-2 text-left transition-all',
-                          selected?.id === name.toLowerCase() ? 'border-green-600 bg-green-50' : 'border-gray-100')}>
-                        <p className="font-black text-gray-900">{name}</p>
-                        <p className="text-xs text-gray-500 mt-0.5">Result Checker</p>
+                          selected?.id === name.toLowerCase() ? 'border-green-600 bg-green-50 dark:bg-green-500/10' : 'border-line')}>
+                        <p className="font-black text-ink">{name}</p>
+                        <p className="text-ink-muted text-xs mt-0.5">Result Checker</p>
                         <p className="text-sm font-bold text-green-700 mt-1">₦3,500</p>
                       </button>
                     ))}
@@ -86,9 +86,9 @@ export default function ExamPage() {
                     {types.map((t) => (
                       <button key={t.id} onClick={() => setSelected(t)}
                         className={cn('p-4 rounded-2xl border-2 text-left transition-all',
-                          selected?.id === t.id ? 'border-green-600 bg-green-50' : 'border-gray-100')}>
-                        <p className="font-black text-gray-900">{t.name}</p>
-                        <p className="text-xs text-gray-500 mt-0.5">{t.description}</p>
+                          selected?.id === t.id ? 'border-green-600 bg-green-50 dark:bg-green-500/10' : 'border-line')}>
+                        <p className="font-black text-ink">{t.name}</p>
+                        <p className="text-ink-muted text-xs mt-0.5">{t.description}</p>
                         <p className="text-sm font-bold text-green-700 mt-1">₦{t.amount.toLocaleString()}</p>
                       </button>
                     ))}
@@ -98,13 +98,13 @@ export default function ExamPage() {
 
               {selected && (
                 <div>
-                  <label className="text-sm font-medium text-gray-700 mb-2 block">Quantity</label>
+                  <label className="text-sm font-medium text-ink-muted mb-2 block">Quantity</label>
                   <div className="flex items-center gap-4">
-                    <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="w-10 h-10 rounded-full bg-gray-100 font-bold text-lg">−</button>
+                    <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="w-10 h-10 rounded-full bg-surface-2 font-bold text-lg">−</button>
                     <span className="text-xl font-black w-8 text-center">{quantity}</span>
-                    <button onClick={() => setQuantity(Math.min(5, quantity + 1))} className="w-10 h-10 rounded-full bg-gray-100 font-bold text-lg">+</button>
+                    <button onClick={() => setQuantity(Math.min(5, quantity + 1))} className="w-10 h-10 rounded-full bg-surface-2 font-bold text-lg">+</button>
                   </div>
-                  <p className="text-sm text-gray-500 mt-2">Total: <strong>₦{((selected.amount || 3500) * quantity).toLocaleString()}</strong></p>
+                  <p className="text-sm text-ink-muted mt-2">Total: <strong>₦{((selected.amount || 3500) * quantity).toLocaleString()}</strong></p>
                 </div>
               )}
 
@@ -117,12 +117,12 @@ export default function ExamPage() {
           ) : (
             <div className="flex flex-col items-center gap-4">
               <div className="text-center">
-                <p className="text-gray-500 text-sm">{quantity}x {selected?.name} PIN</p>
-                <p className="font-bold text-gray-900">₦{((selected?.amount || 3500) * quantity).toLocaleString()}</p>
+                <p className="text-ink-muted text-sm">{quantity}x {selected?.name} PIN</p>
+                <p className="font-bold text-ink">₦{((selected?.amount || 3500) * quantity).toLocaleString()}</p>
               </div>
               <PinInput length={4} onComplete={handlePinComplete} label="Enter Transaction PIN" />
               {loading && <div className="w-6 h-6 border-2 border-green-600 border-t-transparent rounded-full animate-spin" />}
-              <button onClick={() => setShowPin(false)} className="text-sm text-gray-400 underline">Go back</button>
+              <button onClick={() => setShowPin(false)} className="text-sm text-ink-muted underline">Go back</button>
             </div>
           )}
         </div>
