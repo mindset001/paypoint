@@ -144,6 +144,13 @@ export const notificationsApi = {
     api.patch('/notifications/read-all'),
 };
 
+// ── Referral ─────────────────────────────────────────────────────────
+export const referralApi = {
+  stats: () => api.get('/referral/stats'),
+  history: (params?: { page?: number; limit?: number }) =>
+    api.get('/referral/history', { params }),
+};
+
 // ── Admin ─────────────────────────────────────────────────────────────
 export const adminApi = {
   stats: () =>

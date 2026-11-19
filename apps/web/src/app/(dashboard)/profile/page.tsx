@@ -135,15 +135,15 @@ export default function ProfilePage() {
 
       <div className="px-5 -mt-4 flex flex-col gap-4 pb-8">
         {/* Referral card */}
-        <div className="bg-surface rounded-2xl p-4 flex items-center justify-between shadow-sm">
+        <Link href="/profile/referrals" className="bg-surface rounded-2xl p-4 flex items-center justify-between shadow-sm">
           <div>
             <p className="text-xs text-ink-muted">Your Referral Code</p>
             <p className="text-lg font-black text-brand-blue tracking-widest">{user?.referralCode}</p>
           </div>
-          <button onClick={copyReferral} className="flex items-center gap-1.5 text-sm text-brand-blue font-semibold bg-blue-50 dark:bg-blue-500/10 px-3 py-2 rounded-xl">
+          <button onClick={(e) => { e.preventDefault(); copyReferral(); }} className="flex items-center gap-1.5 text-sm text-brand-blue font-semibold bg-blue-50 dark:bg-blue-500/10 px-3 py-2 rounded-xl">
             <Copy size={14} /> Copy
           </button>
-        </div>
+        </Link>
 
         {/* Phone */}
         <div className="bg-surface rounded-2xl p-4 shadow-sm">
