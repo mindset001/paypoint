@@ -2,7 +2,7 @@
 import { useEffect } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Plus, ArrowUpRight, ArrowDownLeft, Clock } from 'lucide-react';
+import { Plus, ArrowUpRight, ArrowDownLeft, Clock, PiggyBank } from 'lucide-react';
 import { useWallet } from '@/hooks/useWallet';
 import { formatNGN } from '@/lib/utils';
 import { TransactionItem } from '@/components/ui/TransactionItem';
@@ -39,13 +39,13 @@ export default function WalletPage() {
       <motion.div variants={stagger} initial="hidden" animate="show">
         {/* Quick Actions */}
         <motion.div variants={item} className="px-5 -mt-5">
-          <div className="bg-surface rounded-2xl shadow-sm p-4 grid grid-cols-2 gap-3">
+          <div className="bg-surface rounded-2xl shadow-sm p-4 grid grid-cols-3 gap-3">
             <Link href="/wallet/fund"
               className="flex flex-col items-center gap-2 p-4 bg-blue-50 dark:bg-blue-500/10 rounded-xl hover:bg-blue-100 dark:hover:bg-blue-500/20 transition-colors">
               <div className="w-10 h-10 bg-brand-blue rounded-full flex items-center justify-center">
                 <Plus size={20} className="text-white" />
               </div>
-              <span className="text-sm font-semibold text-ink">Fund Wallet</span>
+              <span className="text-sm font-semibold text-ink">Fund</span>
             </Link>
             <Link href="/wallet/transfer"
               className="flex flex-col items-center gap-2 p-4 bg-green-50 dark:bg-green-500/10 rounded-xl hover:bg-green-100 dark:hover:bg-green-500/20 transition-colors">
@@ -53,6 +53,13 @@ export default function WalletPage() {
                 <ArrowUpRight size={20} className="text-white" />
               </div>
               <span className="text-sm font-semibold text-ink">Transfer</span>
+            </Link>
+            <Link href="/savings"
+              className="flex flex-col items-center gap-2 p-4 bg-purple-50 dark:bg-purple-500/10 rounded-xl hover:bg-purple-100 dark:hover:bg-purple-500/20 transition-colors">
+              <div className="w-10 h-10 bg-purple-600 rounded-full flex items-center justify-center">
+                <PiggyBank size={20} className="text-white" />
+              </div>
+              <span className="text-sm font-semibold text-ink">Save</span>
             </Link>
           </div>
         </motion.div>

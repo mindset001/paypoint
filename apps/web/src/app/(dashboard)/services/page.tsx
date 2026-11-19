@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Phone, Wifi, Tv, Zap, BookOpen } from 'lucide-react';
+import { Phone, Wifi, Tv, Zap, BookOpen, PiggyBank } from 'lucide-react';
 
 const SERVICES = [
   {
@@ -48,6 +48,15 @@ const SERVICES = [
     color: 'bg-green-50 dark:bg-green-500/10 text-green-600',
     border: 'border-green-100 dark:border-green-500/20',
     gradient: 'from-green-600 to-green-800',
+  },
+  {
+    id: 'savings',
+    name: 'Savings',
+    desc: 'Lock money away for a goal',
+    icon: PiggyBank,
+    color: 'bg-pink-50 dark:bg-pink-500/10 text-pink-600',
+    border: 'border-pink-100 dark:border-pink-500/20',
+    gradient: 'from-pink-500 to-pink-700',
   },
 ];
 

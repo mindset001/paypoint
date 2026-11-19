@@ -10,7 +10,7 @@ const transactionSchema = new mongoose.Schema(
       enum: [
         'airtime', 'data', 'cable', 'electricity', 'exam',
         'wallet_fund', 'wallet_transfer_debit', 'wallet_transfer_credit',
-        'commission', 'cashback', 'referral_bonus', 'refund',
+        'commission', 'cashback', 'referral_bonus', 'refund', 'savings',
       ],
       required: true,
     },

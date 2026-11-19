@@ -171,3 +171,11 @@ export const examApi = {
     api.post('/exam', { examType, quantity, amount, pin }),
 };
 
+// ── Savings ──────────────────────────────────────────────────────────
+export const savingsApi = {
+  list: () => api.get('/savings'),
+  create: (name: string, amount: number, durationDays: number, pin: string) =>
+    api.post('/savings', { name, amount, durationDays, pin }),
+  withdraw: (id: string) => api.post(`/savings/${id}/withdraw`),
+};
+

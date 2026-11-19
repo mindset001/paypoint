@@ -17,6 +17,7 @@ export const txTypeLabel: Record<string, string> = {
   cashback: 'Cashback',
   referral_bonus: 'Referral Bonus',
   refund: 'Refund',
+  savings: 'Savings',
 };
 
 export const networkColors: Record<string, string> = {
