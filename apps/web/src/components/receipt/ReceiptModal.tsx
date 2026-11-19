@@ -30,9 +30,9 @@ export function ReceiptModal({ tx, onClose }: { tx: Transaction; onClose: () => 
     try {
       const blob = await captureCard();
       if (!blob) return;
-      const file = new File([blob], `PayPoint-Receipt-${tx.reference}.png`, { type: 'image/png' });
+      const file = new File([blob], `WavyPay-Receipt-${tx.reference}.png`, { type: 'image/png' });
       if (navigator.share && navigator.canShare?.({ files: [file] })) {
-        await navigator.share({ files: [file], title: 'PayPoint Receipt' }).catch(() => {});
+        await navigator.share({ files: [file], title: 'WavyPay Receipt' }).catch(() => {});
       } else {
         downloadBlob(blob, file.name);
       }
@@ -43,7 +43,7 @@ export function ReceiptModal({ tx, onClose }: { tx: Transaction; onClose: () => 
     setExporting('download');
     try {
       const blob = await captureCard();
-      if (blob) downloadBlob(blob, `PayPoint-Receipt-${tx.reference}.png`);
+      if (blob) downloadBlob(blob, `WavyPay-Receipt-${tx.reference}.png`);
     } finally { setExporting(null); }
   };
 
@@ -77,9 +77,9 @@ export function ReceiptModal({ tx, onClose }: { tx: Transaction; onClose: () => 
         <div ref={cardRef} className="bg-surface">
           <div className="flex items-center justify-center gap-2 pt-5 pb-1">
             <div className="w-6 h-6 rounded-lg bg-brand-blue flex items-center justify-center">
-              <span className="text-white text-xs font-black">P</span>
+              <span className="text-white text-xs font-black">W</span>
             </div>
-            <span className="font-black text-ink text-sm">PayPoint</span>
+            <span className="font-black text-ink text-sm">WavyPay</span>
           </div>
 
           {/* Amount badge */}

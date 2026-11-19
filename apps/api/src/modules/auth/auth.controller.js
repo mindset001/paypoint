@@ -16,7 +16,7 @@ const verifyOtp = async (req, res, next) => {
       identifier: req.body.identifier,
       otpCode: req.body.otp,
     });
-    return success(res, data, 'Phone verified. Welcome to PayPoint!');
+    return success(res, data, 'Phone verified. Welcome to WavyPay!');
   } catch (err) {
     next(err);
   }

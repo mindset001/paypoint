@@ -20,7 +20,7 @@ const env = {
   AIDAPAY_USERNAME: process.env.AIDAPAY_USERNAME,
   AIDAPAY_PASSWORD: process.env.AIDAPAY_PASSWORD,
   // The 4-digit PIN on AidaPay's own merchant account, required by their
-  // POST /buy — unrelated to a PayPoint user's wallet PIN.
+  // POST /buy — unrelated to a WavyPay user's wallet PIN.
   AIDAPAY_ACCOUNT_PIN: process.env.AIDAPAY_ACCOUNT_PIN,
 
   PAYSTACK_SECRET_KEY: process.env.PAYSTACK_SECRET_KEY,
@@ -36,7 +36,7 @@ const env = {
   MONNIFY_BASE_URL:      process.env.MONNIFY_BASE_URL || 'https://sandbox.monnify.com',
 
   TERMII_API_KEY: process.env.TERMII_API_KEY,
-  TERMII_SENDER_ID: process.env.TERMII_SENDER_ID || 'PayPoint',
+  TERMII_SENDER_ID: process.env.TERMII_SENDER_ID || 'WavyPay',
 
   SMTP_HOST: process.env.SMTP_HOST,
   SMTP_PORT: parseInt(process.env.SMTP_PORT || '465', 10),

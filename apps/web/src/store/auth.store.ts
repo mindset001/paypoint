@@ -30,7 +30,7 @@ export const useAuthStore = create<AuthState>()(
       setHasHydrated: (v) => set({ _hasHydrated: v }),
     }),
     {
-      name: 'paypoint-auth',
+      name: 'wavypay-auth',
       onRehydrateStorage: () => (state) => {
         state?.setHasHydrated(true);
         if (state?.accessToken) {

@@ -76,7 +76,7 @@ export default function TransferPage() {
       <div className="bg-gradient-to-br from-green-600 to-green-800 px-6 pt-14 md:pt-8 pb-8">
         <button onClick={() => router.back()} className="text-white mb-4"><ArrowLeft size={22} /></button>
         <h1 className="text-white text-2xl font-black">Transfer</h1>
-        <p className="text-green-100 text-sm">Send money to another PayPoint user</p>
+        <p className="text-green-100 text-sm">Send money to another WavyPay user</p>
       </div>
 
       <div className="px-5 -mt-4 pb-8">

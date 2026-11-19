@@ -16,7 +16,7 @@ const start = async () => {
   await redis.connect().catch(() => {});
 
   app.listen(env.PORT, () => {
-    console.log(`PayPoint API running on port ${env.PORT} [${env.NODE_ENV}]`);
+    console.log(`WavyPay API running on port ${env.PORT} [${env.NODE_ENV}]`);
   });
 };
 

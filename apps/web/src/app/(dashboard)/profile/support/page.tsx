@@ -23,11 +23,11 @@ const FAQS = [
   },
   {
     q: 'Can I transfer money to any bank account?',
-    a: 'Currently, transfers are between PayPoint wallets only. Bank withdrawals are coming soon.',
+    a: 'Currently, transfers are between WavyPay wallets only. Bank withdrawals are coming soon.',
   },
   {
-    q: 'Is my money safe on PayPoint?',
-    a: 'Yes. PayPoint operates within CBN guidelines. Funds in your wallet are held in a dedicated escrow account and are not used for any other purpose.',
+    q: 'Is my money safe on WavyPay?',
+    a: 'Yes. WavyPay operates within CBN guidelines. Funds in your wallet are held in a dedicated escrow account and are not used for any other purpose.',
   },
   {
     q: 'How do I verify my account (KYC)?',
@@ -75,7 +75,7 @@ export default function SupportPage() {
           {[
             { icon: MessageCircle, label: 'WhatsApp', sub: 'Chat now', color: 'bg-green-50 dark:bg-green-500/10 text-green-600', href: 'https://wa.me/2348000000000' },
             { icon: Mail, label: 'Email', sub: 'support@paypoint.ng', color: 'bg-blue-50 dark:bg-blue-500/10 text-brand-blue', href: 'mailto:support@paypoint.ng' },
-            { icon: Phone, label: 'Call', sub: '0800-PAYPOINT', color: 'bg-orange-50 dark:bg-orange-500/10 text-orange-600', href: 'tel:08000000000' },
+            { icon: Phone, label: 'Call', sub: '0800-WAVYPAY', color: 'bg-orange-50 dark:bg-orange-500/10 text-orange-600', href: 'tel:08000000000' },
           ].map(({ icon: Icon, label, sub, color, href }) => (
             <a
               key={label}
@@ -104,7 +104,7 @@ export default function SupportPage() {
         </div>
 
         <p className="text-center text-xs text-ink-muted/70 pb-2">
-          PayPoint Support · Available 24/7
+          WavyPay Support · Available 24/7
         </p>
       </div>
     </div>

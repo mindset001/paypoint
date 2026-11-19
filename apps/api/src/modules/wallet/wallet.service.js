@@ -96,7 +96,7 @@ const initiateWalletFund = async (userId, amountNGN, email, provider = 'paystack
         phone: user?.phone?.number,
         name: `${user?.firstName} ${user?.lastName}`,
         redirectUrl: CALLBACK_URL('flutterwave'),
-        description: `Fund PayPoint wallet — ₦${amountNGN.toLocaleString()}`,
+        description: `Fund WavyPay wallet — ₦${amountNGN.toLocaleString()}`,
         meta: { userId: userId.toString() },
       });
       return { provider: 'flutterwave', authorizationUrl: result.data.link, reference };
@@ -111,7 +111,7 @@ const initiateWalletFund = async (userId, amountNGN, email, provider = 'paystack
       customerName: `${user?.firstName} ${user?.lastName}`,
       customerEmail: email,
       paymentReference: reference,
-      paymentDescription: `PayPoint wallet funding — ₦${amountNGN.toLocaleString()}`,
+      paymentDescription: `WavyPay wallet funding — ₦${amountNGN.toLocaleString()}`,
       redirectUrl: CALLBACK_URL('monnify'),
     });
     return { provider: 'monnify', authorizationUrl: result.responseBody?.checkoutUrl, reference };
@@ -459,7 +459,7 @@ const verifyRecipient = async (senderId, recipientIdentifier) => {
     : { 'email.address': recipientIdentifier.toLowerCase() };
 
   const recipient = await User.findOne(query).select('firstName lastName');
-  if (!recipient) throw Object.assign(new Error('No PayPoint account found with that phone/email'), { statusCode: 404 });
+  if (!recipient) throw Object.assign(new Error('No WavyPay account found with that phone/email'), { statusCode: 404 });
   if (senderId.toString() === recipient._id.toString()) {
     throw Object.assign(new Error('Cannot transfer to yourself'), { statusCode: 400 });
   }

@@ -1,6 +1,6 @@
 {
-  "name": "PayPoint",
-  "short_name": "PayPoint",
+  "name": "WavyPay",
+  "short_name": "WavyPay",
   "description": "Buy airtime, data, pay bills and more",
   "start_url": "/",
   "display": "standalone",

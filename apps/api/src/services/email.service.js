@@ -10,9 +10,9 @@ const transporter = nodemailer.createTransport({
 
 const sendOtpEmail = async (to, code, { heading = 'Your verification code' } = {}) => {
   await transporter.sendMail({
-    from: `PayPoint <${env.EMAIL_FROM}>`,
+    from: `WavyPay <${env.EMAIL_FROM}>`,
     to,
-    subject: `${code} is your PayPoint code`,
+    subject: `${code} is your WavyPay code`,
     text: `${heading}: ${code}\n\nThis code expires in 10 minutes. If you didn't request this, you can ignore this email.`,
     html: `
       <div style="font-family:sans-serif;max-width:420px;margin:0 auto;padding:24px">
