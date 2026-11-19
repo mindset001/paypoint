@@ -69,7 +69,9 @@ const validateRecipient = (providerCode, recipient) =>
 // address/account field.
 const verifyRecipient = async (providerCode, recipient) => {
   const res = await validateRecipient(providerCode, recipient);
-  const body = res.data?.data;
+  // AidaPay's /validation response is flat — {success, verified, message} —
+  // not nested under a `data` key like most of their other endpoints.
+  const body = res.data;
   if (!body?.verified) {
     throw Object.assign(new Error(body?.message || 'Could not verify recipient'), { statusCode: 400 });
   }
