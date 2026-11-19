@@ -55,7 +55,8 @@ export default function WalletPage() {
               <span className="text-xs font-semibold text-ink">Transfer</span>
             </Link>
             <Link href="/wallet/withdraw"
-              className="flex flex-col items-center gap-2 p-3 bg-teal-50 dark:bg-teal-500/10 rounded-xl hover:bg-teal-100 dark:hover:bg-teal-500/20 transition-colors">
+              className="relative flex flex-col items-center gap-2 p-3 bg-teal-50 dark:bg-teal-500/10 rounded-xl hover:bg-teal-100 dark:hover:bg-teal-500/20 transition-colors">
+              <span className="absolute top-1 right-1 text-[9px] font-bold bg-teal-600 text-white px-1.5 py-0.5 rounded-full">Soon</span>
               <div className="w-10 h-10 bg-teal-600 rounded-full flex items-center justify-center">
                 <Building2 size={20} className="text-white" />
               </div>

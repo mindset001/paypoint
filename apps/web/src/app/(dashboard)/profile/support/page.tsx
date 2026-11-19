@@ -23,7 +23,7 @@ const FAQS = [
   },
   {
     q: 'Can I withdraw money to my bank account?',
-    a: 'Yes. Go to Wallet → Withdraw, add your bank account once, and you can send money from your wallet to it anytime.',
+    a: 'Bank withdrawals are coming soon — currently, transfers are between WavyPay wallets only.',
   },
   {
     q: 'Is my money safe on WavyPay?',

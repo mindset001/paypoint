@@ -3,7 +3,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
-import { ArrowLeft, Building2, CheckCircle2, XCircle, Loader2, Plus, Trash2, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Building2, CheckCircle2, XCircle, Loader2, Plus, Trash2, ChevronRight, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { PinInput } from '@/components/ui/PinInput';
@@ -17,7 +17,38 @@ interface Bank { code: string; name: string }
 interface BankAccount { id: string; bankCode: string; bankName: string; accountNumber: string; accountName: string }
 type Step = 'accounts' | 'add-account' | 'amount' | 'pin';
 
-export default function WithdrawPage() {
+// Paystack blocks third-party payouts until the business completes its
+// compliance/verification tier upgrade — flip this back on once that's
+// done. Everything below is already built and tested; this is the only
+// gate.
+const WITHDRAW_ENABLED = false;
+
+function ComingSoon() {
+  const router = useRouter();
+  return (
+    <div>
+      <div className="bg-gradient-to-br from-teal-600 to-teal-800 px-6 pt-14 md:pt-8 pb-8">
+        <button onClick={() => router.back()} className="text-white mb-4"><ArrowLeft size={22} /></button>
+        <h1 className="text-white text-2xl font-black">Withdraw to Bank</h1>
+        <p className="text-teal-100 text-sm">Move money to your bank account</p>
+      </div>
+      <div className="px-5 -mt-4 pb-8">
+        <div className="bg-surface rounded-3xl p-8 shadow-sm flex flex-col items-center text-center gap-3">
+          <div className="w-14 h-14 rounded-full bg-teal-50 dark:bg-teal-500/10 flex items-center justify-center">
+            <Clock size={26} className="text-teal-600" />
+          </div>
+          <h2 className="font-bold text-ink text-lg">Coming Soon</h2>
+          <p className="text-ink-muted text-sm">
+            Bank withdrawals are being set up and will be available shortly. Check back soon!
+          </p>
+          <Button fullWidth size="lg" className="mt-2" onClick={() => router.push('/wallet')}>Back to Wallet</Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function WithdrawPageInner() {
   const router = useRouter();
   const [banks, setBanks] = useState<Bank[]>([]);
   const [accounts, setAccounts] = useState<BankAccount[]>([]);
@@ -271,4 +302,8 @@ export default function WithdrawPage() {
       </div>
     </div>
   );
+}
+
+export default function WithdrawPage() {
+  return WITHDRAW_ENABLED ? <WithdrawPageInner /> : <ComingSoon />;
 }
