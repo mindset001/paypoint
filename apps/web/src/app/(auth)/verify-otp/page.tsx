@@ -13,6 +13,7 @@ function VerifyOtpContent() {
   const router = useRouter();
   const params = useSearchParams();
   const identifier = params.get('identifier') || '';
+  const isEmail = identifier.includes('@');
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
   const [countdown, setCountdown] = useState(60);
@@ -32,7 +33,7 @@ function VerifyOtpContent() {
       const { user, accessToken, refreshToken } = data.data;
       localStorage.setItem('accessToken', accessToken);
       localStorage.setItem('refreshToken', refreshToken);
-      toast.success('Phone verified!');
+      toast.success(isEmail ? 'Email verified!' : 'Phone verified!');
       if (!user.pinHash) {
         router.push('/set-pin');
       } else {
@@ -61,9 +62,9 @@ function VerifyOtpContent() {
   return (
     <div className="flex flex-col items-center text-center">
       <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
-        <span className="text-3xl">📱</span>
+        <span className="text-3xl">{isEmail ? '📧' : '📱'}</span>
       </div>
-      <h1 className="text-2xl font-black text-gray-900 mb-2">Verify your phone</h1>
+      <h1 className="text-2xl font-black text-gray-900 mb-2">Verify your {isEmail ? 'email' : 'phone'}</h1>
       <p className="text-gray-500 text-sm mb-8">
         We sent a 6-digit code to<br />
         <strong className="text-gray-700">{identifier}</strong>

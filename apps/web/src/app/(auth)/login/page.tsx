@@ -25,8 +25,8 @@ export default function LoginPage() {
     try {
       const user = await login(data.identifier, data.password);
       toast.success(`Welcome back, ${user.firstName}!`);
-      if (!user.phone?.verified) {
-        router.push('/verify-otp?identifier=' + encodeURIComponent(data.identifier));
+      if (!user.email?.verified) {
+        router.push('/verify-otp?identifier=' + encodeURIComponent(user.email.address));
       } else {
         router.push('/home');
       }

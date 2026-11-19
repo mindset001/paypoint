@@ -5,7 +5,7 @@ const jwt = require('../../utils/jwt');
 const redis = require('../../config/redis');
 const crypto = require('crypto');
 const referralService = require('../referral/referral.service');
-const email = require('../../services/email.service');
+const emailService = require('../../services/email.service');
 
 const generateReferralCode = () => crypto.randomBytes(4).toString('hex').toUpperCase();
 
@@ -48,13 +48,15 @@ const register = async ({ firstName, lastName, email, phone, password, referralC
   }
 
   const otpCode = otp.generate();
-  await otp.save(`phone:${phone}`, otpCode);
+  const normalizedEmail = email.toLowerCase();
+  await otp.save(`email:${normalizedEmail}`, otpCode);
 
-  console.log(`[OTP] ${phone}: ${otpCode}`);
+  console.log(`[OTP] ${normalizedEmail}: ${otpCode}`);
+  await emailService.sendOtpEmail(normalizedEmail, otpCode, { heading: 'Your verification code' });
 
   return {
     userId: user._id,
-    message: 'OTP sent to your phone number',
+    message: 'OTP sent to your email address',
     ...(process.env.NODE_ENV !== 'production' && { devOtp: otpCode }),
   };
 };
@@ -154,7 +156,7 @@ const resendOtp = async (identifier) => {
   const code = otp.generate();
   await otp.save(key, code);
   console.log(`[OTP] ${identifier}: ${code}`);
-  if (!isPhone) await email.sendOtpEmail(identifier, code, { heading: 'Your verification code' });
+  if (!isPhone) await emailService.sendOtpEmail(identifier, code, { heading: 'Your verification code' });
   return {
     message: 'OTP resent',
     ...(process.env.NODE_ENV !== 'production' && { devOtp: code }),
@@ -190,7 +192,7 @@ const forgotPassword = async (identifier) => {
   const code = otp.generate();
   await otp.save(`reset:${identifier}`, code);
   console.log(`[RESET OTP] ${identifier}: ${code}`);
-  if (!isPhone) await email.sendOtpEmail(user.email.address, code, { heading: 'Your password reset code' });
+  if (!isPhone) await emailService.sendOtpEmail(user.email.address, code, { heading: 'Your password reset code' });
   return {
     message: 'Reset code sent',
     ...(process.env.NODE_ENV !== 'production' && { devOtp: code }),
