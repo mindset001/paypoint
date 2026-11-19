@@ -1,7 +1,8 @@
 'use client';
 import { useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { X, Printer, Share2, Download, ArrowDownLeft, ArrowUpRight } from 'lucide-react';
+import { X, Printer, Share2, Download, ArrowDownLeft, ArrowUpRight, Copy } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { cn } from '@/lib/cn';
 import { formatNGN, formatDate, txTypeLabel } from '@/lib/utils';
 import type { Transaction } from '@/types';
@@ -95,6 +96,19 @@ export function ReceiptModal({ tx, onClose }: { tx: Transaction; onClose: () => 
               {tx.status}
             </span>
           </div>
+
+          {tx.meta?.token && (
+            <div className="mx-5 mb-4 bg-orange-50 dark:bg-orange-500/10 border border-orange-100 dark:border-orange-500/20 rounded-2xl p-4">
+              <p className="text-xs text-ink-muted mb-1">Meter Token</p>
+              <p className="text-xl font-black text-orange-600 tracking-widest break-all">{tx.meta.token}</p>
+              <button
+                onClick={() => { navigator.clipboard.writeText(tx.meta!.token!); toast.success('Token copied!'); }}
+                className="flex items-center gap-1 text-xs text-orange-500 mt-2"
+              >
+                <Copy size={12} /> Copy token
+              </button>
+            </div>
+          )}
 
           {/* Details */}
           <div className="px-5 pb-5 flex flex-col gap-2 text-sm">

@@ -370,17 +370,29 @@ const handleAidaPayWebhook = async (event) => {
   if (!tx || tx.status !== 'pending') return; // not ours, or already resolved — idempotent no-op
 
   if (status === 'Completed') {
+    // AidaPay's meter_token has come back with a stray leading ": " on at
+    // least one real transaction — strip anything before the first digit.
+    const cleanToken = meter_token ? meter_token.replace(/^\D+/, '') : tx.meta?.token;
+
     await Transaction.findByIdAndUpdate(tx._id, {
       status: 'success',
       providerStatus: status,
       providerReference: transaction_hash || tx.providerReference,
       providerResponse: event,
-      'meta.token': meter_token || tx.meta?.token,
+      'meta.token': cleanToken,
       processedAt: new Date(),
     });
     const referralService = require('../referral/referral.service');
     referralService.creditReferralBonusIfQualifying(tx.userId, tx._id)
       .catch((err) => console.error('[referral]', err));
+
+    if (cleanToken) {
+      notify.createNotification(tx.userId, {
+        title: 'Electricity Token Ready ⚡',
+        body: `Your meter token: ${cleanToken}`,
+        type: 'transaction', meta: { reference: tx.reference },
+      });
+    }
   } else if (status === 'Cancelled' || status === 'Refund') {
     await credit(tx.userId, tx.amount, null);
     await Transaction.findByIdAndUpdate(tx._id, {

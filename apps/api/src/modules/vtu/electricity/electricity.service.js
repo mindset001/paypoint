@@ -71,7 +71,9 @@ const pay = async (userId, { disco, meterNumber, meterType, amount, phone, pin }
     // AidaPay's /buy returns status "Processing" for meter tokens — the
     // token itself arrives later via webhook or GET /transaction/{hash}
     // (rate-limited, so not polled here), not synchronously in this response.
-    const token = txn?.meter_token ?? null;
+    // AidaPay's meter_token has come back with a stray leading ": " on at
+    // least one real transaction — strip anything before the first digit.
+    const token = txn?.meter_token ? txn.meter_token.replace(/^\D+/, '') : null;
     await Transaction.findByIdAndUpdate(tx._id, {
       status: token ? 'success' : 'pending',
       providerReference: txn?.transaction_hash,
