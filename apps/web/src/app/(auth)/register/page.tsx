@@ -27,7 +27,7 @@ export default function RegisterPage() {
   const onSubmit = async (data: RegisterForm) => {
     try {
       await authApi.register(data);
-      toast.success('Account created! Please verify your email.');
+      toast.success('Verification code sent! Check your email.');
       router.push('/verify-otp?identifier=' + encodeURIComponent(data.email));
     } catch (err) {
       toast.error(getErrorMessage(err));

@@ -4,7 +4,7 @@ const { success, error } = require('../../utils/response');
 const register = async (req, res, next) => {
   try {
     const data = await authService.register(req.body);
-    return success(res, data, 'Registration successful. OTP sent.', 201);
+    return success(res, data, 'Verification code sent. Verify it to complete registration.', 201);
   } catch (err) {
     next(err);
   }

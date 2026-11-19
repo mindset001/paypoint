@@ -9,12 +9,16 @@ const emailService = require('../../services/email.service');
 
 const generateReferralCode = () => crypto.randomBytes(4).toString('hex').toUpperCase();
 
+// Nothing is written to User/Wallet here — the account only gets created
+// once the OTP is verified (see verifyOtp below), so an unconfirmed email
+// never leaves an orphaned record behind.
 const register = async ({ firstName, lastName, email, phone, password, referralCode }) => {
+  const normalizedEmail = email.toLowerCase();
   const existing = await User.findOne({
-    $or: [{ 'email.address': email.toLowerCase() }, { 'phone.number': phone }],
+    $or: [{ 'email.address': normalizedEmail }, { 'phone.number': phone }],
   });
   if (existing) {
-    const field = existing.email.address === email.toLowerCase() ? 'email' : 'phone number';
+    const field = existing.email.address === normalizedEmail ? 'email' : 'phone number';
     throw Object.assign(new Error(`${field} already registered`), { statusCode: 409 });
   }
 
@@ -26,63 +30,77 @@ const register = async ({ firstName, lastName, email, phone, password, referralC
 
   const passwordHash = await User.hashPassword(password);
 
-  let code;
-  do {
-    code = generateReferralCode();
-  } while (await User.findOne({ referralCode: code }));
-
-  const user = await User.create({
+  const otpCode = otp.generate();
+  await otp.save(`email:${normalizedEmail}`, otpCode, {
     firstName,
     lastName,
-    email: { address: email.toLowerCase() },
-    phone: { number: phone },
+    email: normalizedEmail,
+    phone,
     passwordHash,
-    referralCode: code,
     referredBy,
+    referralCode: referralCode || null,
   });
-
-  await Wallet.create({ userId: user._id });
-
-  if (referredBy) {
-    await referralService.createPendingReferral(referredBy, user._id, referralCode);
-  }
-
-  const otpCode = otp.generate();
-  const normalizedEmail = email.toLowerCase();
-  await otp.save(`email:${normalizedEmail}`, otpCode);
 
   console.log(`[OTP] ${normalizedEmail}: ${otpCode}`);
   await emailService.sendOtpEmail(normalizedEmail, otpCode, { heading: 'Your verification code' });
 
   return {
-    userId: user._id,
-    message: 'OTP sent to your email address',
+    message: 'OTP sent to your email address. Verify it to finish creating your account.',
     ...(process.env.NODE_ENV !== 'production' && { devOtp: otpCode }),
   };
 };
 
 const verifyOtp = async ({ identifier, otpCode }) => {
   const isPhone = /^\+?[0-9]{10,14}$/.test(identifier);
-  const key = isPhone ? `phone:${identifier}` : `email:${identifier}`;
+  const key = isPhone ? `phone:${identifier}` : `email:${identifier.toLowerCase()}`;
 
-  const valid = await otp.verify(key, otpCode);
-  if (!valid) throw Object.assign(new Error('Invalid or expired OTP'), { statusCode: 400 });
+  const result = await otp.verify(key, otpCode);
+  if (!result) throw Object.assign(new Error('Invalid or expired OTP'), { statusCode: 400 });
 
-  const query = isPhone
-    ? { 'phone.number': identifier }
-    : { 'email.address': identifier.toLowerCase() };
+  let user;
+  if (result.pending) {
+    // First time this identifier is verified — the account didn't exist
+    // until now; create it from the payload stashed at register() time.
+    const payload = result.pending;
 
-  const user = await User.findOne(query);
-  if (!user) throw Object.assign(new Error('User not found'), { statusCode: 404 });
+    let code;
+    do {
+      code = generateReferralCode();
+    } while (await User.findOne({ referralCode: code }));
 
-  if (isPhone) {
-    user.phone.verified = true;
-    user.phone.verifiedAt = new Date();
+    user = await User.create({
+      firstName: payload.firstName,
+      lastName: payload.lastName,
+      email: { address: payload.email, verified: true, verifiedAt: new Date() },
+      phone: { number: payload.phone },
+      passwordHash: payload.passwordHash,
+      referralCode: code,
+      referredBy: payload.referredBy,
+    });
+
+    await Wallet.create({ userId: user._id });
+
+    if (payload.referredBy) {
+      await referralService.createPendingReferral(payload.referredBy, user._id, payload.referralCode);
+    }
   } else {
-    user.email.verified = true;
-    user.email.verifiedAt = new Date();
+    // Existing, already-created account verifying phone/email after the fact.
+    const query = isPhone
+      ? { 'phone.number': identifier }
+      : { 'email.address': identifier.toLowerCase() };
+
+    user = await User.findOne(query);
+    if (!user) throw Object.assign(new Error('User not found'), { statusCode: 404 });
+
+    if (isPhone) {
+      user.phone.verified = true;
+      user.phone.verifiedAt = new Date();
+    } else {
+      user.email.verified = true;
+      user.email.verifiedAt = new Date();
+    }
+    await user.save();
   }
-  await user.save();
 
   const tokens = issueTokens(user);
   return { user: sanitize(user), ...tokens };
@@ -152,9 +170,10 @@ const logout = async (userId) => {
 
 const resendOtp = async (identifier) => {
   const isPhone = /^\+?[0-9]{10,14}$/.test(identifier);
-  const key = isPhone ? `phone:${identifier}` : `email:${identifier}`;
+  const key = isPhone ? `phone:${identifier}` : `email:${identifier.toLowerCase()}`;
+  const pendingPayload = await otp.peekPayload(key);
   const code = otp.generate();
-  await otp.save(key, code);
+  await otp.save(key, code, pendingPayload);
   console.log(`[OTP] ${identifier}: ${code}`);
   if (!isPhone) await emailService.sendOtpEmail(identifier, code, { heading: 'Your verification code' });
   return {
