@@ -31,7 +31,10 @@ const TX_TYPE_LABEL: Record<string, string> = {
   wallet_transfer_credit: 'Transfer In',
   commission:             'Commission',
   cashback:               'Cashback',
+  referral_bonus:         'Referral Bonus',
   refund:                 'Refund',
+  savings:                'Savings',
+  withdrawal:             'Bank Withdrawal',
 };
 
 function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {

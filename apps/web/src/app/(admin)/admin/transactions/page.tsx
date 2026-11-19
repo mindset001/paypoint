@@ -26,6 +26,8 @@ const TYPE_LABEL: Record<string, string> = {
   cashback:               'Cashback',
   referral_bonus:         'Referral Bonus',
   refund:                 'Refund',
+  savings:                'Savings',
+  withdrawal:             'Bank Withdrawal',
 };
 
 function TransactionsInner() {
