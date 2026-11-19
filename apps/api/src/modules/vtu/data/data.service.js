@@ -7,21 +7,42 @@ const Transaction = require('../../../models/Transaction');
 const otp = require('../../../utils/otp');
 const referralService = require('../../referral/referral.service');
 
-// AidaPay's data-bundle-sme catalog lists MTN under two unrelated
-// provider_names — "MTN AWUF" (ordinary SIM data bundles) and "MTN FibreX"
-// (home broadband, priced in tens of thousands) — so the generic
-// name-match in resolveProviderCode never finds a plain "MTN" and always
-// throws. Mapped directly to the real AWUF provider_code instead of
-// guessed; FibreX is a different product and deliberately not used here.
-const DATA_PROVIDER_CODE_OVERRIDES = { MTN: 'mtn-awuf-data' };
+// AidaPay's data-bundle-sme catalog doesn't map one network to one
+// provider_code — several networks offer more than one catalog under this
+// service (different promos/tiers, or for MTN a completely different
+// home-broadband product), and some don't resolve by plain network name at
+// all. Mapped directly from their live GET /service/data-bundle-sme
+// response, not guessed. First entry per network is the default.
+const DATA_CATALOGS = {
+  MTN: [
+    { key: 'awuf',   label: 'Data Bundle',             providerCode: 'mtn-awuf-data' },
+    { key: 'fibrex', label: 'FibreX (Home Broadband)',  providerCode: 'mtn-fibre-x' },
+  ],
+  Airtel: [
+    { key: 'sme',  label: 'SME',  providerCode: 'airtel-sme-cg' },
+    { key: 'awuf', label: 'AWUF', providerCode: 'airtel-awuf-data' },
+  ],
+  Glo: [
+    { key: 'gifting', label: 'Gifting', providerCode: 'glo-gifting' },
+  ],
+};
 
-const resolveDataProviderCode = (network) =>
-  DATA_PROVIDER_CODE_OVERRIDES[network]
-    ? Promise.resolve(DATA_PROVIDER_CODE_OVERRIDES[network])
-    : AidaPay.resolveProviderCode(AidaPay.SLUGS.data, network);
+const getCatalogs = (network) => {
+  const catalogs = DATA_CATALOGS[network];
+  if (!catalogs) throw Object.assign(new Error(`${network} is not available on AidaPay for this service`), { statusCode: 400 });
+  return catalogs.map(({ key, label }) => ({ key, label }));
+};
 
-const getPlans = async (network) => {
-  const providerCode = await resolveDataProviderCode(network);
+const resolveDataProviderCode = (network, catalogKey) => {
+  const catalogs = DATA_CATALOGS[network];
+  if (!catalogs) throw Object.assign(new Error(`${network} is not available on AidaPay for this service`), { statusCode: 400 });
+  const catalog = catalogKey ? catalogs.find((c) => c.key === catalogKey) : catalogs[0];
+  if (!catalog) throw Object.assign(new Error(`Unknown bundle type for ${network}`), { statusCode: 400 });
+  return catalog.providerCode;
+};
+
+const getPlans = async (network, catalogKey) => {
+  const providerCode = resolveDataProviderCode(network, catalogKey);
   const result = await AidaPay.getPackages(providerCode);
   const packages = result.data?.data ?? [];
   return packages.map((p) => ({
@@ -32,7 +53,7 @@ const getPlans = async (network) => {
   }));
 };
 
-const buy = async (userId, { network, phone, planId, amount, pin }) => {
+const buy = async (userId, { network, catalog, phone, planId, amount, pin }) => {
   const User = require('../../../models/User');
   const user = await User.findById(userId).select('+pinHash');
   if (!await user.comparePin(pin)) throw Object.assign(new Error('Invalid transaction PIN'), { statusCode: 403 });
@@ -62,7 +83,7 @@ const buy = async (userId, { network, phone, planId, amount, pin }) => {
   finally { session.endSession(); }
 
   try {
-    const providerCode = await resolveDataProviderCode(network);
+    const providerCode = resolveDataProviderCode(network, catalog);
     const result = await AidaPay.buy({ recipient: phone, providerCode, ref: tx.reference, packageCode: planId });
     const txn = result.data?.data?.transaction_data;
 
@@ -82,4 +103,4 @@ const buy = async (userId, { network, phone, planId, amount, pin }) => {
   }
 };
 
-module.exports = { getPlans, buy };
+module.exports = { getCatalogs, getPlans, buy };

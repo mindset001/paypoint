@@ -19,11 +19,14 @@ import { PurchaseSuccess } from '@/components/receipt/PurchaseSuccess';
 const NETWORKS: Network[] = ['MTN', 'Airtel', 'Glo'];
 
 interface Plan { planId: string; name: string; amount: number; validity: string }
+interface Catalog { key: string; label: string }
 interface DataForm { phone: string }
 
 export default function DataPage() {
   const router = useRouter();
   const [network, setNetwork] = useState<Network>('MTN');
+  const [catalogs, setCatalogs] = useState<Catalog[]>([]);
+  const [catalog, setCatalog] = useState<string | undefined>(undefined);
   const [plans, setPlans] = useState<Plan[]>([]);
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
   const [loadingPlans, setLoadingPlans] = useState(false);
@@ -33,13 +36,28 @@ export default function DataPage() {
   const [reference, setReference] = useState<string | null>(null);
   const { register, handleSubmit, formState: { errors } } = useForm<DataForm>();
 
+  // Networks with more than one catalog (e.g. MTN's regular bundles vs
+  // FibreX home broadband) need the bundle-type picked before plans make
+  // sense — refetch catalogs on network change, default to the first.
   useEffect(() => {
+    setSelectedPlan(null);
+    dataApi.catalogs(network)
+      .then(({ data }) => {
+        const list: Catalog[] = data.data || [];
+        setCatalogs(list);
+        setCatalog(list[0]?.key);
+      })
+      .catch(() => { setCatalogs([]); setCatalog(undefined); });
+  }, [network]);
+
+  useEffect(() => {
+    setSelectedPlan(null);
     setLoadingPlans(true);
-    dataApi.plans(network)
+    dataApi.plans(network, catalog)
       .then(({ data }) => setPlans(data.data || []))
       .catch(() => setPlans([]))
       .finally(() => setLoadingPlans(false));
-  }, [network]);
+  }, [network, catalog]);
 
   const onSubmit = (data: DataForm) => {
     if (!selectedPlan) { toast.error('Select a data plan'); return; }
@@ -51,7 +69,7 @@ export default function DataPage() {
     if (!selectedPlan) return;
     setLoading(true);
     try {
-      const res = await dataApi.buy(network, phone, selectedPlan.planId, selectedPlan.amount, pin);
+      const res = await dataApi.buy(network, catalog, phone, selectedPlan.planId, selectedPlan.amount, pin);
       toast.success(`${selectedPlan.name} sent to ${phone}!`);
       setReference(res.data.data.reference);
     } catch (err) {
@@ -96,10 +114,30 @@ export default function DataPage() {
             </div>
           </div>
 
+          {catalogs.length > 1 && (
+            <div>
+              <label className="text-sm font-medium text-ink-muted mb-2 block">Bundle Type</label>
+              <div className={cn('grid gap-2', catalogs.length === 2 ? 'grid-cols-2' : 'grid-cols-3')}>
+                {catalogs.map((c) => (
+                  <button key={c.key} type="button" onClick={() => setCatalog(c.key)}
+                    className={cn('py-2 px-2 rounded-xl text-xs font-bold border-2 transition-all',
+                      catalog === c.key ? 'border-brand-blue bg-blue-50 dark:bg-blue-500/10 text-brand-blue' : 'border-line text-ink-muted')}>
+                    {c.label}
+                  </button>
+                ))}
+              </div>
+              {catalog === 'fibrex' && (
+                <p className="text-xs text-ink-muted bg-surface-2 rounded-xl p-3 mt-2">
+                  FibreX is MTN&apos;s home broadband service, billed monthly by speed — a different product from mobile data bundles.
+                </p>
+              )}
+            </div>
+          )}
+
           {!showPin ? (
             <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
               <Input
-                label="Phone Number" placeholder="0812 345 6789" type="tel"
+                label={catalog === 'fibrex' ? 'Registered Phone Number' : 'Phone Number'} placeholder="0812 345 6789" type="tel"
                 error={errors.phone?.message}
                 {...register('phone', { required: 'Phone is required' })}
               />

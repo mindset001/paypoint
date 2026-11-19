@@ -88,9 +88,11 @@ export const airtimeApi = {
 
 // ── Data ─────────────────────────────────────────────────────────────
 export const dataApi = {
-  plans: (network: string) => api.get(`/data/plans/${network}`),
-  buy: (network: string, phone: string, planId: string, amount: number, pin: string) =>
-    api.post('/data', { network, phone, planId, amount, pin }),
+  catalogs: (network: string) => api.get(`/data/catalogs/${network}`),
+  plans: (network: string, catalog?: string) =>
+    api.get(`/data/plans/${network}`, { params: catalog ? { catalog } : undefined }),
+  buy: (network: string, catalog: string | undefined, phone: string, planId: string, amount: number, pin: string) =>
+    api.post('/data', { network, catalog, phone, planId, amount, pin }),
 };
 
 // ── Cable ────────────────────────────────────────────────────────────
