@@ -6,26 +6,42 @@ const fraud = require('../../../services/fraud.service');
 const Transaction = require('../../../models/Transaction');
 const otp = require('../../../utils/otp');
 const referralService = require('../../referral/referral.service');
+const pricing = require('../../../services/pricing.service');
 
 // AidaPay has no dedicated "exam types" endpoint — exam boards are listed
 // as providers under the generic education service slug.
-const getTypes = async () => {
+const getTypes = async (user) => {
   const result = await AidaPay.getProviders(AidaPay.SLUGS.exam);
   const providers = result.data?.data ?? [];
   return providers.map((p) => ({
     id: p.provider_code,
     name: p.provider_name,
-    amount: Number(p.min_amount),
+    amount: pricing.priceFor(Number(p.min_amount), user),
   }));
 };
 
-const buy = async (userId, { examType, quantity = 1, amount, pin }) => {
+// Never trust a client-supplied amount — look up the real per-unit AidaPay
+// price directly.
+const getRawUnitPrice = async (examType) => {
+  const result = await AidaPay.getProviders(AidaPay.SLUGS.exam);
+  const provider = (result.data?.data ?? []).find((p) => p.provider_code === examType);
+  if (!provider) throw Object.assign(new Error('Exam type not found'), { statusCode: 404 });
+  return Number(provider.min_amount);
+};
+
+const buy = async (userId, { examType, quantity = 1, pin }) => {
+  const qty = parseInt(quantity, 10);
+  if (!Number.isInteger(qty) || qty < 1 || qty > 10) {
+    throw Object.assign(new Error('Quantity must be between 1 and 10'), { statusCode: 400 });
+  }
+
   const User = require('../../../models/User');
   const user = await User.findById(userId).select('+pinHash');
   if (!await user.comparePin(pin)) throw Object.assign(new Error('Invalid PIN'), { statusCode: 403 });
 
-  const amountKobo = Math.round(amount * 100);
-  const unitAmount = amount / quantity;
+  const rawUnitAmount = await getRawUnitPrice(examType);
+  const chargedUnitAmount = pricing.priceFor(rawUnitAmount, user);
+  const amountKobo = Math.round(chargedUnitAmount * qty * 100);
   await fraud.checkVelocity(userId);
 
   const session = await mongoose.startSession();
@@ -35,7 +51,7 @@ const buy = async (userId, { examType, quantity = 1, amount, pin }) => {
     const { balanceBefore, balanceAfter, wallet } = await walletService.debit(userId, amountKobo, session);
     const ref = otp.generateRef();
     [tx] = await Transaction.create([{ reference: ref, userId, walletId: wallet._id, type: 'exam', direction: 'debit', amount: amountKobo, status: 'pending', balanceBefore, balanceAfter, meta: { examType }, processedAt: new Date() }], { session });
-    await ledger.record({ transactionId: tx._id, userId, walletId: wallet._id, entry: 'debit', amount: amountKobo, balanceBefore, balanceAfter, description: `${examType} exam PIN x${quantity}` }, session);
+    await ledger.record({ transactionId: tx._id, userId, walletId: wallet._id, entry: 'debit', amount: amountKobo, balanceBefore, balanceAfter, description: `${examType} exam PIN x${qty}` }, session);
     await session.commitTransaction();
   } catch (err) { await session.abortTransaction(); throw err; } finally { session.endSession(); }
 
@@ -46,9 +62,9 @@ const buy = async (userId, { examType, quantity = 1, amount, pin }) => {
     // against a live response; revisit once the AidaPay account is active.
     const pins = [];
     const hashes = [];
-    for (let i = 0; i < quantity; i++) {
-      const unitRef = quantity > 1 ? `${tx.reference}-${i + 1}` : tx.reference;
-      const result = await AidaPay.buy({ recipient: user.phone.number, providerCode: examType, ref: unitRef, amount: unitAmount });
+    for (let i = 0; i < qty; i++) {
+      const unitRef = qty > 1 ? `${tx.reference}-${i + 1}` : tx.reference;
+      const result = await AidaPay.buy({ recipient: user.phone.number, providerCode: examType, ref: unitRef, amount: rawUnitAmount });
       const txn = result.data?.data?.transaction_data;
       hashes.push(txn?.transaction_hash);
       if (txn?.pin) pins.push(txn.pin);

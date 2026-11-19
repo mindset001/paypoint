@@ -6,6 +6,7 @@ const fraud = require('../../../services/fraud.service');
 const Transaction = require('../../../models/Transaction');
 const otp = require('../../../utils/otp');
 const referralService = require('../../referral/referral.service');
+const pricing = require('../../../services/pricing.service');
 
 // AidaPay's data-bundle-sme catalog doesn't map one network to one
 // provider_code — several networks offer more than one catalog under this
@@ -62,24 +63,38 @@ const categorizeValidity = (name) => {
   return 'Other';
 };
 
-const getPlans = async (network, catalogKey) => {
+const getPlans = async (network, catalogKey, user) => {
   const providerCode = resolveDataProviderCode(network, catalogKey);
   const result = await AidaPay.getPackages(providerCode);
   const packages = result.data?.data ?? [];
   return packages.map((p) => ({
     planId: p.package_api_code,
     name: p.package_name,
-    amount: Number(p.package_amount),
+    amount: pricing.priceFor(Number(p.package_amount), user),
     validity: categorizeValidity(p.package_name),
   }));
 };
 
-const buy = async (userId, { network, catalog, phone, planId, amount, pin }) => {
+// Looks up a package's real AidaPay price directly — never trusts a
+// client-supplied amount for what to charge. Without this, anyone could
+// intercept their own request and pay the reseller (or any) rate.
+const getRawPackagePrice = async (providerCode, planId) => {
+  const result = await AidaPay.getPackages(providerCode);
+  const pkg = (result.data?.data ?? []).find((p) => p.package_api_code === planId);
+  if (!pkg) throw Object.assign(new Error('Plan not found'), { statusCode: 404 });
+  return Number(pkg.package_amount);
+};
+
+const buy = async (userId, { network, catalog, phone, planId, pin }) => {
   const User = require('../../../models/User');
   const user = await User.findById(userId).select('+pinHash');
   if (!await user.comparePin(pin)) throw Object.assign(new Error('Invalid transaction PIN'), { statusCode: 403 });
 
-  const amountKobo = Math.round(amount * 100);
+  const providerCode = resolveDataProviderCode(network, catalog);
+  const rawAmount = await getRawPackagePrice(providerCode, planId);
+  const chargedAmount = pricing.priceFor(rawAmount, user);
+  const amountKobo = Math.round(chargedAmount * 100);
+
   await fraud.checkVelocity(userId);
   await fraud.checkDuplicate(userId, 'data', { phone, amount: amountKobo });
 
@@ -104,13 +119,12 @@ const buy = async (userId, { network, catalog, phone, planId, amount, pin }) => 
   finally { session.endSession(); }
 
   try {
-    const providerCode = resolveDataProviderCode(network, catalog);
     const result = await AidaPay.buy({ recipient: phone, providerCode, ref: tx.reference, packageCode: planId });
     const txn = result.data?.data?.transaction_data;
 
     const charged = Number(txn?.amount_paid ?? txn?.amount);
-    if (Number.isFinite(charged) && Math.abs(charged - amount) > 0.5) {
-      console.error(`[aidapay] price mismatch on ${network} data ${tx.reference}: expected ₦${amount}, AidaPay charged ₦${charged}`);
+    if (Number.isFinite(charged) && Math.abs(charged - rawAmount) > 0.5) {
+      console.error(`[aidapay] price mismatch on ${network} data ${tx.reference}: expected raw ₦${rawAmount}, AidaPay charged ₦${charged}`);
     }
 
     await Transaction.findByIdAndUpdate(tx._id, { status: 'success', providerReference: txn?.transaction_hash, providerStatus: txn?.status, providerResponse: result.data });

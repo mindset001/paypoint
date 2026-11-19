@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { profileApi } from '@/lib/api';
 import { getErrorMessage } from '@/lib/utils';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
+import { cn } from '@/lib/cn';
 
 const MenuItem = ({ icon: Icon, label, href, danger }: { icon: React.ElementType; label: string; href?: string; danger?: boolean }) => {
   const content = (
@@ -122,8 +123,9 @@ export default function ProfilePage() {
                   </button>
                 </div>
                 <p className="text-blue-300 text-sm">{user?.email?.address}</p>
-                <span className="inline-block mt-1 px-2 py-0.5 bg-brand-blue/30 text-blue-200 text-xs rounded-full capitalize">
-                  {user?.role}
+                <span className={cn('inline-block mt-1 px-2 py-0.5 text-xs rounded-full capitalize',
+                  user?.role === 'agent' ? 'bg-amber-400/20 text-amber-300 font-bold' : 'bg-brand-blue/30 text-blue-200')}>
+                  {user?.role === 'agent' ? '👑 Reseller' : user?.role}
                 </span>
               </>
             )}

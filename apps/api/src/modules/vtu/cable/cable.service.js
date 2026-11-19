@@ -6,16 +6,26 @@ const fraud = require('../../../services/fraud.service');
 const Transaction = require('../../../models/Transaction');
 const otp = require('../../../utils/otp');
 const referralService = require('../../referral/referral.service');
+const pricing = require('../../../services/pricing.service');
 
-const getPlans = async (provider) => {
+const getPlans = async (provider, user) => {
   const providerCode = await AidaPay.resolveProviderCode(AidaPay.SLUGS.cable, provider);
   const result = await AidaPay.getPackages(providerCode);
   const packages = result.data?.data ?? [];
   return packages.map((p) => ({
     planCode: p.package_api_code,
     name: p.package_name,
-    amount: Number(p.package_amount),
+    amount: pricing.priceFor(Number(p.package_amount), user),
   }));
+};
+
+// Never trust a client-supplied amount for what to charge — look up the
+// package's real AidaPay price directly.
+const getRawPackagePrice = async (providerCode, planCode) => {
+  const result = await AidaPay.getPackages(providerCode);
+  const pkg = (result.data?.data ?? []).find((p) => p.package_api_code === planCode);
+  if (!pkg) throw Object.assign(new Error('Plan not found'), { statusCode: 404 });
+  return Number(pkg.package_amount);
 };
 
 const verifySmartcard = async (provider, smartcardNumber) => {
@@ -24,12 +34,15 @@ const verifySmartcard = async (provider, smartcardNumber) => {
   return { name, currentPackage: '' };
 };
 
-const subscribe = async (userId, { provider, smartcardNumber, planCode, amount, pin }) => {
+const subscribe = async (userId, { provider, smartcardNumber, planCode, pin }) => {
   const User = require('../../../models/User');
   const user = await User.findById(userId).select('+pinHash');
   if (!await user.comparePin(pin)) throw Object.assign(new Error('Invalid PIN'), { statusCode: 403 });
 
-  const amountKobo = Math.round(amount * 100);
+  const providerCode = await AidaPay.resolveProviderCode(AidaPay.SLUGS.cable, provider);
+  const rawAmount = await getRawPackagePrice(providerCode, planCode);
+  const chargedAmount = pricing.priceFor(rawAmount, user);
+  const amountKobo = Math.round(chargedAmount * 100);
   await fraud.checkVelocity(userId);
 
   const session = await mongoose.startSession();
@@ -44,13 +57,12 @@ const subscribe = async (userId, { provider, smartcardNumber, planCode, amount, 
   } catch (err) { await session.abortTransaction(); throw err; } finally { session.endSession(); }
 
   try {
-    const providerCode = await AidaPay.resolveProviderCode(AidaPay.SLUGS.cable, provider);
     const result = await AidaPay.buy({ recipient: smartcardNumber, providerCode, ref: tx.reference, packageCode: planCode });
     const txn = result.data?.data?.transaction_data;
 
     const charged = Number(txn?.amount_paid ?? txn?.amount);
-    if (Number.isFinite(charged) && Math.abs(charged - amount) > 0.5) {
-      console.error(`[aidapay] price mismatch on ${provider} cable ${tx.reference}: expected ₦${amount}, AidaPay charged ₦${charged}`);
+    if (Number.isFinite(charged) && Math.abs(charged - rawAmount) > 0.5) {
+      console.error(`[aidapay] price mismatch on ${provider} cable ${tx.reference}: expected raw ₦${rawAmount}, AidaPay charged ₦${charged}`);
     }
 
     await Transaction.findByIdAndUpdate(tx._id, { status: 'success', providerReference: txn?.transaction_hash, providerStatus: txn?.status, providerResponse: result.data });

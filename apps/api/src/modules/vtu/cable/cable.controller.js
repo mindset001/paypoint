@@ -2,7 +2,7 @@ const service = require('./cable.service');
 const { success } = require('../../../utils/response');
 
 const getPlans = async (req, res, next) => {
-  try { return success(res, await service.getPlans(req.params.provider), 'Plans fetched'); }
+  try { return success(res, await service.getPlans(req.params.provider, req.user), 'Plans fetched'); }
   catch (err) { next(err); }
 };
 const verifySmartcard = async (req, res, next) => {

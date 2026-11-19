@@ -8,9 +8,10 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { PinInput } from '@/components/ui/PinInput';
 import { electricityApi } from '@/lib/api';
-import { getErrorMessage } from '@/lib/utils';
+import { getErrorMessage, priceWithMarkup, isReseller } from '@/lib/utils';
 import { cn } from '@/lib/cn';
 import { PurchaseSuccess } from '@/components/receipt/PurchaseSuccess';
+import { useAuth } from '@/hooks/useAuth';
 
 const DISCOS = ['IKEDC', 'EKEDC', 'AEDC', 'KAEDC', 'JED', 'PHEDC', 'KEDCO', 'BEDC', 'IBEDC', 'ENUGU'];
 const METER_TYPES = ['prepaid', 'postpaid'];
@@ -21,6 +22,7 @@ interface ElectricityForm { meterNumber: string; phone: string; amount: string }
 
 export default function ElectricityPage() {
   const router = useRouter();
+  const { user } = useAuth();
   const [disco, setDisco] = useState('IKEDC');
   const [meterType, setMeterType] = useState('prepaid');
   const [verified, setVerified] = useState<VerifiedMeter | null>(null);
@@ -168,6 +170,11 @@ export default function ElectricityPage() {
               <div className="text-center">
                 <p className="text-ink-muted text-sm">₦{watch('amount')} electricity for meter</p>
                 <p className="font-bold text-ink">{meterNumber}</p>
+                {watch('amount') && !isReseller(user?.role) && (
+                  <p className="text-xs text-ink-muted mt-1">
+                    Total charge: ₦{priceWithMarkup(parseFloat(watch('amount')), user?.role).toLocaleString()}
+                  </p>
+                )}
               </div>
               <PinInput length={4} onComplete={handlePinComplete} label="Enter Transaction PIN" />
               {loading && <div className="w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />}

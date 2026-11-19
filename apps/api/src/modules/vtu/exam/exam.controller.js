@@ -2,7 +2,7 @@ const service = require('./exam.service');
 const { success } = require('../../../utils/response');
 
 const getTypes = async (req, res, next) => {
-  try { return success(res, await service.getTypes(), 'Exam types fetched'); }
+  try { return success(res, await service.getTypes(req.user), 'Exam types fetched'); }
   catch (err) { next(err); }
 };
 const buy = async (req, res, next) => {

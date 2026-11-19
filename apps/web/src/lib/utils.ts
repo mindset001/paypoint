@@ -1,6 +1,19 @@
 export const formatNGN = (kobo: number) =>
   new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', minimumFractionDigits: 2 }).format(kobo / 100);
 
+// Mirrors apps/api/src/services/pricing.service.js — regular users pay a
+// markup on top of AidaPay's raw cost, resellers ("agent" role) pay raw
+// cost. Used here only to show the real total before PIN confirmation on
+// amount-based purchases (airtime, electricity) — the server always
+// computes the authoritative charge independently.
+export const REGULAR_MARKUP = 0.02;
+export const RESELLER_MARKUP = 0;
+export const isReseller = (role?: string) => role === 'agent';
+export const priceWithMarkup = (rawAmountNGN: number, role?: string) => {
+  const rate = isReseller(role) ? RESELLER_MARKUP : REGULAR_MARKUP;
+  return Math.round(rawAmountNGN * (1 + rate) * 100) / 100;
+};
+
 export const formatDate = (dateStr: string) =>
   new Intl.DateTimeFormat('en-NG', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(dateStr));
 

@@ -6,6 +6,7 @@ const fraud = require('../../../services/fraud.service');
 const Transaction = require('../../../models/Transaction');
 const otp = require('../../../utils/otp');
 const referralService = require('../../referral/referral.service');
+const pricing = require('../../../services/pricing.service');
 
 // AidaPay's provider_name strings for DisCos don't reliably contain the
 // short codes this app's UI uses (e.g. "EKEDC" appears nowhere in their
@@ -38,13 +39,17 @@ const verifyMeter = async (disco, meterNumber, meterType) => {
   return { name, address: '' };
 };
 
-const pay = async (userId, { disco, meterNumber, meterType, amount, phone, pin }) => {
+// `amount` is what the meter is actually topped up with (sent to AidaPay
+// as-is); the wallet is charged that plus the markup. Never trust a
+// client-supplied "amount" as the final charge — it's the raw request.
+const pay = async (userId, { disco, meterNumber, meterType, amount: rawAmount, phone, pin }) => {
   const User = require('../../../models/User');
   const user = await User.findById(userId).select('+pinHash');
   if (!await user.comparePin(pin)) throw Object.assign(new Error('Invalid PIN'), { statusCode: 403 });
 
-  if (amount < 500) throw Object.assign(new Error('Minimum electricity payment is ₦500'), { statusCode: 400 });
-  const amountKobo = Math.round(amount * 100);
+  if (rawAmount < 500) throw Object.assign(new Error('Minimum electricity payment is ₦500'), { statusCode: 400 });
+  const chargedAmount = pricing.priceFor(rawAmount, user);
+  const amountKobo = Math.round(chargedAmount * 100);
   await fraud.checkVelocity(userId);
 
   const session = await mongoose.startSession();
@@ -54,18 +59,18 @@ const pay = async (userId, { disco, meterNumber, meterType, amount, phone, pin }
     const { balanceBefore, balanceAfter, wallet } = await walletService.debit(userId, amountKobo, session);
     const ref = otp.generateRef();
     [tx] = await Transaction.create([{ reference: ref, userId, walletId: wallet._id, type: 'electricity', direction: 'debit', amount: amountKobo, status: 'pending', balanceBefore, balanceAfter, meta: { disco, meterNumber, meterType }, processedAt: new Date() }], { session });
-    await ledger.record({ transactionId: tx._id, userId, walletId: wallet._id, entry: 'debit', amount: amountKobo, balanceBefore, balanceAfter, description: `${disco} electricity ₦${amount} → ${meterNumber}` }, session);
+    await ledger.record({ transactionId: tx._id, userId, walletId: wallet._id, entry: 'debit', amount: amountKobo, balanceBefore, balanceAfter, description: `${disco} electricity ₦${rawAmount} → ${meterNumber}` }, session);
     await session.commitTransaction();
   } catch (err) { await session.abortTransaction(); throw err; } finally { session.endSession(); }
 
   try {
     const providerCode = resolveDiscoCode(disco);
-    const result = await AidaPay.buy({ recipient: meterNumber, providerCode, ref: tx.reference, amount });
+    const result = await AidaPay.buy({ recipient: meterNumber, providerCode, ref: tx.reference, amount: rawAmount });
     const txn = result.data?.data?.transaction_data;
 
     const charged = Number(txn?.amount_paid ?? txn?.amount);
-    if (Number.isFinite(charged) && Math.abs(charged - amount) > 0.5) {
-      console.error(`[aidapay] price mismatch on ${disco} electricity ${tx.reference}: expected ₦${amount}, AidaPay charged ₦${charged}`);
+    if (Number.isFinite(charged) && Math.abs(charged - rawAmount) > 0.5) {
+      console.error(`[aidapay] price mismatch on ${disco} electricity ${tx.reference}: expected raw ₦${rawAmount}, AidaPay charged ₦${charged}`);
     }
 
     // AidaPay's /buy returns status "Processing" for meter tokens — the

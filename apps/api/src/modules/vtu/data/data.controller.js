@@ -10,7 +10,7 @@ const getCatalogs = async (req, res, next) => {
 
 const getPlans = async (req, res, next) => {
   try {
-    const data = await service.getPlans(req.params.network, req.query.catalog);
+    const data = await service.getPlans(req.params.network, req.query.catalog, req.user);
     return success(res, data, 'Plans fetched');
   } catch (err) { next(err); }
 };
