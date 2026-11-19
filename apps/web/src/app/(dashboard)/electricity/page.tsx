@@ -27,6 +27,7 @@ export default function ElectricityPage() {
   const [verifying, setVerifying] = useState(false);
   const [meterNumber, setMeterNumber] = useState('');
   const [token, setToken] = useState('');
+  const [units, setUnits] = useState('');
   const [reference, setReference] = useState<string | null>(null);
   const [showPin, setShowPin] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -48,6 +49,7 @@ export default function ElectricityPage() {
     try {
       const res = await electricityApi.pay(disco, meterNumber, meterType, parseFloat(data.amount), data.phone, pin);
       setToken(res.data.data.token || '');
+      setUnits(res.data.data.units || '');
       setReference(res.data.data.reference);
       toast.success(res.data.data.token ? 'Payment successful!' : 'Payment received — token is on its way');
     } catch (err) {
@@ -68,6 +70,7 @@ export default function ElectricityPage() {
           <div className="bg-orange-50 dark:bg-orange-500/10 border border-orange-100 dark:border-orange-500/20 rounded-2xl p-5 w-full">
             <p className="text-sm text-ink-muted mb-1">Your Electricity Token</p>
             <p className="text-2xl font-black text-orange-600 tracking-widest">{token}</p>
+            {units && <p className="text-sm text-ink-muted mt-1">{units} units</p>}
             <button
               onClick={() => { navigator.clipboard.writeText(token); toast.success('Token copied!'); }}
               className="flex items-center gap-1 text-xs text-orange-500 mt-2 mx-auto"

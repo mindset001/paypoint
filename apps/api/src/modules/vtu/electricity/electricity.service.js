@@ -74,18 +74,20 @@ const pay = async (userId, { disco, meterNumber, meterType, amount, phone, pin }
     // AidaPay's meter_token has come back with a stray leading ": " on at
     // least one real transaction — strip anything before the first digit.
     const token = txn?.meter_token ? txn.meter_token.replace(/^\D+/, '') : null;
+    const units = txn?.meter_unit ?? null;
     await Transaction.findByIdAndUpdate(tx._id, {
       status: token ? 'success' : 'pending',
       providerReference: txn?.transaction_hash,
       providerStatus: txn?.status,
       providerResponse: result.data,
       'meta.token': token,
+      'meta.units': units,
     });
     if (token) {
       referralService.creditReferralBonusIfQualifying(userId, tx._id)
         .catch((err) => console.error('[referral]', err));
     }
-    return { message: token ? 'Electricity payment successful' : 'Electricity payment is processing', reference: tx.reference, token };
+    return { message: token ? 'Electricity payment successful' : 'Electricity payment is processing', reference: tx.reference, token, units };
   } catch (providerErr) {
     await walletService.credit(userId, amountKobo, null);
     await Transaction.findByIdAndUpdate(tx._id, { status: 'failed', failureReason: providerErr.message });

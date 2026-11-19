@@ -101,6 +101,7 @@ export function ReceiptModal({ tx, onClose }: { tx: Transaction; onClose: () => 
             <div className="mx-5 mb-4 bg-orange-50 dark:bg-orange-500/10 border border-orange-100 dark:border-orange-500/20 rounded-2xl p-4">
               <p className="text-xs text-ink-muted mb-1">Meter Token</p>
               <p className="text-xl font-black text-orange-600 tracking-widest break-all">{tx.meta.token}</p>
+              {tx.meta.units && <p className="text-sm text-ink-muted mt-1">{tx.meta.units} units</p>}
               <button
                 onClick={() => { navigator.clipboard.writeText(tx.meta!.token!); toast.success('Token copied!'); }}
                 className="flex items-center gap-1 text-xs text-orange-500 mt-2"

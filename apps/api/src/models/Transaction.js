@@ -33,6 +33,7 @@ const transactionSchema = new mongoose.Schema(
       smartcardNumber: String,
       meterNumber: String,
       token: String,
+      units: String,
       examType: String,
       examPin: String,
       // Wallet funding

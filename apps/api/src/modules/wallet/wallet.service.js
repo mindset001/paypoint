@@ -364,7 +364,7 @@ const handleMonnifyWebhook = async (event) => {
 // Status values per their docs: Completed, Processing, Pending, Refund, Cancelled.
 const handleAidaPayWebhook = async (event) => {
   if (event?.type !== 'transaction' || !event.ref) return;
-  const { ref, status, meter_token, transaction_hash } = event;
+  const { ref, status, meter_token, meter_unit, transaction_hash } = event;
 
   const tx = await Transaction.findOne({ reference: ref });
   if (!tx || tx.status !== 'pending') return; // not ours, or already resolved — idempotent no-op
@@ -373,6 +373,7 @@ const handleAidaPayWebhook = async (event) => {
     // AidaPay's meter_token has come back with a stray leading ": " on at
     // least one real transaction — strip anything before the first digit.
     const cleanToken = meter_token ? meter_token.replace(/^\D+/, '') : tx.meta?.token;
+    const units = meter_unit ?? tx.meta?.units;
 
     await Transaction.findByIdAndUpdate(tx._id, {
       status: 'success',
@@ -380,6 +381,7 @@ const handleAidaPayWebhook = async (event) => {
       providerReference: transaction_hash || tx.providerReference,
       providerResponse: event,
       'meta.token': cleanToken,
+      'meta.units': units,
       processedAt: new Date(),
     });
     const referralService = require('../referral/referral.service');
@@ -389,7 +391,7 @@ const handleAidaPayWebhook = async (event) => {
     if (cleanToken) {
       notify.createNotification(tx.userId, {
         title: 'Electricity Token Ready ⚡',
-        body: `Your meter token: ${cleanToken}`,
+        body: units ? `Your meter token: ${cleanToken} (${units} units)` : `Your meter token: ${cleanToken}`,
         type: 'transaction', meta: { reference: tx.reference },
       });
     }
