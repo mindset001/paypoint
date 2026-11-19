@@ -181,3 +181,16 @@ export const savingsApi = {
   withdraw: (id: string) => api.post(`/savings/${id}/withdraw`),
 };
 
+// ── Bank Withdrawal ──────────────────────────────────────────────────
+export const withdrawApi = {
+  banks: () => api.get('/withdraw/banks'),
+  verifyAccount: (bankCode: string, accountNumber: string) =>
+    api.post('/withdraw/verify-account', { bankCode, accountNumber }),
+  listAccounts: () => api.get('/withdraw/accounts'),
+  addAccount: (bankCode: string, bankName: string, accountNumber: string) =>
+    api.post('/withdraw/accounts', { bankCode, bankName, accountNumber }),
+  deleteAccount: (id: string) => api.delete(`/withdraw/accounts/${id}`),
+  withdraw: (bankAccountId: string, amount: number, pin: string) =>
+    api.post('/withdraw', { bankAccountId, amount, pin }),
+};
+

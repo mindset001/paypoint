@@ -22,8 +22,8 @@ const FAQS = [
     a: "Go to Profile → Security & PIN. You'll need your current PIN to change it. If you've forgotten it, contact support.",
   },
   {
-    q: 'Can I transfer money to any bank account?',
-    a: 'Currently, transfers are between WavyPay wallets only. Bank withdrawals are coming soon.',
+    q: 'Can I withdraw money to my bank account?',
+    a: 'Yes. Go to Wallet → Withdraw, add your bank account once, and you can send money from your wallet to it anytime.',
   },
   {
     q: 'Is my money safe on WavyPay?',

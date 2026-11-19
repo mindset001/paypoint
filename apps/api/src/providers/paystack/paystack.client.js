@@ -37,4 +37,22 @@ const getBanks = () =>
 const resolveAccount = (accountNumber, bankCode) =>
   client.get(`/bank/resolve?account_number=${accountNumber}&bank_code=${bankCode}`);
 
-module.exports = { initializeTransaction, verifyTransaction, getBanks, resolveAccount };
+// Paystack actually resolves against real NIBSS bank records when creating
+// a nuban recipient — even in test mode, a fabricated account number is
+// rejected outright (confirmed live), not just in production.
+const createTransferRecipient = ({ name, accountNumber, bankCode }) =>
+  client.post('/transferrecipient', {
+    type: 'nuban', name, account_number: accountNumber, bank_code: bankCode, currency: 'NGN',
+  });
+
+// response.data.status can be "success", "pending", or "otp" (the business
+// account itself has to approve via a code sent to the merchant's own
+// registered contact — not something this app can or should route around).
+// Only "success" is treated as final here; anything else is left "pending"
+// and resolved later via the transfer.success/failed/reversed webhook.
+const initiateTransfer = ({ amountKobo, recipientCode, reference, reason }) =>
+  client.post('/transfer', {
+    source: 'balance', amount: amountKobo, recipient: recipientCode, reference, reason,
+  });
+
+module.exports = { initializeTransaction, verifyTransaction, getBanks, resolveAccount, createTransferRecipient, initiateTransfer };

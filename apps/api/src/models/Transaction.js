@@ -10,7 +10,7 @@ const transactionSchema = new mongoose.Schema(
       enum: [
         'airtime', 'data', 'cable', 'electricity', 'exam',
         'wallet_fund', 'wallet_transfer_debit', 'wallet_transfer_credit',
-        'commission', 'cashback', 'referral_bonus', 'refund', 'savings',
+        'commission', 'cashback', 'referral_bonus', 'refund', 'savings', 'withdrawal',
       ],
       required: true,
     },
@@ -43,6 +43,9 @@ const transactionSchema = new mongoose.Schema(
       counterpartyUserId: mongoose.Schema.Types.ObjectId,
       counterpartyName: String,
       narration: String,
+      // Bank withdrawal
+      bankName: String,
+      accountNumber: String,
       // Referral
       refereeId: mongoose.Schema.Types.ObjectId,
     },

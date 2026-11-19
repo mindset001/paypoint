@@ -302,11 +302,49 @@ const creditReservedAccountDeposit = async ({ accountReference, accountNumber, p
 // ── Webhook Handlers ───────────────────────────────────────────────────
 
 const handlePaystackWebhook = async (event) => {
-  if (event.event !== 'charge.success') return;
-  const { reference, amount, channel, id } = event.data;
-  const result = await completeWalletFund({ reference, providerAmountKobo: amount, providerTransactionId: id, channel });
-  if (result.outcome === 'unknown') {
-    console.error('[wallet] paystack webhook: no matching transaction for reference', reference);
+  if (event.event === 'charge.success') {
+    const { reference, amount, channel, id } = event.data;
+    const result = await completeWalletFund({ reference, providerAmountKobo: amount, providerTransactionId: id, channel });
+    if (result.outcome === 'unknown') {
+      console.error('[wallet] paystack webhook: no matching transaction for reference', reference);
+    }
+    return;
+  }
+
+  if (['transfer.success', 'transfer.failed', 'transfer.reversed'].includes(event.event)) {
+    await handleTransferWebhook(event);
+  }
+};
+
+// Resolves a withdrawal left "pending" at initiation (Paystack's /transfer
+// can come back "pending" or "otp" — business-side approval, not ours to
+// automate around). Idempotent: a transaction that already left "pending"
+// is a no-op, so a replayed webhook can't double-reverse a wallet credit.
+const handleTransferWebhook = async (event) => {
+  const { reference, status } = event.data;
+  if (!reference) return;
+
+  const tx = await Transaction.findOne({ reference, type: 'withdrawal' });
+  if (!tx || tx.status !== 'pending') return;
+
+  if (event.event === 'transfer.success') {
+    await Transaction.findByIdAndUpdate(tx._id, { status: 'success', providerStatus: status, providerResponse: event.data });
+    notify.createNotification(tx.userId, {
+      title: 'Withdrawal Successful ✓',
+      body: `₦${(tx.amount / 100).toLocaleString()} sent to ${tx.meta?.bankName} ${tx.meta?.accountNumber}.`,
+      type: 'wallet', meta: { reference: tx.reference },
+    });
+  } else {
+    await credit(tx.userId, tx.amount, null);
+    await Transaction.findByIdAndUpdate(tx._id, {
+      status: 'failed', providerStatus: status, providerResponse: event.data,
+      failureReason: `Paystack reported: ${event.event}`,
+    });
+    notify.createNotification(tx.userId, {
+      title: 'Withdrawal Failed',
+      body: `Your withdrawal of ₦${(tx.amount / 100).toLocaleString()} could not be completed — your wallet has been refunded.`,
+      type: 'wallet', meta: { reference: tx.reference },
+    });
   }
 };
 
