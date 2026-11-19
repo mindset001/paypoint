@@ -1,8 +1,12 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, ChevronDown, Mail, MessageCircle, Phone } from 'lucide-react';
+import { ArrowLeft, ChevronDown, Mail, MessageCircle, Phone, Headphones, Lightbulb, ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/cn';
+
+const WHATSAPP_NUMBER = '2348160071243';
+const SUPPORT_EMAIL = 'smademola01@gmail.com';
+const SUPPORT_PHONE = '+2348160071243';
 
 const FAQS = [
   {
@@ -61,34 +65,62 @@ export default function SupportPage() {
 
   return (
     <div>
-      <div className="bg-gradient-to-b from-brand-dark to-brand-navy px-6 pt-14 md:pt-8 pb-6">
-        <button onClick={() => router.back()} className="text-white mb-4">
+      <div className="px-4 pt-14 md:pt-8 pb-2 flex items-center justify-center relative">
+        <button onClick={() => router.back()} className="absolute left-4 text-ink">
           <ArrowLeft size={22} />
         </button>
-        <h1 className="text-white text-xl font-bold">Help & Support</h1>
-        <p className="text-blue-300 text-sm mt-1">We&apos;re here to help</p>
+        <h1 className="text-ink text-lg font-bold">Help &amp; support</h1>
       </div>
 
       <div className="px-4 py-5 flex flex-col gap-4">
+        {/* Hero */}
+        <div className="bg-gradient-to-br from-brand-dark to-brand-navy rounded-3xl p-6 flex flex-col gap-4">
+          <div>
+            <h2 className="text-white text-xl font-black mb-1">We&apos;re here to help</h2>
+            <p className="text-blue-200 text-sm leading-relaxed">
+              Questions, failed payments or wallet funding: email WavyPay support, or reach the team on WhatsApp.
+            </p>
+          </div>
+          <a href={`mailto:${SUPPORT_EMAIL}`}
+            className="bg-white text-ink font-bold text-sm rounded-2xl py-3.5 flex items-center justify-center gap-2 hover:bg-gray-100 active:scale-[0.98] transition-all">
+            <Headphones size={18} /> Chat with us now
+          </a>
+          <a href={`https://wa.me/${WHATSAPP_NUMBER}`} target="_blank" rel="noopener noreferrer"
+            className="bg-green-500 text-white font-bold text-sm rounded-2xl py-3.5 flex items-center justify-center gap-2 hover:bg-green-600 active:scale-[0.98] transition-all">
+            <MessageCircle size={18} /> Chat on WhatsApp
+          </a>
+        </div>
+
+        <div className="flex items-start gap-2 px-1">
+          <Lightbulb size={16} className="text-ink-muted flex-shrink-0 mt-0.5" />
+          <p className="text-xs text-ink-muted leading-relaxed">
+            About a payment? Send the reference from its receipt so we can find it quickly.
+          </p>
+        </div>
+
         {/* Contact channels */}
-        <div className="grid grid-cols-3 gap-3">
-          {[
-            { icon: MessageCircle, label: 'WhatsApp', sub: 'Chat now', color: 'bg-green-50 dark:bg-green-500/10 text-green-600', href: 'https://wa.me/2348000000000' },
-            { icon: Mail, label: 'Email', sub: 'support@paypoint.ng', color: 'bg-blue-50 dark:bg-blue-500/10 text-brand-blue', href: 'mailto:support@paypoint.ng' },
-            { icon: Phone, label: 'Call', sub: '0800-WAVYPAY', color: 'bg-orange-50 dark:bg-orange-500/10 text-orange-600', href: 'tel:08000000000' },
-          ].map(({ icon: Icon, label, sub, color, href }) => (
-            <a
-              key={label}
-              href={href}
-              className="bg-surface border border-line rounded-2xl p-3 flex flex-col items-center gap-2 hover:shadow-md active:scale-95 transition-all"
-            >
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${color}`}>
-                <Icon size={18} />
-              </div>
-              <p className="text-xs font-bold text-ink">{label}</p>
-              <p className="text-xs text-ink-muted text-center leading-tight">{sub}</p>
-            </a>
-          ))}
+        <div>
+          <p className="text-xs font-bold text-ink-muted uppercase tracking-widest mb-3 px-1">
+            Other ways to reach us
+          </p>
+          <div className="bg-surface rounded-2xl border border-line">
+            {[
+              { icon: Phone, label: 'Call us', sub: SUPPORT_PHONE, color: 'bg-blue-50 dark:bg-blue-500/10 text-brand-blue', href: `tel:${SUPPORT_PHONE}` },
+              { icon: Mail, label: 'Email', sub: SUPPORT_EMAIL, color: 'bg-purple-50 dark:bg-purple-500/10 text-purple-600', href: `mailto:${SUPPORT_EMAIL}` },
+            ].map(({ icon: Icon, label, sub, color, href }) => (
+              <a key={label} href={href}
+                className="flex items-center gap-3 p-4 border-b border-line last:border-0 hover:bg-surface-2 transition-colors">
+                <div className={cn('w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0', color)}>
+                  <Icon size={18} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold text-ink">{label}</p>
+                  <p className="text-xs text-ink-muted truncate">{sub}</p>
+                </div>
+                <ExternalLink size={16} className="text-ink-muted flex-shrink-0" />
+              </a>
+            ))}
+          </div>
         </div>
 
         {/* FAQ */}
