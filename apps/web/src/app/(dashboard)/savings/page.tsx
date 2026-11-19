@@ -13,11 +13,9 @@ import { getErrorMessage, formatNGN, formatDate } from '@/lib/utils';
 import { cn } from '@/lib/cn';
 
 const DURATIONS = [
-  { label: '30 days', days: 30 },
-  { label: '60 days', days: 60 },
-  { label: '90 days', days: 90 },
-  { label: '180 days', days: 180 },
-  { label: '365 days', days: 365 },
+  { label: '1 Week', days: 7 },
+  { label: '1 Month', days: 30 },
+  { label: '2 Months', days: 60 },
 ];
 
 interface SavingsLock {
