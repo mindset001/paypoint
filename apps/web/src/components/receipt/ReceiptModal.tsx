@@ -102,8 +102,6 @@ export function ReceiptModal({ tx, onClose }: { tx: Transaction; onClose: () => 
               ['Type',        txTypeLabel[tx.type] ?? tx.type],
               ['Reference',   tx.reference],
               ['Date',        formatDate(tx.createdAt)],
-              ['Balance Before', formatNGN(tx.balanceBefore)],
-              ['Balance After',  formatNGN(tx.balanceAfter)],
               ...(tx.meta?.phone    ? [['Phone',    tx.meta.phone]]    : []),
               ...(tx.meta?.network  ? [['Network',  tx.meta.network]]  : []),
               ...(tx.meta?.provider ? [['Provider', tx.meta.provider]] : []),
