@@ -65,7 +65,7 @@ const buy = async (userId, { examType, quantity = 1, amount, pin }) => {
   } catch (providerErr) {
     await walletService.credit(userId, amountKobo, null);
     await Transaction.findByIdAndUpdate(tx._id, { status: 'failed', failureReason: providerErr.message });
-    throw Object.assign(new Error('Exam PIN purchase failed. Wallet reversed.'), { statusCode: 502 });
+    throw Object.assign(new Error(`${providerErr.message} — your wallet has been reversed.`), { statusCode: 502 });
   }
 };
 

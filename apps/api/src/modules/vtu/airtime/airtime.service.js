@@ -95,7 +95,7 @@ const buy = async (userId, { network, phone, amount, pin }) => {
       type: 'transaction',
       meta: { reference: tx.reference },
     });
-    throw Object.assign(new Error('Airtime purchase failed. Your wallet has been reversed.'), { statusCode: 502 });
+    throw Object.assign(new Error(`${providerErr.message} — your wallet has been reversed.`), { statusCode: 502 });
   }
 };
 

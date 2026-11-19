@@ -60,7 +60,7 @@ const subscribe = async (userId, { provider, smartcardNumber, planCode, amount, 
   } catch (providerErr) {
     await walletService.credit(userId, amountKobo, null);
     await Transaction.findByIdAndUpdate(tx._id, { status: 'failed', failureReason: providerErr.message });
-    throw Object.assign(new Error('Cable subscription failed. Wallet reversed.'), { statusCode: 502 });
+    throw Object.assign(new Error(`${providerErr.message} — your wallet has been reversed.`), { statusCode: 502 });
   }
 };
 
