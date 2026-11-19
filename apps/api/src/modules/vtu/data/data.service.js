@@ -7,8 +7,21 @@ const Transaction = require('../../../models/Transaction');
 const otp = require('../../../utils/otp');
 const referralService = require('../../referral/referral.service');
 
+// AidaPay's data-bundle-sme catalog lists MTN under two unrelated
+// provider_names — "MTN AWUF" (ordinary SIM data bundles) and "MTN FibreX"
+// (home broadband, priced in tens of thousands) — so the generic
+// name-match in resolveProviderCode never finds a plain "MTN" and always
+// throws. Mapped directly to the real AWUF provider_code instead of
+// guessed; FibreX is a different product and deliberately not used here.
+const DATA_PROVIDER_CODE_OVERRIDES = { MTN: 'mtn-awuf-data' };
+
+const resolveDataProviderCode = (network) =>
+  DATA_PROVIDER_CODE_OVERRIDES[network]
+    ? Promise.resolve(DATA_PROVIDER_CODE_OVERRIDES[network])
+    : AidaPay.resolveProviderCode(AidaPay.SLUGS.data, network);
+
 const getPlans = async (network) => {
-  const providerCode = await AidaPay.resolveProviderCode(AidaPay.SLUGS.data, network);
+  const providerCode = await resolveDataProviderCode(network);
   const result = await AidaPay.getPackages(providerCode);
   const packages = result.data?.data ?? [];
   return packages.map((p) => ({
@@ -49,7 +62,7 @@ const buy = async (userId, { network, phone, planId, amount, pin }) => {
   finally { session.endSession(); }
 
   try {
-    const providerCode = await AidaPay.resolveProviderCode(AidaPay.SLUGS.data, network);
+    const providerCode = await resolveDataProviderCode(network);
     const result = await AidaPay.buy({ recipient: phone, providerCode, ref: tx.reference, packageCode: planId });
     const txn = result.data?.data?.transaction_data;
 

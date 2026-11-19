@@ -13,7 +13,10 @@ import type { Network } from '@/types';
 import { cn } from '@/lib/cn';
 import { PurchaseSuccess } from '@/components/receipt/PurchaseSuccess';
 
-const NETWORKS: Network[] = ['MTN', 'Airtel', 'Glo', '9mobile'];
+// 9mobile has no data-bundle product on AidaPay at all (confirmed against
+// their live provider list) — omitted here so it's never offered as a dead
+// end. Airtime still supports all four networks; this is data-only.
+const NETWORKS: Network[] = ['MTN', 'Airtel', 'Glo'];
 
 interface Plan { planId: string; name: string; amount: number; validity: string }
 interface DataForm { phone: string }
@@ -82,7 +85,7 @@ export default function DataPage() {
         <div className="bg-surface rounded-3xl p-5 shadow-sm flex flex-col gap-5">
           <div>
             <label className="text-sm font-medium text-ink-muted mb-2 block">Network</label>
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-3 gap-2">
               {NETWORKS.map((n) => (
                 <button key={n} onClick={() => setNetwork(n)}
                   className={cn('py-2 rounded-xl text-xs font-bold border-2 transition-all',
