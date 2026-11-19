@@ -1,12 +1,13 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Phone as PhoneIcon, UserCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { PinInput } from '@/components/ui/PinInput';
+import { Skeleton } from '@/components/ui/Skeleton';
 import { dataApi } from '@/lib/api';
 import { getErrorMessage, networkColors } from '@/lib/utils';
 import type { Network } from '@/types';
@@ -18,6 +19,10 @@ import { PurchaseSuccess } from '@/components/receipt/PurchaseSuccess';
 // end. Airtime still supports all four networks; this is data-only.
 const NETWORKS: Network[] = ['MTN', 'Airtel', 'Glo'];
 
+// Display order for the validity filter tabs — only shown when at least
+// one plan in the current list actually falls into that bucket.
+const VALIDITY_ORDER = ['Daily', 'Weekly', 'Monthly', 'Longer', 'Other'];
+
 interface Plan { planId: string; name: string; amount: number; validity: string }
 interface Catalog { key: string; label: string }
 interface DataForm { phone: string }
@@ -28,13 +33,14 @@ export default function DataPage() {
   const [catalogs, setCatalogs] = useState<Catalog[]>([]);
   const [catalog, setCatalog] = useState<string | undefined>(undefined);
   const [plans, setPlans] = useState<Plan[]>([]);
+  const [validityFilter, setValidityFilter] = useState('All');
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
   const [loadingPlans, setLoadingPlans] = useState(false);
   const [showPin, setShowPin] = useState(false);
   const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
   const [reference, setReference] = useState<string | null>(null);
-  const { register, handleSubmit, formState: { errors } } = useForm<DataForm>();
+  const { register, handleSubmit, setValue, formState: { errors } } = useForm<DataForm>();
 
   // Networks with more than one catalog (e.g. MTN's regular bundles vs
   // FibreX home broadband) need the bundle-type picked before plans make
@@ -52,12 +58,36 @@ export default function DataPage() {
 
   useEffect(() => {
     setSelectedPlan(null);
+    setValidityFilter('All');
     setLoadingPlans(true);
     dataApi.plans(network, catalog)
       .then(({ data }) => setPlans(data.data || []))
       .catch(() => setPlans([]))
       .finally(() => setLoadingPlans(false));
   }, [network, catalog]);
+
+  const availableFilters = useMemo(
+    () => ['All', ...VALIDITY_ORDER.filter((cat) => plans.some((p) => p.validity === cat))],
+    [plans]
+  );
+  const filteredPlans = validityFilter === 'All' ? plans : plans.filter((p) => p.validity === validityFilter);
+
+  const currentCatalogLabel = catalogs.length > 1 ? catalogs.find((c) => c.key === catalog)?.label : undefined;
+
+  const pickContact = async () => {
+    const contactsApi = (navigator as { contacts?: { select: (props: string[], opts: { multiple: boolean }) => Promise<{ tel?: string[] }[]> } }).contacts;
+    if (!contactsApi) {
+      toast.error('Contact picker not supported on this device');
+      return;
+    }
+    try {
+      const [contact] = await contactsApi.select(['tel'], { multiple: false });
+      const tel = contact?.tel?.[0];
+      if (tel) setValue('phone', tel.replace(/\s+/g, ''));
+    } catch {
+      // user cancelled the picker — not an error
+    }
+  };
 
   const onSubmit = (data: DataForm) => {
     if (!selectedPlan) { toast.error('Select a data plan'); return; }
@@ -95,8 +125,15 @@ export default function DataPage() {
     <div>
       <div className="bg-gradient-to-br from-brand-blue to-blue-700 px-6 pt-14 md:pt-8 pb-8">
         <button onClick={() => router.back()} className="text-white mb-4"><ArrowLeft size={22} /></button>
-        <h1 className="text-white text-2xl font-black">Buy Data</h1>
-        <p className="text-blue-100 text-sm">All networks, best prices</p>
+        <div className="flex items-center gap-3">
+          <div className={cn('w-12 h-12 rounded-2xl flex items-center justify-center font-black text-base flex-shrink-0', networkColors[network])}>
+            {network.charAt(0)}
+          </div>
+          <div>
+            <h1 className="text-white text-xl font-black">Buy Data Bundle</h1>
+            <p className="text-blue-100 text-sm">{network}{currentCatalogLabel ? ` · ${currentCatalogLabel}` : ''}</p>
+          </div>
+        </div>
       </div>
 
       <div className="px-5 -mt-4 pb-8">
@@ -138,21 +175,42 @@ export default function DataPage() {
             <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
               <Input
                 label={catalog === 'fibrex' ? 'Registered Phone Number' : 'Phone Number'} placeholder="0812 345 6789" type="tel"
+                prefix={<PhoneIcon size={16} />}
+                suffix={
+                  <button type="button" onClick={pickContact} aria-label="Pick from contacts" className="hover:text-ink transition-colors">
+                    <UserCircle2 size={20} />
+                  </button>
+                }
                 error={errors.phone?.message}
                 {...register('phone', { required: 'Phone is required' })}
               />
 
               <div>
-                <label className="text-sm font-medium text-ink-muted mb-2 block">Select Plan</label>
+                <label className="text-sm font-medium text-ink-muted mb-2 block">Choose a Plan</label>
+
+                {!loadingPlans && plans.length > 0 && availableFilters.length > 1 && (
+                  <div className="flex gap-1.5 mb-3 overflow-x-auto hide-scrollbar">
+                    {availableFilters.map((f) => (
+                      <button type="button" key={f} onClick={() => setValidityFilter(f)}
+                        className={cn('px-3 py-1.5 rounded-full text-xs font-bold border transition-all flex-shrink-0',
+                          validityFilter === f ? 'border-brand-blue bg-blue-50 dark:bg-blue-500/10 text-brand-blue' : 'border-line text-ink-muted')}>
+                        {f}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
                 {loadingPlans ? (
                   <div className="grid grid-cols-2 gap-2">
-                    {Array(4).fill(0).map((_, i) => <div key={i} className="h-16 rounded-xl bg-surface-2 animate-pulse" />)}
+                    {Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-16" />)}
                   </div>
                 ) : plans.length === 0 ? (
                   <p className="text-sm text-ink-muted text-center py-4">No plans available</p>
+                ) : filteredPlans.length === 0 ? (
+                  <p className="text-sm text-ink-muted text-center py-4">No {validityFilter.toLowerCase()} plans for this bundle</p>
                 ) : (
                   <div className="grid grid-cols-2 gap-2 max-h-56 overflow-y-auto hide-scrollbar">
-                    {plans.map((p) => (
+                    {filteredPlans.map((p) => (
                       <button type="button" key={p.planId} onClick={() => setSelectedPlan(p)}
                         className={cn('p-3 rounded-xl border-2 text-left transition-all',
                           selectedPlan?.planId === p.planId ? 'border-brand-blue bg-blue-50 dark:bg-blue-500/10' : 'border-line')}>

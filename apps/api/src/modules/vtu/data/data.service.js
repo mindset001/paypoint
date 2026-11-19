@@ -41,6 +41,27 @@ const resolveDataProviderCode = (network, catalogKey) => {
   return catalog.providerCode;
 };
 
+// AidaPay doesn't give a structured validity field — package_name is the
+// only source (e.g. "MTN 6GB - 7 Days - AWUF Data", "MTN 2.5GB AWUF Daily").
+// Parsed into a coarse bucket so the UI can filter a long list instead of
+// dumping 20+ plans in one grid.
+const categorizeValidity = (name) => {
+  const lower = name.toLowerCase();
+  const daysMatch = lower.match(/(\d+)\s*days?/);
+  const monthsMatch = lower.match(/(\d+)\s*months?/);
+  const yearsMatch = lower.match(/(\d+)\s*years?/);
+  const days = daysMatch ? parseInt(daysMatch[1], 10) : null;
+  const months = monthsMatch ? parseInt(monthsMatch[1], 10) : null;
+
+  if (yearsMatch || /\byearly\b|\bannual\b/.test(lower)) return 'Longer';
+  if (months !== null) return months <= 1 ? 'Monthly' : 'Longer';
+  if (/\bdaily\b/.test(lower) || days === 1) return 'Daily';
+  if (/\bweekly\b/.test(lower) || (days !== null && days <= 13)) return 'Weekly';
+  if (/\bmonthly\b/.test(lower) || (days !== null && days <= 45)) return 'Monthly';
+  if (days !== null && days > 45) return 'Longer';
+  return 'Other';
+};
+
 const getPlans = async (network, catalogKey) => {
   const providerCode = resolveDataProviderCode(network, catalogKey);
   const result = await AidaPay.getPackages(providerCode);
@@ -49,7 +70,7 @@ const getPlans = async (network, catalogKey) => {
     planId: p.package_api_code,
     name: p.package_name,
     amount: Number(p.package_amount),
-    validity: '',
+    validity: categorizeValidity(p.package_name),
   }));
 };
 
