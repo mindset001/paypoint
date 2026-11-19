@@ -122,6 +122,19 @@ const login = async ({ identifier, password, ip }) => {
     throw Object.assign(new Error('Account suspended. Contact support.'), { statusCode: 403 });
   }
 
+  if (!user.email.verified) {
+    // The frontend redirects unverified logins straight to the OTP screen,
+    // which assumes a code is already on its way — actually send one.
+    const code = otp.generate();
+    await otp.save(`email:${user.email.address}`, code);
+    console.log(`[OTP] ${user.email.address}: ${code}`);
+    try {
+      await emailService.sendOtpEmail(user.email.address, code, { heading: 'Your verification code' });
+    } catch (err) {
+      console.error('Failed to send login-verification OTP:', err.message);
+    }
+  }
+
   user.lastLoginAt = new Date();
   user.lastLoginIp = ip;
   await user.save();
