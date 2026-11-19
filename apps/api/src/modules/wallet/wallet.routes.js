@@ -16,5 +16,6 @@ router.get('/transactions/:reference', authenticate, ctrl.getTransactionByRefere
 router.post('/webhook/paystack',    express.raw({ type: '*/*' }), ctrl.paystackWebhook);
 router.post('/webhook/flutterwave', ctrl.flutterwaveWebhook);
 router.post('/webhook/monnify',     ctrl.monnifyWebhook);
+router.post('/webhook/aidapay',     express.raw({ type: '*/*' }), ctrl.aidapayWebhook);
 
 module.exports = router;

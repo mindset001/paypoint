@@ -358,6 +358,41 @@ const handleMonnifyWebhook = async (event) => {
   }
 };
 
+// AidaPay sends this on any transaction status change ({type: "transaction"}).
+// Mainly resolves meter-token purchases that came back "Processing" from the
+// synchronous /buy call — the real token and final status arrive here.
+// Status values per their docs: Completed, Processing, Pending, Refund, Cancelled.
+const handleAidaPayWebhook = async (event) => {
+  if (event?.type !== 'transaction' || !event.ref) return;
+  const { ref, status, meter_token, transaction_hash } = event;
+
+  const tx = await Transaction.findOne({ reference: ref });
+  if (!tx || tx.status !== 'pending') return; // not ours, or already resolved — idempotent no-op
+
+  if (status === 'Completed') {
+    await Transaction.findByIdAndUpdate(tx._id, {
+      status: 'success',
+      providerStatus: status,
+      providerReference: transaction_hash || tx.providerReference,
+      providerResponse: event,
+      'meta.token': meter_token || tx.meta?.token,
+      processedAt: new Date(),
+    });
+    const referralService = require('../referral/referral.service');
+    referralService.creditReferralBonusIfQualifying(tx.userId, tx._id)
+      .catch((err) => console.error('[referral]', err));
+  } else if (status === 'Cancelled' || status === 'Refund') {
+    await credit(tx.userId, tx.amount, null);
+    await Transaction.findByIdAndUpdate(tx._id, {
+      status: 'failed',
+      providerStatus: status,
+      providerResponse: event,
+      failureReason: `AidaPay reported status: ${status}`,
+    });
+  }
+  // Processing / Pending — still waiting, nothing to do yet.
+};
+
 // ── Verify payment from callback page ─────────────────────────────────
 
 const verifyPayment = async (provider, reference, transactionId) => {
@@ -525,6 +560,6 @@ const getTransactionByReference = async (userId, reference) => {
 module.exports = {
   getWallet, debit, credit,
   initiateWalletFund, verifyPayment, getOrCreateVirtualAccount,
-  handlePaystackWebhook, handleFlutterwaveWebhook, handleMonnifyWebhook,
+  handlePaystackWebhook, handleFlutterwaveWebhook, handleMonnifyWebhook, handleAidaPayWebhook,
   transfer, verifyRecipient, getTransactions, getTransactionByReference,
 };

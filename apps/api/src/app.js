@@ -39,12 +39,12 @@ app.use(cors({
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
 }));
-// Paystack's webhook signature is computed over the raw request body, so it
-// must stay unparsed here — express.json() would consume the stream and
-// leave nothing for the route's express.raw() middleware to read.
-const PAYSTACK_WEBHOOK_PATH = '/api/v1/wallet/webhook/paystack';
+// Paystack's and AidaPay's webhook signatures are computed over the raw
+// request body, so it must stay unparsed here — express.json() would
+// consume the stream and leave nothing for the route's express.raw() to read.
+const RAW_BODY_WEBHOOK_PATHS = ['/api/v1/wallet/webhook/paystack', '/api/v1/wallet/webhook/aidapay'];
 app.use((req, res, next) => {
-  if (req.originalUrl.startsWith(PAYSTACK_WEBHOOK_PATH)) return next();
+  if (RAW_BODY_WEBHOOK_PATHS.some((p) => req.originalUrl.startsWith(p))) return next();
   return express.json({ limit: '10kb' })(req, res, next);
 });
 app.use(morgan(env.NODE_ENV === 'production' ? 'combined' : 'dev'));

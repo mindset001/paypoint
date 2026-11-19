@@ -83,6 +83,23 @@ const monnifyWebhook = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+// AidaPay signs with HMAC-SHA256 of the raw body, keyed on the API token —
+// per their docs, under Settings → API Settings → Webhooks.
+const aidapayWebhook = async (req, res, next) => {
+  try {
+    const expected = Buffer.from(
+      crypto.createHmac('sha256', env.AIDAPAY_API_KEY).update(req.body).digest('hex')  // raw Buffer
+    );
+    const signature = Buffer.from(String(req.headers['signature'] || ''));
+    if (signature.length !== expected.length || !crypto.timingSafeEqual(signature, expected)) {
+      return res.sendStatus(401);
+    }
+    const event = JSON.parse(req.body);
+    await walletService.handleAidaPayWebhook(event);
+    return res.sendStatus(200);
+  } catch (err) { next(err); }
+};
+
 const transfer = async (req, res, next) => {
   try {
     const { recipient, amount, pin } = req.body;
@@ -122,6 +139,6 @@ const getTransactionByReference = async (req, res, next) => {
 
 module.exports = {
   getWallet, initiateWalletFund, verifyPayment, getVirtualAccount,
-  paystackWebhook, flutterwaveWebhook, monnifyWebhook,
+  paystackWebhook, flutterwaveWebhook, monnifyWebhook, aidapayWebhook,
   transfer, verifyRecipient, getTransactions, getTransactionByReference,
 };
