@@ -10,6 +10,7 @@ import { PinInput } from '@/components/ui/PinInput';
 import { electricityApi } from '@/lib/api';
 import { getErrorMessage } from '@/lib/utils';
 import { cn } from '@/lib/cn';
+import { PurchaseSuccess } from '@/components/receipt/PurchaseSuccess';
 
 const DISCOS = ['IKEDC', 'EKEDC', 'AEDC', 'KAEDC', 'JED', 'PHEDC', 'KEDCO', 'BEDC', 'IBEDC', 'ENUGU'];
 const METER_TYPES = ['prepaid', 'postpaid'];
@@ -26,6 +27,7 @@ export default function ElectricityPage() {
   const [verifying, setVerifying] = useState(false);
   const [meterNumber, setMeterNumber] = useState('');
   const [token, setToken] = useState('');
+  const [reference, setReference] = useState<string | null>(null);
   const [showPin, setShowPin] = useState(false);
   const [loading, setLoading] = useState(false);
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<ElectricityForm>();
@@ -46,32 +48,35 @@ export default function ElectricityPage() {
     try {
       const res = await electricityApi.pay(disco, meterNumber, meterType, parseFloat(data.amount), data.phone, pin);
       setToken(res.data.data.token || '');
-      toast.success('Payment successful!');
+      setReference(res.data.data.reference);
+      toast.success(res.data.data.token ? 'Payment successful!' : 'Payment received — token is on its way');
     } catch (err) {
       toast.error(getErrorMessage(err));
       setShowPin(false);
     } finally { setLoading(false); }
   };
 
-  if (token) {
+  if (reference) {
     return (
-      <div className="px-5 pt-12 md:pt-8 pb-8 flex flex-col items-center text-center gap-4">
-        <div className="w-16 h-16 bg-green-100 dark:bg-green-500/15 rounded-full flex items-center justify-center">
-          <CheckCircle size={32} className="text-green-600" />
-        </div>
-        <h2 className="text-xl font-black text-ink">Payment Successful!</h2>
-        <div className="bg-orange-50 dark:bg-orange-500/10 border border-orange-100 dark:border-orange-500/20 rounded-2xl p-5 w-full">
-          <p className="text-sm text-ink-muted mb-1">Your Electricity Token</p>
-          <p className="text-2xl font-black text-orange-600 tracking-widest">{token}</p>
-          <button
-            onClick={() => { navigator.clipboard.writeText(token); toast.success('Token copied!'); }}
-            className="flex items-center gap-1 text-xs text-orange-500 mt-2 mx-auto"
-          >
-            <Copy size={12} /> Copy token
-          </button>
-        </div>
-        <Button fullWidth size="lg" onClick={() => router.push('/home')}>Back to Home</Button>
-      </div>
+      <PurchaseSuccess
+        reference={reference}
+        title={token ? 'Payment Successful!' : 'Payment Received!'}
+        subtitle={token ? undefined : `Your token for meter ${meterNumber} is processing and will arrive shortly.`}
+        onDone={() => router.push('/home')}
+      >
+        {token && (
+          <div className="bg-orange-50 dark:bg-orange-500/10 border border-orange-100 dark:border-orange-500/20 rounded-2xl p-5 w-full">
+            <p className="text-sm text-ink-muted mb-1">Your Electricity Token</p>
+            <p className="text-2xl font-black text-orange-600 tracking-widest">{token}</p>
+            <button
+              onClick={() => { navigator.clipboard.writeText(token); toast.success('Token copied!'); }}
+              className="flex items-center gap-1 text-xs text-orange-500 mt-2 mx-auto"
+            >
+              <Copy size={12} /> Copy token
+            </button>
+          </div>
+        )}
+      </PurchaseSuccess>
     );
   }
 

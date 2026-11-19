@@ -71,6 +71,8 @@ export const walletApi = {
     api.post('/wallet/transfer/verify', { recipient }),
   transactions: (params?: { page?: number; limit?: number; type?: string; status?: string; from?: string; to?: string }) =>
     api.get('/wallet/transactions', { params }),
+  transactionByReference: (reference: string) =>
+    api.get(`/wallet/transactions/${encodeURIComponent(reference)}`),
 };
 
 // ── Services ─────────────────────────────────────────────────────────

@@ -113,8 +113,15 @@ const getTransactions = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+const getTransactionByReference = async (req, res, next) => {
+  try {
+    const data = await walletService.getTransactionByReference(req.user._id, req.params.reference);
+    return success(res, data, 'Transaction fetched');
+  } catch (err) { next(err); }
+};
+
 module.exports = {
   getWallet, initiateWalletFund, verifyPayment, getVirtualAccount,
   paystackWebhook, flutterwaveWebhook, monnifyWebhook,
-  transfer, verifyRecipient, getTransactions,
+  transfer, verifyRecipient, getTransactions, getTransactionByReference,
 };

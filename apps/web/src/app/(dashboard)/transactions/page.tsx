@@ -1,13 +1,14 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import { walletApi } from '@/lib/api';
 import { Button } from '@/components/ui/Button';
 import type { Transaction } from '@/types';
-import { Filter, X, Printer, ArrowDownLeft, ArrowUpRight, Calendar } from 'lucide-react';
+import { Filter, X, ArrowDownLeft, ArrowUpRight, Calendar } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { formatNGN, formatDate, txTypeLabel } from '@/lib/utils';
 import { EmptyStateIllustration } from '@/components/illustrations/EmptyState';
+import { ReceiptModal } from '@/components/receipt/ReceiptModal';
 
 const TYPE_FILTERS = ['All', 'airtime', 'data', 'cable', 'electricity', 'wallet_fund', 'refund'];
 const STATUS_FILTERS = ['Any', 'success', 'pending', 'failed'];
@@ -18,74 +19,6 @@ const statusStyle: Record<string, string> = {
   failed:  'text-red-500 bg-red-50 dark:bg-red-500/15',
   reversed:'text-ink-muted bg-surface-2',
 };
-
-function ReceiptModal({ tx, onClose }: { tx: Transaction; onClose: () => void }) {
-  const isCredit = tx.direction === 'credit';
-  return (
-    <motion.div
-      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-4"
-    >
-      <motion.div
-        initial={{ opacity: 0, y: 24, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ type: 'spring', stiffness: 300, damping: 26 }}
-        className="bg-surface rounded-3xl w-full max-w-sm shadow-2xl"
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-line">
-          <h2 className="font-black text-ink">Transaction Receipt</h2>
-          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full bg-surface-2 text-ink-muted">
-            <X size={16} />
-          </button>
-        </div>
-
-        {/* Amount badge */}
-        <div className="flex flex-col items-center py-6">
-          <div className={cn('w-16 h-16 rounded-2xl flex items-center justify-center mb-3',
-            isCredit ? 'bg-green-100 dark:bg-green-500/15 text-green-600' : 'bg-red-100 dark:bg-red-500/15 text-red-500')}>
-            {isCredit ? <ArrowDownLeft size={28} /> : <ArrowUpRight size={28} />}
-          </div>
-          <p className={cn('text-3xl font-black', isCredit ? 'text-green-600' : 'text-ink')}>
-            {isCredit ? '+' : '-'}{formatNGN(tx.amount)}
-          </p>
-          <span className={cn('mt-2 text-xs font-semibold px-3 py-1 rounded-full capitalize', statusStyle[tx.status] ?? 'bg-surface-2 text-ink-muted')}>
-            {tx.status}
-          </span>
-        </div>
-
-        {/* Details */}
-        <div className="px-5 pb-5 flex flex-col gap-2 text-sm">
-          {[
-            ['Type',        txTypeLabel[tx.type] ?? tx.type],
-            ['Reference',   tx.reference],
-            ['Date',        formatDate(tx.createdAt)],
-            ['Balance Before', formatNGN(tx.balanceBefore)],
-            ['Balance After',  formatNGN(tx.balanceAfter)],
-            ...(tx.meta?.phone    ? [['Phone',    tx.meta.phone]]    : []),
-            ...(tx.meta?.network  ? [['Network',  tx.meta.network]]  : []),
-            ...(tx.meta?.provider ? [['Provider', tx.meta.provider]] : []),
-            ...(tx.failureReason  ? [['Reason',   tx.failureReason]] : []),
-          ].map(([label, value]) => (
-            <div key={label} className="flex justify-between items-start gap-2">
-              <span className="text-ink-muted flex-shrink-0">{label}</span>
-              <span className="text-ink font-medium text-right break-all">{value}</span>
-            </div>
-          ))}
-        </div>
-
-        {/* Print */}
-        <div className="px-5 pb-5">
-          <button
-            onClick={() => window.print()}
-            className="w-full flex items-center justify-center gap-2 border border-line text-ink-muted font-semibold py-3 rounded-2xl text-sm hover:bg-surface-2 transition-colors"
-          >
-            <Printer size={16} /> Print Receipt
-          </button>
-        </div>
-      </motion.div>
-    </motion.div>
-  );
-}
 
 function TxRow({ tx, onClick }: { tx: Transaction; onClick: () => void }) {
   const isCredit = tx.direction === 'credit';

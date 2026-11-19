@@ -11,6 +11,7 @@ import { airtimeApi } from '@/lib/api';
 import { getErrorMessage, networkColors } from '@/lib/utils';
 import type { Network } from '@/types';
 import { cn } from '@/lib/cn';
+import { PurchaseSuccess } from '@/components/receipt/PurchaseSuccess';
 
 const NETWORKS: Network[] = ['MTN', 'Airtel', 'Glo', '9mobile'];
 const QUICK_AMOUNTS = [50, 100, 200, 500, 1000, 2000];
@@ -26,6 +27,7 @@ export default function AirtimePage() {
   const [showPin, setShowPin] = useState(false);
   const [formData, setFormData] = useState<AirtimeForm | null>(null);
   const [loading, setLoading] = useState(false);
+  const [reference, setReference] = useState<string | null>(null);
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<AirtimeForm>();
 
   const onSubmit = (data: AirtimeForm) => {
@@ -37,9 +39,9 @@ export default function AirtimePage() {
     if (!formData) return;
     setLoading(true);
     try {
-      await airtimeApi.buy(network, formData.phone, parseFloat(formData.amount), pin);
+      const res = await airtimeApi.buy(network, formData.phone, parseFloat(formData.amount), pin);
       toast.success(`₦${formData.amount} ${network} airtime sent to ${formData.phone}!`);
-      router.push('/home');
+      setReference(res.data.data.reference);
     } catch (err) {
       toast.error(getErrorMessage(err));
       setShowPin(false);
@@ -47,6 +49,17 @@ export default function AirtimePage() {
       setLoading(false);
     }
   };
+
+  if (reference) {
+    return (
+      <PurchaseSuccess
+        reference={reference}
+        title="Airtime Purchased!"
+        subtitle={`₦${formData?.amount} ${network} airtime sent to ${formData?.phone}`}
+        onDone={() => router.push('/home')}
+      />
+    );
+  }
 
   return (
     <div>

@@ -515,9 +515,16 @@ const getTransactions = async (userId, { page = 1, limit = 20, type, status } = 
   return { transactions, pagination: { page, limit, total, pages: Math.ceil(total / limit) } };
 };
 
+// Scoped to the requesting user — a reference alone isn't a capability token.
+const getTransactionByReference = async (userId, reference) => {
+  const tx = await Transaction.findOne({ userId, reference });
+  if (!tx) throw Object.assign(new Error('Transaction not found'), { statusCode: 404 });
+  return tx;
+};
+
 module.exports = {
   getWallet, debit, credit,
   initiateWalletFund, verifyPayment, getOrCreateVirtualAccount,
   handlePaystackWebhook, handleFlutterwaveWebhook, handleMonnifyWebhook,
-  transfer, verifyRecipient, getTransactions,
+  transfer, verifyRecipient, getTransactions, getTransactionByReference,
 };

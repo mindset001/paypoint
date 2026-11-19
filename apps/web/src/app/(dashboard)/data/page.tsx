@@ -11,6 +11,7 @@ import { dataApi } from '@/lib/api';
 import { getErrorMessage, networkColors } from '@/lib/utils';
 import type { Network } from '@/types';
 import { cn } from '@/lib/cn';
+import { PurchaseSuccess } from '@/components/receipt/PurchaseSuccess';
 
 const NETWORKS: Network[] = ['MTN', 'Airtel', 'Glo', '9mobile'];
 
@@ -26,6 +27,7 @@ export default function DataPage() {
   const [showPin, setShowPin] = useState(false);
   const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
+  const [reference, setReference] = useState<string | null>(null);
   const { register, handleSubmit, formState: { errors } } = useForm<DataForm>();
 
   useEffect(() => {
@@ -46,9 +48,9 @@ export default function DataPage() {
     if (!selectedPlan) return;
     setLoading(true);
     try {
-      await dataApi.buy(network, phone, selectedPlan.planId, selectedPlan.amount, pin);
+      const res = await dataApi.buy(network, phone, selectedPlan.planId, selectedPlan.amount, pin);
       toast.success(`${selectedPlan.name} sent to ${phone}!`);
-      router.push('/home');
+      setReference(res.data.data.reference);
     } catch (err) {
       toast.error(getErrorMessage(err));
       setShowPin(false);
@@ -56,6 +58,17 @@ export default function DataPage() {
       setLoading(false);
     }
   };
+
+  if (reference) {
+    return (
+      <PurchaseSuccess
+        reference={reference}
+        title="Data Purchased!"
+        subtitle={`${selectedPlan?.name} sent to ${phone}`}
+        onDone={() => router.push('/home')}
+      />
+    );
+  }
 
   return (
     <div>

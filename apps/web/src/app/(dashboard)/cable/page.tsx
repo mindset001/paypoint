@@ -11,6 +11,7 @@ import { cableApi } from '@/lib/api';
 import { getErrorMessage } from '@/lib/utils';
 import { cn } from '@/lib/cn';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { PurchaseSuccess } from '@/components/receipt/PurchaseSuccess';
 
 const PROVIDERS = [
   { id: 'DSTV', name: 'DStv', color: 'from-blue-600 to-blue-800' },
@@ -33,6 +34,7 @@ export default function CablePage() {
   const [smartcard, setSmartcard] = useState('');
   const [showPin, setShowPin] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [reference, setReference] = useState<string | null>(null);
   const { register, handleSubmit, formState: { errors }, watch } = useForm<CableForm>();
 
   useEffect(() => {
@@ -59,14 +61,25 @@ export default function CablePage() {
     if (!selectedPlan) return;
     setLoading(true);
     try {
-      await cableApi.subscribe(provider, smartcard, selectedPlan.planCode, selectedPlan.amount, pin);
+      const res = await cableApi.subscribe(provider, smartcard, selectedPlan.planCode, selectedPlan.amount, pin);
       toast.success(`${provider} subscription successful!`);
-      router.push('/home');
+      setReference(res.data.data.reference);
     } catch (err) {
       toast.error(getErrorMessage(err));
       setShowPin(false);
     } finally { setLoading(false); }
   };
+
+  if (reference) {
+    return (
+      <PurchaseSuccess
+        reference={reference}
+        title="Subscription Successful!"
+        subtitle={`${selectedPlan?.name} activated on ${smartcard}`}
+        onDone={() => router.push('/home')}
+      />
+    );
+  }
 
   return (
     <div>
