@@ -78,10 +78,10 @@ export interface AdminUserDetail {
 export interface AdminStats {
   users: { total: number; active: number; suspended: number; pendingKyc: number };
   transactions: {
-    allTime: { success: number; failed: number; pending: number; volume: number };
-    today:  { count: number; volume: number };
-    week:   { count: number; volume: number };
-    month:  { count: number; volume: number };
+    allTime: { success: number; failed: number; pending: number; volume: number; margin: number };
+    today:  { count: number; volume: number; margin: number };
+    week:   { count: number; volume: number; margin: number };
+    month:  { count: number; volume: number; margin: number };
   };
   recentUsers: AdminUserRow[];
 }

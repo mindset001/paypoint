@@ -50,7 +50,7 @@ const buy = async (userId, { examType, quantity = 1, pin }) => {
   try {
     const { balanceBefore, balanceAfter, wallet } = await walletService.debit(userId, amountKobo, session);
     const ref = otp.generateRef();
-    [tx] = await Transaction.create([{ reference: ref, userId, walletId: wallet._id, type: 'exam', direction: 'debit', amount: amountKobo, status: 'pending', balanceBefore, balanceAfter, meta: { examType }, processedAt: new Date() }], { session });
+    [tx] = await Transaction.create([{ reference: ref, userId, walletId: wallet._id, type: 'exam', direction: 'debit', amount: amountKobo, status: 'pending', balanceBefore, balanceAfter, meta: { examType, marginAmount: amountKobo - Math.round(rawUnitAmount * qty * 100) }, processedAt: new Date() }], { session });
     await ledger.record({ transactionId: tx._id, userId, walletId: wallet._id, entry: 'debit', amount: amountKobo, balanceBefore, balanceAfter, description: `${examType} exam PIN x${qty}` }, session);
     await session.commitTransaction();
   } catch (err) { await session.abortTransaction(); throw err; } finally { session.endSession(); }

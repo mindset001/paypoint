@@ -36,6 +36,7 @@ const transactionSchema = new mongoose.Schema(
       units: String,
       examType: String,
       examPin: String,
+      marginAmount: Number, // kobo — chargedAmount minus AidaPay's raw cost, 0 for resellers
       // Wallet funding
       provider: String,
       channel: String,

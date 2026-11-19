@@ -44,7 +44,7 @@ const buy = async (userId, { network, phone, amount: rawAmount, pin }) => {
       status: 'pending',
       balanceBefore,
       balanceAfter,
-      meta: { network, phone },
+      meta: { network, phone, marginAmount: amountKobo - Math.round(rawAmount * 100) },
       processedAt: new Date(),
     }], { session });
 

@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Users, ArrowLeftRight, TrendingUp, AlertTriangle, Clock, CheckCircle, XCircle, ChevronRight } from 'lucide-react';
+import { Users, ArrowLeftRight, TrendingUp, AlertTriangle, Clock, CheckCircle, XCircle, ChevronRight, Coins } from 'lucide-react';
 import { adminApi } from '@/lib/api';
 import { formatNGN } from '@/lib/utils';
 import type { AdminStats } from '@/types';
@@ -89,28 +89,28 @@ export default function AdminOverviewPage() {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard
             label="All-time volume"
-            value={formatNGN(transactions.allTime.volume / 100)}
+            value={formatNGN(transactions.allTime.volume)}
             sub={`${transactions.allTime.success.toLocaleString()} successful`}
             icon={TrendingUp}
             color="bg-emerald-500/20 text-emerald-400"
           />
           <StatCard
             label="Today"
-            value={formatNGN(transactions.today.volume / 100)}
+            value={formatNGN(transactions.today.volume)}
             sub={`${transactions.today.count} txns`}
             icon={ArrowLeftRight}
             color="bg-brand-blue/20 text-blue-400"
           />
           <StatCard
             label="This week"
-            value={formatNGN(transactions.week.volume / 100)}
+            value={formatNGN(transactions.week.volume)}
             sub={`${transactions.week.count} txns`}
             icon={ArrowLeftRight}
             color="bg-indigo-500/20 text-indigo-400"
           />
           <StatCard
             label="This month"
-            value={formatNGN(transactions.month.volume / 100)}
+            value={formatNGN(transactions.month.volume)}
             sub={`${transactions.month.count} txns`}
             icon={ArrowLeftRight}
             color="bg-purple-500/20 text-purple-400"
@@ -126,6 +126,19 @@ export default function AdminOverviewPage() {
             </p>
           </div>
         )}
+      </section>
+
+      {/* Margin earned */}
+      <section className="mb-8">
+        <p className="text-slate-400 text-xs font-semibold uppercase tracking-widest mb-3">
+          Margin Earned <span className="normal-case text-slate-500">(VTU markup, reseller sales excluded — only counts purchases made since the pricing engine shipped)</span>
+        </p>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <StatCard label="All-time" value={formatNGN(transactions.allTime.margin)} icon={Coins} color="bg-amber-500/20 text-amber-400" />
+          <StatCard label="Today"     value={formatNGN(transactions.today.margin)}  icon={Coins} color="bg-amber-500/20 text-amber-400" />
+          <StatCard label="This week" value={formatNGN(transactions.week.margin)}   icon={Coins} color="bg-amber-500/20 text-amber-400" />
+          <StatCard label="This month" value={formatNGN(transactions.month.margin)} icon={Coins} color="bg-amber-500/20 text-amber-400" />
+        </div>
       </section>
 
       {/* Recent sign-ups */}

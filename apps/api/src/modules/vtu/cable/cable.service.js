@@ -51,7 +51,7 @@ const subscribe = async (userId, { provider, smartcardNumber, planCode, pin }) =
   try {
     const { balanceBefore, balanceAfter, wallet } = await walletService.debit(userId, amountKobo, session);
     const ref = otp.generateRef();
-    [tx] = await Transaction.create([{ reference: ref, userId, walletId: wallet._id, type: 'cable', direction: 'debit', amount: amountKobo, status: 'pending', balanceBefore, balanceAfter, meta: { cableProvider: provider, smartcardNumber }, processedAt: new Date() }], { session });
+    [tx] = await Transaction.create([{ reference: ref, userId, walletId: wallet._id, type: 'cable', direction: 'debit', amount: amountKobo, status: 'pending', balanceBefore, balanceAfter, meta: { cableProvider: provider, smartcardNumber, marginAmount: amountKobo - Math.round(rawAmount * 100) }, processedAt: new Date() }], { session });
     await ledger.record({ transactionId: tx._id, userId, walletId: wallet._id, entry: 'debit', amount: amountKobo, balanceBefore, balanceAfter, description: `${provider} subscription ${planCode}` }, session);
     await session.commitTransaction();
   } catch (err) { await session.abortTransaction(); throw err; } finally { session.endSession(); }

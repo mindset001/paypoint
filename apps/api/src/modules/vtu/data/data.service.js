@@ -109,7 +109,7 @@ const buy = async (userId, { network, catalog, phone, planId, pin }) => {
       reference: ref, userId, walletId: wallet._id,
       type: 'data', direction: 'debit', amount: amountKobo,
       status: 'pending', balanceBefore, balanceAfter,
-      meta: { network, phone, dataBundle: planId },
+      meta: { network, phone, dataBundle: planId, marginAmount: amountKobo - Math.round(rawAmount * 100) },
       processedAt: new Date(),
     }], { session });
 

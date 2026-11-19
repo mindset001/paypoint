@@ -21,25 +21,26 @@ const getStats = async () => {
         _id: '$status',
         count: { $sum: 1 },
         volume: { $sum: '$amount' },
+        margin: { $sum: { $ifNull: ['$meta.marginAmount', 0] } },
       }},
     ]),
 
     // Today's transactions
     Transaction.aggregate([
       { $match: { createdAt: { $gte: startOfDay }, status: 'success' } },
-      { $group: { _id: null, count: { $sum: 1 }, volume: { $sum: '$amount' } } },
+      { $group: { _id: null, count: { $sum: 1 }, volume: { $sum: '$amount' }, margin: { $sum: { $ifNull: ['$meta.marginAmount', 0] } } } },
     ]),
 
     // This week's transactions
     Transaction.aggregate([
       { $match: { createdAt: { $gte: startOfWeek }, status: 'success' } },
-      { $group: { _id: null, count: { $sum: 1 }, volume: { $sum: '$amount' } } },
+      { $group: { _id: null, count: { $sum: 1 }, volume: { $sum: '$amount' }, margin: { $sum: { $ifNull: ['$meta.marginAmount', 0] } } } },
     ]),
 
     // This month's transactions
     Transaction.aggregate([
       { $match: { createdAt: { $gte: startOfMonth }, status: 'success' } },
-      { $group: { _id: null, count: { $sum: 1 }, volume: { $sum: '$amount' } } },
+      { $group: { _id: null, count: { $sum: 1 }, volume: { $sum: '$amount' }, margin: { $sum: { $ifNull: ['$meta.marginAmount', 0] } } } },
     ]),
 
     // 5 most recent users
@@ -48,7 +49,7 @@ const getStats = async () => {
   ]);
 
   const byStatus = Object.fromEntries(userCounts.map(({ _id, count }) => [_id, count]));
-  const txByStatus = Object.fromEntries(txStats.map(({ _id, count, volume }) => [_id, { count, volume }]));
+  const txByStatus = Object.fromEntries(txStats.map(({ _id, count, volume, margin }) => [_id, { count, volume, margin }]));
 
   return {
     users: {
@@ -63,10 +64,11 @@ const getStats = async () => {
         failed:  txByStatus.failed?.count  ?? 0,
         pending: txByStatus.pending?.count ?? 0,
         volume:  txByStatus.success?.volume ?? 0,
+        margin:  txByStatus.success?.margin ?? 0,
       },
-      today:  { count: dailyTx[0]?.count ?? 0,   volume: dailyTx[0]?.volume ?? 0 },
-      week:   { count: weeklyTx[0]?.count ?? 0,  volume: weeklyTx[0]?.volume ?? 0 },
-      month:  { count: monthlyTx[0]?.count ?? 0, volume: monthlyTx[0]?.volume ?? 0 },
+      today:  { count: dailyTx[0]?.count ?? 0,   volume: dailyTx[0]?.volume ?? 0,   margin: dailyTx[0]?.margin ?? 0 },
+      week:   { count: weeklyTx[0]?.count ?? 0,  volume: weeklyTx[0]?.volume ?? 0,  margin: weeklyTx[0]?.margin ?? 0 },
+      month:  { count: monthlyTx[0]?.count ?? 0, volume: monthlyTx[0]?.volume ?? 0, margin: monthlyTx[0]?.margin ?? 0 },
     },
     recentUsers,
   };
