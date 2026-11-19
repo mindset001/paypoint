@@ -7,6 +7,7 @@ import { useWallet } from '@/hooks/useWallet';
 import { formatNGN } from '@/lib/utils';
 import { TransactionItem } from '@/components/ui/TransactionItem';
 import { EmptyStateIllustration } from '@/components/illustrations/EmptyState';
+import { Skeleton } from '@/components/ui/Skeleton';
 
 const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.06 } } };
 const item = { hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0, transition: { duration: 0.3, ease: 'easeOut' as const } } };
@@ -87,7 +88,21 @@ export default function WalletPage() {
             <Link href="/transactions" className="text-xs text-brand-blue font-semibold">See all</Link>
           </div>
           <div className="bg-surface rounded-2xl px-4">
-            {transactions.slice(0, 8).map((tx) => <TransactionItem key={tx._id} tx={tx} />)}
+            {loading && transactions.length === 0 && (
+              <div className="flex flex-col gap-3 py-3">
+                {Array(5).fill(0).map((_, i) => (
+                  <div key={i} className="flex items-center gap-3">
+                    <Skeleton className="w-10 h-10 rounded-full shrink-0" />
+                    <div className="flex-1 flex flex-col gap-1.5">
+                      <Skeleton className="h-3 w-2/3" />
+                      <Skeleton className="h-2.5 w-1/3" />
+                    </div>
+                    <Skeleton className="h-3 w-14" />
+                  </div>
+                ))}
+              </div>
+            )}
+            {!loading && transactions.slice(0, 8).map((tx) => <TransactionItem key={tx._id} tx={tx} />)}
             {transactions.length === 0 && !loading && (
               <div className="py-10 flex flex-col items-center text-center gap-2">
                 <EmptyStateIllustration variant="wallet" />

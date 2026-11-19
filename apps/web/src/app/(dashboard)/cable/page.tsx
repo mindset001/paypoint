@@ -10,6 +10,7 @@ import { PinInput } from '@/components/ui/PinInput';
 import { cableApi } from '@/lib/api';
 import { getErrorMessage } from '@/lib/utils';
 import { cn } from '@/lib/cn';
+import { Skeleton } from '@/components/ui/Skeleton';
 
 const PROVIDERS = [
   { id: 'DSTV', name: 'DStv', color: 'from-blue-600 to-blue-800' },
@@ -25,6 +26,7 @@ export default function CablePage() {
   const router = useRouter();
   const [provider, setProvider] = useState('DSTV');
   const [plans, setPlans] = useState<Plan[]>([]);
+  const [loadingPlans, setLoadingPlans] = useState(true);
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
   const [verified, setVerified] = useState<VerifiedCard | null>(null);
   const [verifying, setVerifying] = useState(false);
@@ -34,7 +36,11 @@ export default function CablePage() {
   const { register, handleSubmit, formState: { errors }, watch } = useForm<CableForm>();
 
   useEffect(() => {
-    cableApi.plans(provider).then(({ data }) => setPlans(data.data || [])).catch(() => setPlans([]));
+    setLoadingPlans(true);
+    cableApi.plans(provider)
+      .then(({ data }) => setPlans(data.data || []))
+      .catch(() => setPlans([]))
+      .finally(() => setLoadingPlans(false));
     setVerified(null);
     setSelectedPlan(null);
   }, [provider]);
@@ -104,7 +110,16 @@ export default function CablePage() {
                 </div>
               )}
 
-              {verified && plans.length > 0 && (
+              {verified && loadingPlans && (
+                <div>
+                  <label className="text-sm font-medium text-ink-muted mb-2 block">Select Package</label>
+                  <div className="flex flex-col gap-2">
+                    {Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-12" />)}
+                  </div>
+                </div>
+              )}
+
+              {verified && !loadingPlans && plans.length > 0 && (
                 <div>
                   <label className="text-sm font-medium text-ink-muted mb-2 block">Select Package</label>
                   <div className="flex flex-col gap-2 max-h-64 overflow-y-auto hide-scrollbar">

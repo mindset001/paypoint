@@ -8,12 +8,14 @@ import { PinInput } from '@/components/ui/PinInput';
 import { examApi } from '@/lib/api';
 import { getErrorMessage } from '@/lib/utils';
 import { cn } from '@/lib/cn';
+import { Skeleton } from '@/components/ui/Skeleton';
 
 interface ExamType { id: string; name: string; amount: number; description: string }
 
 export default function ExamPage() {
   const router = useRouter();
   const [types, setTypes] = useState<ExamType[]>([]);
+  const [loadingTypes, setLoadingTypes] = useState(true);
   const [selected, setSelected] = useState<ExamType | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [showPin, setShowPin] = useState(false);
@@ -21,7 +23,10 @@ export default function ExamPage() {
   const [result, setResult] = useState<{ pins: string[] } | null>(null);
 
   useEffect(() => {
-    examApi.types().then(({ data }) => setTypes(data.data || [])).catch(() => {});
+    examApi.types()
+      .then(({ data }) => setTypes(data.data || []))
+      .catch(() => {})
+      .finally(() => setLoadingTypes(false));
   }, []);
 
   const handlePinComplete = async (pin: string) => {
@@ -69,7 +74,11 @@ export default function ExamPage() {
             <>
               <div>
                 <label className="text-sm font-medium text-ink-muted mb-2 block">Select Exam Type</label>
-                {types.length === 0 ? (
+                {loadingTypes ? (
+                  <div className="grid grid-cols-2 gap-2">
+                    {Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-20" />)}
+                  </div>
+                ) : types.length === 0 ? (
                   <div className="grid grid-cols-2 gap-2">
                     {['WAEC', 'NECO', 'NABTEB', 'JAMB'].map((name) => (
                       <button key={name} onClick={() => setSelected({ id: name.toLowerCase(), name, amount: 3500, description: `${name} result checker` })}
