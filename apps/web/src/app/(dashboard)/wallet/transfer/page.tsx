@@ -1,9 +1,9 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { PinInput } from '@/components/ui/PinInput';
@@ -12,6 +12,7 @@ import { getErrorMessage } from '@/lib/utils';
 import { cn } from '@/lib/cn';
 
 const QUICK_AMOUNTS = [500, 1000, 2000, 5000, 10000];
+const RECIPIENT_PATTERN = /^(\+?[0-9]{10,14}|\S+@\S+\.\S+)$/;
 
 interface TransferForm { recipient: string; amount: string }
 
@@ -22,7 +23,37 @@ export default function TransferPage() {
   const [loading, setLoading] = useState(false);
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<TransferForm>();
 
+  const recipientValue = watch('recipient');
+  const [verifyState, setVerifyState] = useState<'idle' | 'checking' | 'found' | 'error'>('idle');
+  const [recipientName, setRecipientName] = useState('');
+  const [recipientError, setRecipientError] = useState('');
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    setVerifyState('idle');
+    setRecipientName('');
+    setRecipientError('');
+
+    if (!recipientValue || !RECIPIENT_PATTERN.test(recipientValue.trim())) return;
+
+    debounceRef.current = setTimeout(async () => {
+      setVerifyState('checking');
+      try {
+        const { data } = await walletApi.verifyRecipient(recipientValue.trim());
+        setRecipientName(`${data.data.firstName} ${data.data.lastName}`);
+        setVerifyState('found');
+      } catch (err) {
+        setRecipientError(getErrorMessage(err));
+        setVerifyState('error');
+      }
+    }, 500);
+
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [recipientValue]);
+
   const onSubmit = (data: TransferForm) => {
+    if (verifyState !== 'found') return;
     setFormData(data);
     setShowPin(true);
   };
@@ -52,12 +83,29 @@ export default function TransferPage() {
         <div className="bg-surface rounded-3xl p-5 shadow-sm flex flex-col gap-5">
           {!showPin ? (
             <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
-              <Input
-                label="Recipient (Phone or Email)"
-                placeholder="08012345678 or email@example.com"
-                error={errors.recipient?.message}
-                {...register('recipient', { required: 'Recipient is required' })}
-              />
+              <div>
+                <Input
+                  label="Recipient (Phone or Email)"
+                  placeholder="08012345678 or email@example.com"
+                  error={errors.recipient?.message}
+                  {...register('recipient', { required: 'Recipient is required' })}
+                />
+                {verifyState === 'checking' && (
+                  <p className="flex items-center gap-1.5 text-xs text-ink-muted mt-2">
+                    <Loader2 size={14} className="animate-spin" /> Looking up account...
+                  </p>
+                )}
+                {verifyState === 'found' && (
+                  <p className="flex items-center gap-1.5 text-sm font-semibold text-green-700 dark:text-green-400 mt-2">
+                    <CheckCircle2 size={16} /> {recipientName}
+                  </p>
+                )}
+                {verifyState === 'error' && (
+                  <p className="flex items-center gap-1.5 text-xs text-red-600 mt-2">
+                    <XCircle size={14} /> {recipientError}
+                  </p>
+                )}
+              </div>
               <div>
                 <label className="text-sm font-medium text-ink-muted mb-2 block">Amount (₦)</label>
                 <div className="grid grid-cols-5 gap-1.5 mb-3">
@@ -73,12 +121,15 @@ export default function TransferPage() {
                   error={errors.amount?.message}
                   {...register('amount', { required: 'Amount required', min: { value: 100, message: 'Min ₦100' } })} />
               </div>
-              <Button type="submit" fullWidth size="lg">Continue</Button>
+              <Button type="submit" fullWidth size="lg" disabled={verifyState !== 'found'}>Continue</Button>
             </form>
           ) : (
             <div className="flex flex-col items-center gap-4">
               <div className="text-center">
-                <p className="text-ink-muted text-sm">Sending to <strong>{formData?.recipient}</strong></p>
+                <p className="text-ink-muted text-sm">
+                  Sending to <strong>{recipientName || formData?.recipient}</strong>
+                  {recipientName && <span className="block text-xs text-ink-muted">{formData?.recipient}</span>}
+                </p>
                 <p className="text-2xl font-black text-ink">₦{parseFloat(formData?.amount || '0').toLocaleString()}</p>
               </div>
               <PinInput length={4} onComplete={handlePinComplete} label="Enter Transaction PIN" />

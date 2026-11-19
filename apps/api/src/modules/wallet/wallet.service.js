@@ -414,6 +414,24 @@ const verifyPayment = async (provider, reference, transactionId) => {
 
 // ── Transfer ───────────────────────────────────────────────────────────
 
+// Name-enquiry lookup so the sender can see who they're paying before
+// confirming — same identifier resolution transfer() uses, no money moves.
+const verifyRecipient = async (senderId, recipientIdentifier) => {
+  const User = require('../../models/User');
+  const isPhone = /^\+?[0-9]{10,14}$/.test(recipientIdentifier);
+  const query = isPhone
+    ? { 'phone.number': recipientIdentifier }
+    : { 'email.address': recipientIdentifier.toLowerCase() };
+
+  const recipient = await User.findOne(query).select('firstName lastName');
+  if (!recipient) throw Object.assign(new Error('No PayPoint account found with that phone/email'), { statusCode: 404 });
+  if (senderId.toString() === recipient._id.toString()) {
+    throw Object.assign(new Error('Cannot transfer to yourself'), { statusCode: 400 });
+  }
+
+  return { firstName: recipient.firstName, lastName: recipient.lastName };
+};
+
 const transfer = async (senderId, recipientIdentifier, amountNGN, pin) => {
   const User = require('../../models/User');
   const sender = await User.findById(senderId).select('+pinHash');
@@ -501,5 +519,5 @@ module.exports = {
   getWallet, debit, credit,
   initiateWalletFund, verifyPayment, getOrCreateVirtualAccount,
   handlePaystackWebhook, handleFlutterwaveWebhook, handleMonnifyWebhook,
-  transfer, getTransactions,
+  transfer, verifyRecipient, getTransactions,
 };

@@ -92,6 +92,15 @@ const transfer = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+const verifyRecipient = async (req, res, next) => {
+  try {
+    const { recipient } = req.body;
+    if (!recipient) return error(res, 'Recipient is required', 400);
+    const data = await walletService.verifyRecipient(req.user._id, recipient);
+    return success(res, data, 'Recipient found');
+  } catch (err) { next(err); }
+};
+
 const getTransactions = async (req, res, next) => {
   try {
     const { page, limit, type, status } = req.query;
@@ -107,5 +116,5 @@ const getTransactions = async (req, res, next) => {
 module.exports = {
   getWallet, initiateWalletFund, verifyPayment, getVirtualAccount,
   paystackWebhook, flutterwaveWebhook, monnifyWebhook,
-  transfer, getTransactions,
+  transfer, verifyRecipient, getTransactions,
 };

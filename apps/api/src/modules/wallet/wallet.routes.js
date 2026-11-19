@@ -7,6 +7,7 @@ router.get('/',                   authenticate, ctrl.getWallet);
 router.post('/fund',              authenticate, ctrl.initiateWalletFund);
 router.post('/fund/verify',       authenticate, ctrl.verifyPayment);
 router.get('/virtual-account',    authenticate, ctrl.getVirtualAccount);
+router.post('/transfer/verify',   authenticate, ctrl.verifyRecipient);
 router.post('/transfer',          authenticate, ctrl.transfer);
 router.get('/transactions',       authenticate, ctrl.getTransactions);
 
