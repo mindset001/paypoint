@@ -118,6 +118,13 @@ const verifyRecipient = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+const getRecentRecipients = async (req, res, next) => {
+  try {
+    const data = await walletService.getRecentRecipients(req.user._id);
+    return success(res, data, 'Recent recipients fetched');
+  } catch (err) { next(err); }
+};
+
 const getTransactions = async (req, res, next) => {
   try {
     const { page, limit, type, status } = req.query;
@@ -140,5 +147,5 @@ const getTransactionByReference = async (req, res, next) => {
 module.exports = {
   getWallet, initiateWalletFund, verifyPayment, getVirtualAccount,
   paystackWebhook, flutterwaveWebhook, monnifyWebhook, aidapayWebhook,
-  transfer, verifyRecipient, getTransactions, getTransactionByReference,
+  transfer, verifyRecipient, getRecentRecipients, getTransactions, getTransactionByReference,
 };

@@ -15,13 +15,21 @@ const QUICK_AMOUNTS = [500, 1000, 2000, 5000, 10000];
 const RECIPIENT_PATTERN = /^(\+?[0-9]{10,14}|\S+@\S+\.\S+)$/;
 
 interface TransferForm { recipient: string; amount: string }
+interface RecentRecipient { userId: string; name: string; identifier: string }
 
 export default function TransferPage() {
   const router = useRouter();
   const [showPin, setShowPin] = useState(false);
   const [formData, setFormData] = useState<TransferForm | null>(null);
   const [loading, setLoading] = useState(false);
+  const [recent, setRecent] = useState<RecentRecipient[]>([]);
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<TransferForm>();
+
+  useEffect(() => {
+    walletApi.recentRecipients()
+      .then(({ data }) => setRecent(data.data || []))
+      .catch(() => setRecent([]));
+  }, []);
 
   const recipientValue = watch('recipient');
   const [verifyState, setVerifyState] = useState<'idle' | 'checking' | 'found' | 'error'>('idle');
@@ -83,6 +91,25 @@ export default function TransferPage() {
         <div className="bg-surface rounded-3xl p-5 shadow-sm flex flex-col gap-5">
           {!showPin ? (
             <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
+              {recent.length > 0 && (
+                <div>
+                  <label className="text-sm font-medium text-ink-muted mb-2 block">Recent Transfers</label>
+                  <div className="flex gap-3 overflow-x-auto hide-scrollbar pb-1">
+                    {recent.map((r) => (
+                      <button type="button" key={r.userId}
+                        onClick={() => setValue('recipient', r.identifier, { shouldValidate: true, shouldDirty: true })}
+                        className="flex flex-col items-center gap-1.5 flex-shrink-0 w-16">
+                        <div className="w-12 h-12 rounded-full bg-green-100 dark:bg-green-500/15 text-green-700 dark:text-green-400 flex items-center justify-center font-bold text-sm">
+                          {r.name.split(' ').map((n) => n[0]).slice(0, 2).join('')}
+                        </div>
+                        <span className="text-xs text-ink-muted text-center leading-tight truncate w-full">
+                          {r.name.split(' ')[0]}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
               <div>
                 <Input
                   label="Recipient (Phone or Email)"

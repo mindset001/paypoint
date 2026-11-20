@@ -590,6 +590,34 @@ const transfer = async (senderId, recipientIdentifier, amountNGN, pin) => {
   }
 };
 
+// Distinct people this user has sent money to before, most-recent first —
+// looked up fresh from User rather than trusting the identifier typed at
+// the time, so a "send again" still works if they've since changed their
+// phone/email.
+const getRecentRecipients = async (userId, limit = 10) => {
+  const User = require('../../models/User');
+  const recent = await Transaction.aggregate([
+    { $match: { userId: new mongoose.Types.ObjectId(userId), type: 'wallet_transfer_debit', status: 'success' } },
+    { $sort: { createdAt: -1 } },
+    { $group: { _id: '$meta.counterpartyUserId', lastTransferAt: { $first: '$createdAt' } } },
+    { $sort: { lastTransferAt: -1 } },
+    { $limit: limit },
+  ]);
+
+  const ids = recent.map((r) => r._id).filter(Boolean);
+  const users = await User.find({ _id: { $in: ids } }).select('firstName lastName phone.number email.address');
+  const byId = new Map(users.map((u) => [u._id.toString(), u]));
+
+  return recent
+    .map((r) => byId.get(r._id?.toString()))
+    .filter(Boolean)
+    .map((u) => ({
+      userId: u._id,
+      name: `${u.firstName} ${u.lastName}`,
+      identifier: u.phone?.number || u.email?.address,
+    }));
+};
+
 const getTransactions = async (userId, { page = 1, limit = 20, type, status } = {}) => {
   const query = { userId };
   if (type) query.type = type;
@@ -613,5 +641,5 @@ module.exports = {
   getWallet, debit, credit,
   initiateWalletFund, verifyPayment, getOrCreateVirtualAccount,
   handlePaystackWebhook, handleFlutterwaveWebhook, handleMonnifyWebhook, handleAidaPayWebhook,
-  transfer, verifyRecipient, getTransactions, getTransactionByReference,
+  transfer, verifyRecipient, getRecentRecipients, getTransactions, getTransactionByReference,
 };

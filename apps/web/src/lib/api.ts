@@ -69,6 +69,8 @@ export const walletApi = {
     api.post('/wallet/transfer', { recipient, amount, pin }),
   verifyRecipient: (recipient: string) =>
     api.post('/wallet/transfer/verify', { recipient }),
+  recentRecipients: () =>
+    api.get('/wallet/transfer/recent'),
   transactions: (params?: { page?: number; limit?: number; type?: string; status?: string; from?: string; to?: string }) =>
     api.get('/wallet/transactions', { params }),
   transactionByReference: (reference: string) =>
