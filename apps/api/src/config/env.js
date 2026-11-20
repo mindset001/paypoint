@@ -44,10 +44,12 @@ const env = {
   DOJAH_SECRET_KEY: process.env.DOJAH_SECRET_KEY,
   DOJAH_APP_ID:     process.env.DOJAH_APP_ID,
 
-  SMTP_HOST: process.env.SMTP_HOST,
-  SMTP_PORT: parseInt(process.env.SMTP_PORT || '465', 10),
-  SMTP_USER: process.env.SMTP_USER,
-  SMTP_PASS: process.env.SMTP_PASS,
+  // Resend's HTTP API, not their SMTP relay — Render (and most PaaS hosts)
+  // block outbound SMTP ports, which silently hung every OTP-sending
+  // request. RESEND_API_KEY falls back to SMTP_PASS because Resend's SMTP
+  // relay auth password *is* the API key, so this picks up the existing
+  // value with no env var changes needed wherever SMTP_PASS was already set.
+  RESEND_API_KEY: process.env.RESEND_API_KEY || process.env.SMTP_PASS,
   EMAIL_FROM: process.env.EMAIL_FROM || 'noreply@paycen.ng',
 
   SENTRY_DSN: process.env.SENTRY_DSN,

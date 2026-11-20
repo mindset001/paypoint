@@ -1,17 +1,10 @@
-const nodemailer = require('nodemailer');
+const axios = require('axios');
 const env = require('../config/env');
 
-const transporter = nodemailer.createTransport({
-  host: env.SMTP_HOST,
-  port: env.SMTP_PORT,
-  secure: env.SMTP_PORT === 465,
-  auth: { user: env.SMTP_USER, pass: env.SMTP_PASS },
-});
-
 const sendOtpEmail = async (to, code, { heading = 'Your verification code' } = {}) => {
-  await transporter.sendMail({
+  await axios.post('https://api.resend.com/emails', {
     from: `Paycen <${env.EMAIL_FROM}>`,
-    to,
+    to: [to],
     subject: `${code} is your Paycen code`,
     text: `${heading}: ${code}\n\nThis code expires in 10 minutes. If you didn't request this, you can ignore this email.`,
     html: `
@@ -21,6 +14,9 @@ const sendOtpEmail = async (to, code, { heading = 'Your verification code' } = {
         <p style="color:#9ca3af;font-size:12px;margin:0">This code expires in 10 minutes. If you didn't request this, you can ignore this email.</p>
       </div>
     `,
+  }, {
+    headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+    timeout: 10000,
   });
 };
 
