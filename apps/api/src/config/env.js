@@ -38,6 +38,12 @@ const env = {
   TERMII_API_KEY: process.env.TERMII_API_KEY,
   TERMII_SENDER_ID: process.env.TERMII_SENDER_ID || 'WavyPay',
 
+  // Default to sandbox — switch DOJAH_BASE_URL to https://api.dojah.io
+  // with live keys only when actually going to production.
+  DOJAH_BASE_URL:   process.env.DOJAH_BASE_URL || 'https://sandbox.dojah.io',
+  DOJAH_SECRET_KEY: process.env.DOJAH_SECRET_KEY,
+  DOJAH_APP_ID:     process.env.DOJAH_APP_ID,
+
   SMTP_HOST: process.env.SMTP_HOST,
   SMTP_PORT: parseInt(process.env.SMTP_PORT || '465', 10),
   SMTP_USER: process.env.SMTP_USER,

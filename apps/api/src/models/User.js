@@ -35,6 +35,7 @@ const userSchema = new mongoose.Schema(
       bvn: { type: String, select: false },
       submittedAt: Date,
       verifiedAt: Date,
+      verifiedName: String, // name on file at Dojah, for audit against a name mismatch
     },
     twoFactorEnabled: { type: Boolean, default: false },
     lastLoginAt: Date,

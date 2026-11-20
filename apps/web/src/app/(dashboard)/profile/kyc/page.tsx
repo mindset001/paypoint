@@ -30,7 +30,7 @@ export default function KycPage() {
       const payload = tab === 'nin' ? { nin: value } : { bvn: value };
       const { data } = await profileApi.submitKyc(payload);
       setUser(data.data);
-      toast.success('KYC submitted! We\'ll review within 24 hours.');
+      toast.success(data.message || 'KYC submitted! We\'ll review within 24 hours.');
     } catch (err) {
       toast.error(getErrorMessage(err));
     } finally {

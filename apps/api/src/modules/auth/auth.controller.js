@@ -112,8 +112,8 @@ const updateProfile = async (req, res, next) => {
 
 const submitKyc = async (req, res, next) => {
   try {
-    const data = await authService.submitKyc(req.user._id, req.body);
-    return success(res, data, 'KYC submitted successfully. Under review.');
+    const { message, ...user } = await authService.submitKyc(req.user._id, req.body);
+    return success(res, user, message);
   } catch (err) { next(err); }
 };
 

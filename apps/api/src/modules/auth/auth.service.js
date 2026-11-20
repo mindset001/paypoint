@@ -6,6 +6,7 @@ const redis = require('../../config/redis');
 const crypto = require('crypto');
 const referralService = require('../referral/referral.service');
 const emailService = require('../../services/email.service');
+const Dojah = require('../../providers/dojah/dojah.client');
 
 const generateReferralCode = () => crypto.randomBytes(4).toString('hex').toUpperCase();
 
@@ -280,18 +281,49 @@ const updateProfile = async (userId, { firstName, lastName }) => {
   return sanitize(user);
 };
 
+// Strips everything but letters before comparing — Nigerian name records
+// often differ in spacing, hyphenation or case, not in substance.
+const namesRoughlyMatch = (a, b) =>
+  (a || '').toLowerCase().replace(/[^a-z]/g, '') === (b || '').toLowerCase().replace(/[^a-z]/g, '');
+
 const submitKyc = async (userId, { nin, bvn }) => {
   if (!nin && !bvn) throw Object.assign(new Error('Provide NIN or BVN'), { statusCode: 400 });
   if (nin && !/^\d{11}$/.test(nin)) throw Object.assign(new Error('NIN must be 11 digits'), { statusCode: 400 });
   if (bvn && !/^\d{11}$/.test(bvn)) throw Object.assign(new Error('BVN must be 11 digits'), { statusCode: 400 });
 
-  const update = { status: 'pending_kyc', 'kyc.submittedAt': new Date() };
+  const user = await User.findById(userId);
+  if (!user) throw Object.assign(new Error('User not found'), { statusCode: 404 });
+
+  let entity;
+  try {
+    const result = nin ? await Dojah.lookupNin(nin) : await Dojah.lookupBvn(bvn);
+    entity = result.entity;
+  } catch (err) {
+    if (err.statusCode === 404) {
+      throw Object.assign(new Error(`No record found for that ${nin ? 'NIN' : 'BVN'} — please check and try again`), { statusCode: 400 });
+    }
+    throw Object.assign(new Error(`Verification failed: ${err.message}`), { statusCode: 502 });
+  }
+
+  const verifiedName = `${entity.first_name} ${entity.last_name}`.trim();
+  const isMatch = namesRoughlyMatch(entity.first_name, user.firstName) && namesRoughlyMatch(entity.last_name, user.lastName);
+
+  const update = {
+    'kyc.submittedAt': new Date(),
+    'kyc.verifiedName': verifiedName,
+    status: isMatch ? 'active' : 'pending_kyc',
+  };
+  if (isMatch) update['kyc.verifiedAt'] = new Date();
   if (nin) update['kyc.nin'] = nin;
   if (bvn) update['kyc.bvn'] = bvn;
 
-  const user = await User.findByIdAndUpdate(userId, update, { new: true });
-  if (!user) throw Object.assign(new Error('User not found'), { statusCode: 404 });
-  return sanitize(user);
+  const updated = await User.findByIdAndUpdate(userId, update, { new: true });
+  return {
+    ...sanitize(updated),
+    message: isMatch
+      ? 'Identity verified successfully!'
+      : `The name on your account doesn't match the name on your ${nin ? 'NIN' : 'BVN'} record (${verifiedName}) — submitted for manual review.`,
+  };
 };
 
 module.exports = { register, verifyOtp, login, refreshTokens, setPin, logout, resendOtp, forgotPassword, resetPassword, changePassword, changePin, updateProfile, submitKyc };
