@@ -6,5 +6,6 @@ const { authenticate } = require('../../middlewares/auth.middleware');
 router.get('/',              authenticate, ctrl.getLocks);
 router.post('/',             authenticate, ctrl.createLock);
 router.post('/:id/withdraw', authenticate, ctrl.withdrawLock);
+router.post('/:id/topup',    authenticate, ctrl.topUpLock);
 
 module.exports = router;

@@ -44,6 +44,11 @@ export default function SavingsPage() {
   const [formData, setFormData] = useState<LockForm | null>(null);
   const { register, handleSubmit, formState: { errors }, reset } = useForm<LockForm>();
 
+  const [topUpTarget, setTopUpTarget] = useState<SavingsLock | null>(null);
+  const [topUpShowPin, setTopUpShowPin] = useState(false);
+  const [topUpAmount, setTopUpAmount] = useState('');
+  const [toppingUp, setToppingUp] = useState(false);
+
   const load = () => {
     setLoading(true);
     savingsApi.list()
@@ -80,6 +85,34 @@ export default function SavingsPage() {
     }
   };
 
+  const cancelTopUp = () => {
+    setTopUpTarget(null);
+    setTopUpShowPin(false);
+    setTopUpAmount('');
+  };
+
+  const submitTopUpAmount = () => {
+    const amt = parseFloat(topUpAmount);
+    if (!amt || amt < 1000) { toast.error('Minimum top-up is ₦1,000'); return; }
+    setTopUpShowPin(true);
+  };
+
+  const handleTopUpPinComplete = async (pin: string) => {
+    if (!topUpTarget) return;
+    setToppingUp(true);
+    try {
+      await savingsApi.topUp(topUpTarget.id, parseFloat(topUpAmount), pin);
+      toast.success(`₦${topUpAmount} added to "${topUpTarget.name}"!`);
+      cancelTopUp();
+      load();
+    } catch (err) {
+      toast.error(getErrorMessage(err));
+      setTopUpShowPin(false);
+    } finally {
+      setToppingUp(false);
+    }
+  };
+
   const handleWithdraw = async (lock: SavingsLock) => {
     setWithdrawingId(lock.id);
     try {
@@ -107,7 +140,41 @@ export default function SavingsPage() {
 
       <div className="px-5 -mt-4 pb-8">
         <div className="bg-surface rounded-3xl p-5 shadow-sm flex flex-col gap-5">
-          {!showNew ? (
+          {topUpTarget ? (
+            !topUpShowPin ? (
+              <div className="flex flex-col gap-4">
+                <div>
+                  <p className="font-bold text-ink">Top Up &quot;{topUpTarget.name}&quot;</p>
+                  <p className="text-xs text-ink-muted mt-1">Current balance: {formatNGN(topUpTarget.amount)}</p>
+                </div>
+                <Input
+                  label="Amount to add (₦)"
+                  placeholder="Enter amount"
+                  type="number"
+                  min={1000}
+                  value={topUpAmount}
+                  onChange={(e) => setTopUpAmount(e.target.value)}
+                />
+                <p className="text-xs text-ink-muted bg-surface-2 rounded-xl p-3">
+                  This adds to the existing lock — the unlock date stays {formatDate(topUpTarget.maturityDate)}.
+                </p>
+                <div className="flex gap-2">
+                  <Button type="button" variant="secondary" fullWidth onClick={cancelTopUp}>Cancel</Button>
+                  <Button type="button" fullWidth onClick={submitTopUpAmount}>Continue</Button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center gap-4 py-2">
+                <div className="text-center mb-2">
+                  <p className="text-ink-muted text-sm">Adding <strong>₦{topUpAmount}</strong> to</p>
+                  <p className="font-bold text-ink">&quot;{topUpTarget.name}&quot;</p>
+                </div>
+                <PinInput length={4} onComplete={handleTopUpPinComplete} label="Enter Transaction PIN" />
+                {toppingUp && <div className="w-6 h-6 border-2 border-pink-500 border-t-transparent rounded-full animate-spin" />}
+                <button onClick={() => setTopUpShowPin(false)} className="text-sm text-ink-muted underline">Go back</button>
+              </div>
+            )
+          ) : !showNew ? (
             <>
               <Button fullWidth size="lg" onClick={() => setShowNew(true)}>
                 <span className="flex items-center gap-2"><Plus size={18} /> New Savings Lock</span>
@@ -146,14 +213,22 @@ export default function SavingsPage() {
                             ? `Matured on ${formatDate(lock.maturityDate)}`
                             : `Unlocks ${formatDate(lock.maturityDate)}`}
                       </p>
-                      {lock.status === 'active' && lock.isMatured && (
-                        <Button
-                          size="sm"
-                          loading={withdrawingId === lock.id}
-                          onClick={() => handleWithdraw(lock)}
-                        >
-                          Withdraw to Wallet
-                        </Button>
+                      {lock.status === 'active' && (
+                        <div className="flex gap-2">
+                          <Button size="sm" variant="secondary" fullWidth onClick={() => setTopUpTarget(lock)}>
+                            Top Up
+                          </Button>
+                          {lock.isMatured && (
+                            <Button
+                              size="sm"
+                              fullWidth
+                              loading={withdrawingId === lock.id}
+                              onClick={() => handleWithdraw(lock)}
+                            >
+                              Withdraw to Wallet
+                            </Button>
+                          )}
+                        </div>
                       )}
                     </div>
                   ))}

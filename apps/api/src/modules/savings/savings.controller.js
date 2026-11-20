@@ -28,4 +28,13 @@ const withdrawLock = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-module.exports = { createLock, getLocks, withdrawLock };
+const topUpLock = async (req, res, next) => {
+  try {
+    const { amount, pin } = req.body;
+    if (!amount || !pin) return error(res, 'amount and pin are required', 400);
+    const data = await savingsService.topUpLock(req.user._id, req.params.id, parseFloat(amount), pin);
+    return success(res, data, 'Savings topped up');
+  } catch (err) { next(err); }
+};
+
+module.exports = { createLock, getLocks, withdrawLock, topUpLock };

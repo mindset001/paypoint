@@ -196,6 +196,8 @@ export const savingsApi = {
   create: (name: string, amount: number, durationDays: number, pin: string) =>
     api.post('/savings', { name, amount, durationDays, pin }),
   withdraw: (id: string) => api.post(`/savings/${id}/withdraw`),
+  topUp: (id: string, amount: number, pin: string) =>
+    api.post(`/savings/${id}/topup`, { amount, pin }),
 };
 
 // ── Bank Withdrawal ──────────────────────────────────────────────────

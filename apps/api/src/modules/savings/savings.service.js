@@ -83,6 +83,61 @@ const createLock = async (userId, { name, amountNGN, durationDays, pin }) => {
   return sanitizeLock(lock);
 };
 
+// Topping up is a wallet debit added onto an existing lock's principal —
+// the maturityDate never moves, so repeated top-ups can't be used to keep
+// pushing back when the money becomes withdrawable.
+const topUpLock = async (userId, lockId, amountNGN, pin) => {
+  const User = require('../../models/User');
+  const user = await User.findById(userId).select('+pinHash');
+  if (!user) throw Object.assign(new Error('User not found'), { statusCode: 404 });
+  if (!(await user.comparePin(pin))) throw Object.assign(new Error('Invalid transaction PIN'), { statusCode: 403 });
+
+  const lock = await SavingsLock.findOne({ _id: lockId, userId });
+  if (!lock) throw Object.assign(new Error('Savings lock not found'), { statusCode: 404 });
+  if (lock.status !== 'active') throw Object.assign(new Error('This savings lock has already been withdrawn'), { statusCode: 400 });
+
+  const amountKobo = Math.round(amountNGN * 100);
+  if (!Number.isFinite(amountKobo) || amountKobo < MIN_AMOUNT_KOBO) {
+    throw Object.assign(new Error(`Minimum top-up is ₦${(MIN_AMOUNT_KOBO / 100).toLocaleString()}`), { statusCode: 400 });
+  }
+
+  const session = await mongoose.startSession();
+  session.startTransaction();
+  let tx;
+  try {
+    const { wallet, balanceBefore, balanceAfter } = await walletService.debit(userId, amountKobo, session);
+
+    const reference = otp.generateRef();
+    [tx] = await Transaction.create([{
+      reference, userId, walletId: wallet._id,
+      type: 'savings', direction: 'debit', amount: amountKobo, status: 'success',
+      balanceBefore, balanceAfter,
+      meta: { narration: `Topped up "${lock.name}"` },
+      processedAt: new Date(),
+    }], { session });
+
+    await ledger.record({ transactionId: tx._id, userId, walletId: wallet._id, entry: 'debit', amount: amountKobo, balanceBefore, balanceAfter, description: `Savings top-up: ${lock.name}` }, session);
+
+    lock.amount += amountKobo;
+    await lock.save({ session });
+
+    await session.commitTransaction();
+  } catch (err) {
+    await session.abortTransaction();
+    throw err;
+  } finally {
+    session.endSession();
+  }
+
+  notify.createNotification(userId, {
+    title: 'Savings Topped Up 💰',
+    body: `₦${(amountKobo / 100).toLocaleString()} added to "${lock.name}" — now ₦${(lock.amount / 100).toLocaleString()} total.`,
+    type: 'wallet', meta: { reference: tx.reference },
+  });
+
+  return sanitizeLock(lock);
+};
+
 const getLocks = async (userId) => {
   const locks = await SavingsLock.find({ userId }).sort({ createdAt: -1 });
   return locks.map(sanitizeLock);
@@ -136,4 +191,4 @@ const withdrawLock = async (userId, lockId) => {
   return sanitizeLock(lock);
 };
 
-module.exports = { createLock, getLocks, withdrawLock };
+module.exports = { createLock, getLocks, withdrawLock, topUpLock };
