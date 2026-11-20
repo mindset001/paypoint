@@ -2,15 +2,17 @@
 import { useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { Zap, LayoutDashboard, Users, ArrowLeftRight, Settings, ChevronRight, LogOut, Home, ShieldAlert } from 'lucide-react';
+import { Zap, LayoutDashboard, Users, ArrowLeftRight, Settings, ChevronRight, LogOut, Home, ShieldAlert, ShieldCheck, History } from 'lucide-react';
 import { useAuthStore } from '@/store/auth.store';
 
 const NAV = [
-  { href: '/admin',               icon: LayoutDashboard, label: 'Overview' },
-  { href: '/admin/users',         icon: Users,           label: 'Users' },
-  { href: '/admin/transactions',  icon: ArrowLeftRight,  label: 'Transactions' },
-  { href: '/admin/reconciliation', icon: ShieldAlert,    label: 'Reconciliation' },
-  { href: '/admin/settings',      icon: Settings,        label: 'Settings' },
+  { href: '/admin',                icon: LayoutDashboard, label: 'Overview' },
+  { href: '/admin/users',          icon: Users,           label: 'Users' },
+  { href: '/admin/transactions',   icon: ArrowLeftRight,  label: 'Transactions' },
+  { href: '/admin/reconciliation', icon: ShieldAlert,     label: 'Reconciliation' },
+  { href: '/admin/kyc',            icon: ShieldCheck,     label: 'KYC Review' },
+  { href: '/admin/audit-log',      icon: History,         label: 'Audit Log' },
+  { href: '/admin/settings',       icon: Settings,        label: 'Settings' },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

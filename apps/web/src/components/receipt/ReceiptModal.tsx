@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { X, Printer, Share2, Download, ArrowDownLeft, ArrowUpRight, Copy } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { cn } from '@/lib/cn';
-import { formatNGN, formatDate, txTypeLabel } from '@/lib/utils';
+import { formatNGN, formatDate, txTypeLabel, downloadBlob } from '@/lib/utils';
 import type { Transaction } from '@/types';
 
 const statusStyle: Record<string, string> = {
@@ -46,14 +46,6 @@ export function ReceiptModal({ tx, onClose }: { tx: Transaction; onClose: () => 
       const blob = await captureCard();
       if (blob) downloadBlob(blob, `Paycen-Receipt-${tx.reference}.png`);
     } finally { setExporting(null); }
-  };
-
-  const downloadBlob = (blob: Blob, filename: string) => {
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = filename;
-    document.body.appendChild(a); a.click(); a.remove();
-    URL.revokeObjectURL(url);
   };
 
   return (

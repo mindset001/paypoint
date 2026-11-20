@@ -186,6 +186,22 @@ export const adminApi = {
     api.post(`/admin/withdrawals/${id}/reconcile`),
   ledger: (params?: { page?: number; limit?: number; userId?: string; search?: string }) =>
     api.get('/admin/ledger', { params }),
+  pendingKyc: () =>
+    api.get('/admin/kyc/pending'),
+  approveKyc: (id: string) =>
+    api.post(`/admin/kyc/${id}/approve`),
+  rejectKyc: (id: string, reason: string) =>
+    api.post(`/admin/kyc/${id}/reject`, { reason }),
+  savingsLocks: (params?: { page?: number; limit?: number; status?: string }) =>
+    api.get('/admin/savings', { params }),
+  auditLog: (params?: { page?: number; limit?: number; adminId?: string; targetUserId?: string; action?: string }) =>
+    api.get('/admin/audit-log', { params }),
+  chartData: () =>
+    api.get('/admin/stats/charts'),
+  exportTransactionsCsv: (params?: { type?: string; status?: string; userId?: string; from?: string; to?: string }) =>
+    api.get('/admin/transactions/export', { params, responseType: 'blob' }),
+  exportUsersCsv: (params?: { search?: string; role?: string; status?: string }) =>
+    api.get('/admin/users/export', { params, responseType: 'blob' }),
 };
 
 // ── Exam ─────────────────────────────────────────────────────────────

@@ -1,17 +1,18 @@
 'use client';
 import { useEffect, useState, useCallback } from 'react';
 import toast from 'react-hot-toast';
-import { AlertTriangle, RefreshCw, Wallet, Landmark, BookOpen, ChevronLeft, ChevronRight } from 'lucide-react';
+import { AlertTriangle, RefreshCw, Wallet, Landmark, BookOpen, PiggyBank, ChevronLeft, ChevronRight } from 'lucide-react';
 import { adminApi } from '@/lib/api';
 import { formatNGN } from '@/lib/utils';
-import type { AdminTransactionRow, AdminLedgerEntry } from '@/types';
+import type { AdminTransactionRow, AdminLedgerEntry, AdminSavingsLockRow } from '@/types';
 
-type Tab = 'deposits' | 'withdrawals' | 'ledger';
+type Tab = 'deposits' | 'withdrawals' | 'ledger' | 'savings';
 
 const TABS: { id: Tab; label: string; icon: typeof Wallet }[] = [
   { id: 'deposits',    label: 'Stuck Deposits',      icon: Wallet },
   { id: 'withdrawals', label: 'Pending Withdrawals',  icon: Landmark },
   { id: 'ledger',      label: 'Ledger',               icon: BookOpen },
+  { id: 'savings',     label: 'Savings Locks',        icon: PiggyBank },
 ];
 
 const ageLabel = (createdAt: string) => {
@@ -31,7 +32,7 @@ export default function ReconciliationPage() {
       <div className="mb-6">
         <h1 className="text-white text-2xl font-black">Reconciliation</h1>
         <p className="text-slate-400 text-sm mt-0.5">
-          Manually resolve money that the usual webhook/verify path never completed
+          Resolve money that the usual webhook/verify path never completed, and see where money sits outside the main wallet
         </p>
       </div>
 
@@ -50,6 +51,7 @@ export default function ReconciliationPage() {
       {tab === 'deposits' && <StuckDeposits />}
       {tab === 'withdrawals' && <PendingWithdrawals />}
       {tab === 'ledger' && <LedgerTab />}
+      {tab === 'savings' && <SavingsTab />}
     </div>
   );
 }
@@ -287,6 +289,106 @@ function LedgerTab() {
       {pages > 1 && (
         <div className="flex items-center justify-between mt-4">
           <p className="text-slate-500 text-sm">Page {page} of {pages} · {total.toLocaleString()} entries</p>
+          <div className="flex gap-2">
+            <button onClick={() => setPage((p) => p - 1)} disabled={page === 1}
+              className="flex items-center gap-1 text-sm px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+              <ChevronLeft size={15} /> Prev
+            </button>
+            <button onClick={() => setPage((p) => p + 1)} disabled={page === pages}
+              className="flex items-center gap-1 text-sm px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+              Next <ChevronRight size={15} />
+            </button>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+function SavingsTab() {
+  const [rows, setRows] = useState<AdminSavingsLockRow[]>([]);
+  const [total, setTotal] = useState(0);
+  const [totalLocked, setTotalLocked] = useState(0);
+  const [pages, setPages] = useState(1);
+  const [page, setPage] = useState(1);
+  const [status, setStatus] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState('');
+
+  const load = useCallback(() => {
+    setLoading(true);
+    setErr('');
+    adminApi.savingsLocks({ page, limit: 30, status })
+      .then((r) => {
+        setRows(r.data.data.locks);
+        setTotal(r.data.data.total);
+        setPages(r.data.data.pages);
+        setTotalLocked(r.data.data.totalLockedActive);
+      })
+      .catch((e) => setErr(e.response?.data?.message ?? 'Failed to load savings locks'))
+      .finally(() => setLoading(false));
+  }, [page, status]);
+
+  useEffect(() => { load(); }, [load]);
+  useEffect(() => { setPage(1); }, [status]);
+
+  return (
+    <>
+      <div className="bg-slate-800/60 border border-slate-700/50 rounded-2xl p-4 mb-5 flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <p className="text-slate-500 text-xs font-semibold uppercase tracking-widest">Total locked (active)</p>
+          <p className="text-white text-xl font-black mt-0.5">{formatNGN(totalLocked)}</p>
+        </div>
+        <select value={status} onChange={(e) => setStatus(e.target.value)}
+          className="bg-slate-700 border border-slate-600 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-blue/60">
+          <option value="">All statuses</option>
+          <option value="active">Active</option>
+          <option value="withdrawn">Withdrawn</option>
+        </select>
+      </div>
+
+      <Panel
+        loading={loading}
+        err={err}
+        onRefresh={load}
+        empty={rows.length === 0}
+        emptyIcon={PiggyBank}
+        emptyText="No savings locks found"
+        count={total}
+        countLabel="lock"
+      >
+        <div className="hidden lg:grid grid-cols-[1fr_1fr_110px_90px_120px_120px] gap-4 px-5 py-3 border-b border-slate-700/50">
+          {['User', 'Goal', 'Amount', 'Status', 'Started', 'Matures'].map((h) => (
+            <p key={h} className="text-slate-500 text-xs font-semibold uppercase tracking-wide">{h}</p>
+          ))}
+        </div>
+        {rows.map((lock) => (
+          <div key={lock._id}
+            className="grid grid-cols-1 lg:grid-cols-[1fr_1fr_110px_90px_120px_120px] gap-1 lg:gap-4 items-center px-5 py-3.5 border-b border-slate-700/30">
+            <div className="min-w-0">
+              {lock.userId ? (
+                <>
+                  <p className="text-slate-200 text-sm font-medium truncate">{lock.userId.firstName} {lock.userId.lastName}</p>
+                  <p className="text-slate-500 text-xs">{lock.userId.phone?.number}</p>
+                </>
+              ) : <p className="text-slate-500 text-sm">—</p>}
+            </div>
+            <p className="text-slate-300 text-sm truncate">{lock.name}</p>
+            <p className="text-white text-sm font-semibold">{formatNGN(lock.amount)}</p>
+            <span className={`text-xs px-2 py-0.5 rounded-full border font-medium inline-flex w-fit ${
+              lock.status === 'active' ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20' : 'bg-slate-500/10 text-slate-400 border-slate-500/20'
+            }`}>
+              {lock.status}
+            </span>
+            <p className="text-slate-500 text-xs">{new Date(lock.startDate).toLocaleDateString('en-NG', { day: 'numeric', month: 'short' })}</p>
+            <p className="text-slate-500 text-xs">{new Date(lock.maturityDate).toLocaleDateString('en-NG', { day: 'numeric', month: 'short' })}</p>
+          </div>
+        ))}
+      </Panel>
+
+      {pages > 1 && (
+        <div className="flex items-center justify-between mt-4">
+          <p className="text-slate-500 text-sm">Page {page} of {pages} · {total.toLocaleString()} locks</p>
           <div className="flex gap-2">
             <button onClick={() => setPage((p) => p - 1)} disabled={page === 1}
               className="flex items-center gap-1 text-sm px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">

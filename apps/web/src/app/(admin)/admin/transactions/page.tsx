@@ -1,9 +1,10 @@
 'use client';
 import { useEffect, useState, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { ArrowLeftRight, AlertTriangle, RefreshCw, ChevronLeft, ChevronRight, Filter } from 'lucide-react';
+import { ArrowLeftRight, AlertTriangle, RefreshCw, ChevronLeft, ChevronRight, Filter, Download } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { adminApi } from '@/lib/api';
-import { formatNGN } from '@/lib/utils';
+import { formatNGN, downloadBlob } from '@/lib/utils';
 import type { AdminTransactionRow } from '@/types';
 
 const STATUS_BADGE: Record<string, string> = {
@@ -43,6 +44,19 @@ function TransactionsInner() {
   const [to, setTo]         = useState('');
   const [loading, setLoading] = useState(true);
   const [err, setErr]       = useState('');
+  const [exporting, setExporting] = useState(false);
+
+  const exportCsv = async () => {
+    setExporting(true);
+    try {
+      const res = await adminApi.exportTransactionsCsv({ type, status, userId, from, to });
+      downloadBlob(res.data, `transactions-${Date.now()}.csv`);
+    } catch {
+      toast.error('Export failed');
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const load = useCallback(() => {
     setLoading(true);
@@ -68,10 +82,16 @@ function TransactionsInner() {
           <h1 className="text-white text-2xl font-black">Transactions</h1>
           <p className="text-slate-400 text-sm mt-0.5">{total.toLocaleString()} total</p>
         </div>
-        <button onClick={load} className="flex items-center gap-2 text-slate-400 hover:text-white text-sm transition-colors">
-          <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />
-          Refresh
-        </button>
+        <div className="flex items-center gap-4">
+          <button onClick={exportCsv} disabled={exporting} className="flex items-center gap-2 text-slate-400 hover:text-white text-sm transition-colors disabled:opacity-50">
+            <Download size={15} />
+            {exporting ? 'Exporting…' : 'Export CSV'}
+          </button>
+          <button onClick={load} className="flex items-center gap-2 text-slate-400 hover:text-white text-sm transition-colors">
+            <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />
+            Refresh
+          </button>
+        </div>
       </div>
 
       {/* Filters */}

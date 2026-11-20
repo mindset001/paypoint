@@ -5,11 +5,14 @@ const ctrl = require('./admin.controller');
 const isAdmin = [authenticate, authorize('admin', 'developer')];
 
 router.get('/stats',                       ...isAdmin, ctrl.getStats);
+router.get('/stats/charts',                ...isAdmin, ctrl.getChartData);
+router.get('/users/export',                ...isAdmin, ctrl.exportUsersCsv); // before /users/:id — "export" would otherwise match as an id
 router.get('/users',                       ...isAdmin, ctrl.getUsers);
 router.get('/users/:id',                   ...isAdmin, ctrl.getUserById);
 router.patch('/users/:id/status',          ...isAdmin, ctrl.updateUserStatus);
 router.patch('/users/:id/role',            ...isAdmin, ctrl.updateUserRole);
 router.get('/users/:id/transactions',      ...isAdmin, ctrl.getUserTransactions);
+router.get('/transactions/export',         ...isAdmin, ctrl.exportTransactionsCsv);
 router.get('/transactions',                ...isAdmin, ctrl.getTransactions);
 router.get('/settings/referral-bonus',     ...isAdmin, ctrl.getReferralBonusSettings);
 router.patch('/settings/referral-bonus',   ...isAdmin, ctrl.updateReferralBonusSettings);
@@ -19,5 +22,12 @@ router.post('/deposits/:id/reconcile',     ...isAdmin, ctrl.reconcileDeposit);
 router.get('/withdrawals/pending',         ...isAdmin, ctrl.getPendingWithdrawals);
 router.post('/withdrawals/:id/reconcile',  ...isAdmin, ctrl.reconcileWithdrawal);
 router.get('/ledger',                      ...isAdmin, ctrl.getLedger);
+
+router.get('/kyc/pending',                 ...isAdmin, ctrl.getPendingKyc);
+router.post('/kyc/:id/approve',            ...isAdmin, ctrl.approveKyc);
+router.post('/kyc/:id/reject',             ...isAdmin, ctrl.rejectKyc);
+
+router.get('/savings',                     ...isAdmin, ctrl.getSavingsLocks);
+router.get('/audit-log',                   ...isAdmin, ctrl.getAuditLog);
 
 module.exports = router;

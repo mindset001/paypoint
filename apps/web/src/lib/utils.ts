@@ -1,6 +1,20 @@
 export const formatNGN = (kobo: number) =>
   new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', minimumFractionDigits: 2 }).format(kobo / 100);
 
+// Triggers a browser download for a Blob — used for CSV exports fetched via
+// axios with responseType: 'blob', since a plain <a href> navigation
+// wouldn't carry the Authorization header the export endpoint needs.
+export const downloadBlob = (blob: Blob, filename: string) => {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+};
+
 export const formatDate = (dateStr: string) =>
   new Intl.DateTimeFormat('en-NG', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(dateStr));
 

@@ -103,6 +103,49 @@ export interface AdminLedgerEntry {
   createdAt: string;
 }
 
+export interface AdminKycRow {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email?: string;
+  phone?: string;
+  submittedAt: string;
+  verifiedName?: string;
+  idType: 'NIN' | 'BVN' | null;
+  idLast4: string;
+  priorRejectionReason?: string;
+}
+
+export interface AdminSavingsLockRow {
+  _id: string;
+  name: string;
+  amount: number;
+  status: 'active' | 'withdrawn';
+  startDate: string;
+  maturityDate: string;
+  withdrawnAt?: string;
+  userId?: { _id: string; firstName: string; lastName: string; email: { address: string }; phone: { number: string } };
+}
+
+export interface AdminAuditLogEntry {
+  _id: string;
+  adminId?: { _id: string; firstName: string; lastName: string; email: { address: string } };
+  action: string;
+  targetUserId?: { _id: string; firstName: string; lastName: string; email: { address: string } };
+  targetTransactionId?: { _id: string; reference: string; type: string };
+  before?: Record<string, unknown>;
+  after?: Record<string, unknown>;
+  reason?: string;
+  ip?: string;
+  createdAt: string;
+}
+
+export interface AdminChartData {
+  dailyVolume: { date: string; success: number; failed: number; pending: number; volume: number }[];
+  providerBreakdown: { provider: string; count: number; volume: number }[];
+  dailyActiveUsers: { date: string; count: number }[];
+}
+
 export interface PaginatedResponse<T> {
   items: T[];
   total: number;

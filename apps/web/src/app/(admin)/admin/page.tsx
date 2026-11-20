@@ -1,10 +1,43 @@
 'use client';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import {
+  ResponsiveContainer, AreaChart, Area, BarChart, Bar, LineChart, Line,
+  XAxis, YAxis, CartesianGrid, Tooltip, Legend, Cell,
+} from 'recharts';
 import { Users, ArrowLeftRight, TrendingUp, AlertTriangle, Clock, CheckCircle, XCircle, ChevronRight, Coins } from 'lucide-react';
 import { adminApi } from '@/lib/api';
 import { formatNGN } from '@/lib/utils';
-import type { AdminStats } from '@/types';
+import type { AdminStats, AdminChartData } from '@/types';
+
+// Status triad reused from the badges already used across admin pages, for
+// visual consistency — the green/yellow pair sits in the CVD 6-8 "warn but
+// legal" band, mitigated by always shipping a text-labeled legend below
+// (never color alone).
+const STATUS_HUES = { success: '#4ade80', pending: '#facc15', failed: '#f87171' };
+// First 3 slots of the dataviz skill's validated dark categorical palette —
+// passes all-pairs CVD/contrast checks against this panel's card surface.
+const PROVIDER_HUES = ['#3987e5', '#d95926', '#199e70'];
+const SEQUENTIAL_BLUE = '#3987e5';
+
+const chartTick = { fill: '#64748b', fontSize: 11 };
+const shortDate = (d: string) => new Date(d + 'T00:00:00').toLocaleDateString('en-NG', { day: 'numeric', month: 'short' });
+
+function ChartCard({ title, sub, children }: { title: string; sub?: string; children: React.ReactNode }) {
+  return (
+    <div className="bg-slate-800/60 border border-slate-700/50 rounded-2xl p-5">
+      <p className="text-white text-sm font-bold">{title}</p>
+      {sub && <p className="text-slate-500 text-xs mt-0.5 mb-2">{sub}</p>}
+      <div className="h-64 mt-2">{children}</div>
+    </div>
+  );
+}
+
+const tooltipStyle = {
+  contentStyle: { background: '#1e293b', border: '1px solid #334155', borderRadius: 12, fontSize: 12 },
+  labelStyle: { color: '#cbd5e1', fontWeight: 600, marginBottom: 4 },
+  itemStyle: { color: '#e2e8f0' },
+};
 
 const STATUS_COLORS: Record<string, string> = {
   active:      'bg-green-500/10 text-green-400 border-green-500/20',
@@ -36,6 +69,7 @@ function StatCard({ label, value, sub, icon: Icon, color }: { label: string; val
 
 export default function AdminOverviewPage() {
   const [stats, setStats] = useState<AdminStats | null>(null);
+  const [charts, setCharts] = useState<AdminChartData | null>(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
 
@@ -44,6 +78,9 @@ export default function AdminOverviewPage() {
       .then((r) => setStats(r.data.data))
       .catch((e) => setErr(e.response?.data?.message ?? 'Failed to load stats'))
       .finally(() => setLoading(false));
+    adminApi.chartData()
+      .then((r) => setCharts(r.data.data))
+      .catch(() => setCharts(null));
   }, []);
 
   if (loading) return (
@@ -140,6 +177,81 @@ export default function AdminOverviewPage() {
           <StatCard label="This month" value={formatNGN(transactions.month.margin)} icon={Coins} color="bg-amber-500/20 text-amber-400" />
         </div>
       </section>
+
+      {/* Charts */}
+      {charts && (
+        <section className="mb-8">
+          <p className="text-slate-400 text-xs font-semibold uppercase tracking-widest mb-3">Last 30 days</p>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+            <ChartCard title="Successful transaction volume" sub="₦ per day, successful transactions only">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={charts.dailyVolume} margin={{ left: 0, right: 8, top: 8, bottom: 0 }}>
+                  <CartesianGrid vertical={false} stroke="#334155" strokeDasharray="3 3" />
+                  <XAxis dataKey="date" tickFormatter={shortDate} tick={chartTick} axisLine={{ stroke: '#334155' }} tickLine={false}
+                    interval={Math.max(0, Math.ceil(charts.dailyVolume.length / 7) - 1)} />
+                  <YAxis tick={chartTick} axisLine={false} tickLine={false} width={48}
+                    tickFormatter={(v) => v >= 1000000 ? `₦${(v / 1000000).toFixed(1)}m` : v >= 1000 ? `₦${(v / 1000).toFixed(0)}k` : `₦${v}`} />
+                  <Tooltip {...tooltipStyle} formatter={(v) => formatNGN(Number(v))} labelFormatter={(l) => shortDate(String(l))} />
+                  <Area type="monotone" dataKey="volume" stroke={SEQUENTIAL_BLUE} fill={SEQUENTIAL_BLUE} fillOpacity={0.15} strokeWidth={2} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </ChartCard>
+
+            <ChartCard title="Daily active users" sub="Distinct users who transacted that day">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={charts.dailyActiveUsers} margin={{ left: 0, right: 8, top: 8, bottom: 0 }}>
+                  <CartesianGrid vertical={false} stroke="#334155" strokeDasharray="3 3" />
+                  <XAxis dataKey="date" tickFormatter={shortDate} tick={chartTick} axisLine={{ stroke: '#334155' }} tickLine={false}
+                    interval={Math.max(0, Math.ceil(charts.dailyActiveUsers.length / 7) - 1)} />
+                  <YAxis tick={chartTick} axisLine={false} tickLine={false} width={32} allowDecimals={false} />
+                  <Tooltip {...tooltipStyle} labelFormatter={(l) => shortDate(String(l))} />
+                  <Line type="monotone" dataKey="count" name="Active users" stroke={SEQUENTIAL_BLUE} strokeWidth={2} dot={false} />
+                </LineChart>
+              </ResponsiveContainer>
+            </ChartCard>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <ChartCard title="Transaction outcomes" sub="Count per day, by status">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={charts.dailyVolume} margin={{ left: 0, right: 8, top: 8, bottom: 0 }} barGap={2}>
+                  <CartesianGrid vertical={false} stroke="#334155" strokeDasharray="3 3" />
+                  <XAxis dataKey="date" tickFormatter={shortDate} tick={chartTick} axisLine={{ stroke: '#334155' }} tickLine={false}
+                    interval={Math.max(0, Math.ceil(charts.dailyVolume.length / 7) - 1)} />
+                  <YAxis tick={chartTick} axisLine={false} tickLine={false} width={32} allowDecimals={false} />
+                  <Tooltip {...tooltipStyle} labelFormatter={(l) => shortDate(String(l))} />
+                  <Legend wrapperStyle={{ fontSize: 12, color: '#94a3b8' }} />
+                  <Bar dataKey="success" name="Success" stackId="s" fill={STATUS_HUES.success} stroke="#1e293b" strokeWidth={2} />
+                  <Bar dataKey="pending" name="Pending" stackId="s" fill={STATUS_HUES.pending} stroke="#1e293b" strokeWidth={2} />
+                  <Bar dataKey="failed"  name="Failed"  stackId="s" fill={STATUS_HUES.failed}  stroke="#1e293b" strokeWidth={2} radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </ChartCard>
+
+            <ChartCard title="Funding by provider" sub="Successful deposits, last 30 days">
+              {charts.providerBreakdown.length === 0 ? (
+                <div className="h-full flex items-center justify-center text-slate-600 text-sm">No deposits yet</div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={charts.providerBreakdown} layout="vertical" margin={{ left: 8, right: 16, top: 8, bottom: 0 }}>
+                    <CartesianGrid horizontal={false} stroke="#334155" strokeDasharray="3 3" />
+                    <XAxis type="number" tick={chartTick} axisLine={false} tickLine={false}
+                      tickFormatter={(v) => v >= 1000000 ? `₦${(v / 1000000).toFixed(1)}m` : `₦${(v / 1000).toFixed(0)}k`} />
+                    <YAxis type="category" dataKey="provider" tick={chartTick} axisLine={false} tickLine={false} width={80}
+                      tickFormatter={(v) => v.charAt(0).toUpperCase() + v.slice(1)} />
+                    <Tooltip {...tooltipStyle} formatter={(v) => formatNGN(Number(v))} />
+                    <Bar dataKey="volume" radius={[0, 4, 4, 0]}>
+                      {charts.providerBreakdown.map((_, i) => (
+                        <Cell key={i} fill={PROVIDER_HUES[i % PROVIDER_HUES.length]} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+            </ChartCard>
+          </div>
+        </section>
+      )}
 
       {/* Recent sign-ups */}
       <section>

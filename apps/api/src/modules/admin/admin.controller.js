@@ -38,9 +38,9 @@ const getUserById = async (req, res) => {
 
 const updateUserStatus = async (req, res) => {
   try {
-    const { status } = req.body;
+    const { status, reason } = req.body;
     if (!status) return error(res, 'status is required', 400);
-    const user = await adminService.updateUserStatus(req.params.id, status);
+    const user = await adminService.updateUserStatus(req.params.id, status, { adminId: req.user._id, reason, ip: req.ip });
     if (!user) return error(res, 'User not found', 404);
     return success(res, user, `User ${status === 'suspended' ? 'suspended' : 'status updated'}`);
   } catch (err) {
@@ -52,7 +52,7 @@ const updateUserRole = async (req, res) => {
   try {
     const { role } = req.body;
     if (!role) return error(res, 'role is required', 400);
-    const user = await adminService.updateUserRole(req.params.id, role);
+    const user = await adminService.updateUserRole(req.params.id, role, { adminId: req.user._id, ip: req.ip });
     if (!user) return error(res, 'User not found', 404);
     return success(res, user, 'User role updated');
   } catch (err) {
@@ -121,7 +121,7 @@ const getStuckDeposits = async (req, res) => {
 
 const reconcileDeposit = async (req, res) => {
   try {
-    const data = await adminService.reconcileDeposit(req.params.id);
+    const data = await adminService.reconcileDeposit(req.params.id, { adminId: req.user._id, ip: req.ip });
     return success(res, data, 'Deposit reconciled');
   } catch (err) {
     return error(res, err.message, err.statusCode || 400);
@@ -139,7 +139,7 @@ const getPendingWithdrawals = async (req, res) => {
 
 const reconcileWithdrawal = async (req, res) => {
   try {
-    const data = await adminService.reconcileWithdrawal(req.params.id);
+    const data = await adminService.reconcileWithdrawal(req.params.id, { adminId: req.user._id, ip: req.ip });
     return success(res, data, 'Withdrawal reconciled');
   } catch (err) {
     return error(res, err.message, err.statusCode || 400);
@@ -161,6 +161,97 @@ const getLedger = async (req, res) => {
   }
 };
 
+const getPendingKyc = async (req, res) => {
+  try {
+    const data = await adminService.getPendingKyc();
+    return success(res, data, 'Pending KYC fetched');
+  } catch (err) {
+    return error(res, err.message, 500);
+  }
+};
+
+const approveKyc = async (req, res) => {
+  try {
+    const data = await adminService.approveKyc(req.params.id, { adminId: req.user._id, ip: req.ip });
+    return success(res, data, 'KYC approved');
+  } catch (err) {
+    return error(res, err.message, err.statusCode || 400);
+  }
+};
+
+const rejectKyc = async (req, res) => {
+  try {
+    const { reason } = req.body;
+    const data = await adminService.rejectKyc(req.params.id, reason, { adminId: req.user._id, ip: req.ip });
+    return success(res, data, 'KYC rejected');
+  } catch (err) {
+    return error(res, err.message, err.statusCode || 400);
+  }
+};
+
+const getSavingsLocks = async (req, res) => {
+  try {
+    const { page, limit, status } = req.query;
+    const data = await adminService.getSavingsLocks({
+      page: Number(page) || 1,
+      limit: Math.min(Number(limit) || 30, 100),
+      status: status ?? '',
+    });
+    return success(res, data, 'Savings locks fetched');
+  } catch (err) {
+    return error(res, err.message, 500);
+  }
+};
+
+const getAuditLog = async (req, res) => {
+  try {
+    const { page, limit, adminId, targetUserId, action } = req.query;
+    const data = await adminService.getAuditLog({
+      page: Number(page) || 1,
+      limit: Math.min(Number(limit) || 30, 100),
+      adminId: adminId ?? '',
+      targetUserId: targetUserId ?? '',
+      action: action ?? '',
+    });
+    return success(res, data, 'Audit log fetched');
+  } catch (err) {
+    return error(res, err.message, 500);
+  }
+};
+
+const exportTransactionsCsv = async (req, res) => {
+  try {
+    const { type, status, userId, from, to } = req.query;
+    const csv = await adminService.exportTransactionsCsv({ type, status, userId, from, to });
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="transactions-${Date.now()}.csv"`);
+    return res.send(csv);
+  } catch (err) {
+    return error(res, err.message, 500);
+  }
+};
+
+const exportUsersCsv = async (req, res) => {
+  try {
+    const { search, role, status } = req.query;
+    const csv = await adminService.exportUsersCsv({ search, role, status });
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="users-${Date.now()}.csv"`);
+    return res.send(csv);
+  } catch (err) {
+    return error(res, err.message, 500);
+  }
+};
+
+const getChartData = async (req, res) => {
+  try {
+    const data = await adminService.getChartData();
+    return success(res, data, 'Chart data fetched');
+  } catch (err) {
+    return error(res, err.message, 500);
+  }
+};
+
 module.exports = {
   getStats,
   getUsers,
@@ -176,4 +267,12 @@ module.exports = {
   getPendingWithdrawals,
   reconcileWithdrawal,
   getLedger,
+  getPendingKyc,
+  approveKyc,
+  rejectKyc,
+  getSavingsLocks,
+  getAuditLog,
+  exportTransactionsCsv,
+  exportUsersCsv,
+  getChartData,
 };
