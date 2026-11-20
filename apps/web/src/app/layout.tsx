@@ -12,10 +12,11 @@ export const metadata: Metadata = {
     statusBarStyle: 'default',
     title: 'Paycen',
   },
-  icons: {
-    apple: '/icons/icon-192.png',
-    icon: '/icons/icon-192.png',
-  },
+  // No explicit `icons` override here — Next's file-based convention
+  // (app/icon.png, app/apple-icon.png) already covers this, and each needs
+  // different treatment: the browser-tab favicon can be fully transparent,
+  // but the apple touch icon needs a solid background (iOS renders
+  // transparency as black on the home screen).
 };
 
 export const viewport: Viewport = {
