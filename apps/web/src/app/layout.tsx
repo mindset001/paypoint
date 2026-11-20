@@ -34,11 +34,27 @@ const THEME_INIT_SCRIPT = `
   } catch (e) {}
 `;
 
+// The marketing landing page only makes sense for a first-time visitor in a
+// browser tab — someone opening the installed PWA already knows what the
+// app is, so skip straight to their dashboard (if still signed in) or the
+// login screen. Runs before paint, same as the theme script, so there's no
+// landing-page flash before the redirect.
+const PWA_ENTRY_SCRIPT = `
+  try {
+    var standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+    if (standalone && window.location.pathname === '/') {
+      var hasToken = !!localStorage.getItem('accessToken');
+      window.location.replace(hasToken ? '/home' : '/login');
+    }
+  } catch (e) {}
+`;
+
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+        <script dangerouslySetInnerHTML={{ __html: PWA_ENTRY_SCRIPT }} />
       </head>
       <body>
         <Providers>
