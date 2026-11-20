@@ -272,6 +272,34 @@ const changePin = async (userId, currentPin, newPin) => {
   return { message: 'PIN changed successfully' };
 };
 
+// Already-authenticated recovery path for a genuinely forgotten PIN —
+// unlike changePin, doesn't need the old one, just proof of email access.
+const forgotPin = async (userId) => {
+  const user = await User.findById(userId);
+  if (!user) throw Object.assign(new Error('User not found'), { statusCode: 404 });
+
+  const code = otp.generate();
+  await otp.save(`pinreset:${userId}`, code);
+  console.log(`[PIN RESET OTP] ${user.email.address}: ${code}`);
+  await emailService.sendOtpEmail(user.email.address, code, { heading: 'Your PIN reset code' });
+  return {
+    message: 'A reset code has been sent to your email',
+    ...(process.env.NODE_ENV !== 'production' && { devOtp: code }),
+  };
+};
+
+const resetPin = async (userId, otpCode, newPin) => {
+  const valid = await otp.verify(`pinreset:${userId}`, otpCode);
+  if (!valid) throw Object.assign(new Error('Invalid or expired code'), { statusCode: 400 });
+
+  const user = await User.findById(userId);
+  if (!user) throw Object.assign(new Error('User not found'), { statusCode: 404 });
+
+  user.pinHash = await User.hashPin(newPin);
+  await user.save();
+  return { message: 'PIN reset successfully' };
+};
+
 const updateProfile = async (userId, { firstName, lastName }) => {
   const update = {};
   if (firstName) update.firstName = firstName.trim();
@@ -326,4 +354,4 @@ const submitKyc = async (userId, { nin, bvn }) => {
   };
 };
 
-module.exports = { register, verifyOtp, login, refreshTokens, setPin, logout, resendOtp, forgotPassword, resetPassword, changePassword, changePin, updateProfile, submitKyc };
+module.exports = { register, verifyOtp, login, refreshTokens, setPin, logout, resendOtp, forgotPassword, resetPassword, changePassword, changePin, forgotPin, resetPin, updateProfile, submitKyc };

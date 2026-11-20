@@ -13,6 +13,7 @@ import { getErrorMessage, networkColors } from '@/lib/utils';
 import type { Network } from '@/types';
 import { cn } from '@/lib/cn';
 import { PurchaseSuccess } from '@/components/receipt/PurchaseSuccess';
+import { RecentNumbers } from '@/components/vtu/RecentNumbers';
 
 // 9mobile has no data-bundle product on AidaPay at all (confirmed against
 // their live provider list) — omitted here so it's never offered as a dead
@@ -173,6 +174,10 @@ export default function DataPage() {
 
           {!showPin ? (
             <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
+              <RecentNumbers onSelect={(phone, net) => {
+                setValue('phone', phone, { shouldValidate: true, shouldDirty: true });
+                if (net && NETWORKS.includes(net as Network)) setNetwork(net as Network);
+              }} />
               <Input
                 label={catalog === 'fibrex' ? 'Registered Phone Number' : 'Phone Number'} placeholder="0812 345 6789" type="tel"
                 prefix={<PhoneIcon size={16} />}

@@ -17,6 +17,7 @@ interface PasswordForm {
 }
 
 type PinStep = 'current' | 'new' | 'confirm';
+type PinMode = 'change' | 'forgot-otp' | 'forgot-new' | 'forgot-confirm';
 
 export default function SecurityPage() {
   const router = useRouter();
@@ -28,6 +29,57 @@ export default function SecurityPage() {
   const [currentPin, setCurrentPin] = useState('');
   const [newPin, setNewPin] = useState('');
   const [pinLoading, setPinLoading] = useState(false);
+
+  const [pinMode, setPinMode] = useState<PinMode>('change');
+  const [pinOtp, setPinOtp] = useState('');
+  const [forgotLoading, setForgotLoading] = useState(false);
+
+  const startForgotPin = async () => {
+    setForgotLoading(true);
+    try {
+      await securityApi.forgotPin();
+      toast.success('Reset code sent to your email');
+      setPinMode('forgot-otp');
+    } catch (err) {
+      toast.error(getErrorMessage(err));
+    } finally {
+      setForgotLoading(false);
+    }
+  };
+
+  const cancelForgotPin = () => {
+    setPinMode('change');
+    setPinOtp('');
+    setNewPin('');
+  };
+
+  const handleForgotStep = async (value: string) => {
+    if (pinMode === 'forgot-otp') {
+      setPinOtp(value);
+      setPinMode('forgot-new');
+    } else if (pinMode === 'forgot-new') {
+      setNewPin(value);
+      setPinMode('forgot-confirm');
+    } else {
+      if (value !== newPin) {
+        toast.error('PINs do not match, try again');
+        setPinMode('forgot-new');
+        setNewPin('');
+        return;
+      }
+      setPinLoading(true);
+      try {
+        await securityApi.resetPin(pinOtp, value);
+        toast.success('PIN reset successfully');
+        cancelForgotPin();
+      } catch (err) {
+        toast.error(getErrorMessage(err));
+        cancelForgotPin();
+      } finally {
+        setPinLoading(false);
+      }
+    }
+  };
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm<PasswordForm>();
 
@@ -151,33 +203,56 @@ export default function SecurityPage() {
           </form>
         </div>
 
-        {/* Change PIN */}
+        {/* Change / Forgot PIN */}
         <div className="bg-surface rounded-2xl p-5 border border-line">
           <div className="flex items-center gap-3 mb-5">
             <div className="w-10 h-10 bg-green-50 dark:bg-green-500/10 rounded-xl flex items-center justify-center">
               <Key size={18} className="text-green-600" />
             </div>
             <div>
-              <p className="font-bold text-ink">Change Transaction PIN</p>
+              <p className="font-bold text-ink">{pinMode === 'change' ? 'Change Transaction PIN' : 'Reset Forgotten PIN'}</p>
               <p className="text-xs text-ink-muted">
-                Step {pinStep === 'current' ? 1 : pinStep === 'new' ? 2 : 3} of 3 —{' '}
-                {pinStep === 'current' ? 'verify current' : pinStep === 'new' ? 'enter new' : 'confirm new'}
+                {pinMode === 'change'
+                  ? `Step ${pinStep === 'current' ? 1 : pinStep === 'new' ? 2 : 3} of 3 — ${pinStep === 'current' ? 'verify current' : pinStep === 'new' ? 'enter new' : 'confirm new'}`
+                  : pinMode === 'forgot-otp'
+                    ? 'Enter the code sent to your email'
+                    : pinMode === 'forgot-new'
+                      ? 'Enter your new PIN'
+                      : 'Confirm your new PIN'}
               </p>
             </div>
           </div>
 
-          <div className="flex flex-col items-center gap-4">
-            <PinInput key={pinStep} length={4} onComplete={handlePinStep} label={pinLabels[pinStep]} />
-            {pinLoading && <div className="w-5 h-5 border-2 border-green-600 border-t-transparent rounded-full animate-spin" />}
-            {pinStep !== 'current' && (
-              <button
-                onClick={() => { setPinStep('current'); setCurrentPin(''); setNewPin(''); }}
-                className="text-sm text-ink-muted underline"
-              >
-                Start over
+          {pinMode === 'change' ? (
+            <div className="flex flex-col items-center gap-4">
+              <PinInput key={pinStep} length={4} onComplete={handlePinStep} label={pinLabels[pinStep]} />
+              {pinLoading && <div className="w-5 h-5 border-2 border-green-600 border-t-transparent rounded-full animate-spin" />}
+              {pinStep !== 'current' && (
+                <button
+                  onClick={() => { setPinStep('current'); setCurrentPin(''); setNewPin(''); }}
+                  className="text-sm text-ink-muted underline"
+                >
+                  Start over
+                </button>
+              )}
+              <button onClick={startForgotPin} disabled={forgotLoading} className="text-sm text-brand-blue font-semibold">
+                {forgotLoading ? 'Sending code...' : 'Forgot PIN?'}
               </button>
-            )}
-          </div>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center gap-4">
+              <PinInput
+                key={pinMode}
+                length={pinMode === 'forgot-otp' ? 6 : 4}
+                onComplete={handleForgotStep}
+                label={pinMode === 'forgot-otp' ? 'Enter 6-digit code' : pinMode === 'forgot-new' ? 'Enter new 4-digit PIN' : 'Confirm new PIN'}
+              />
+              {pinLoading && <div className="w-5 h-5 border-2 border-green-600 border-t-transparent rounded-full animate-spin" />}
+              <button onClick={cancelForgotPin} className="text-sm text-ink-muted underline">
+                Cancel
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

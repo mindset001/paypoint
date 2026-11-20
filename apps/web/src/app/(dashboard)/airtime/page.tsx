@@ -13,6 +13,7 @@ import type { Network } from '@/types';
 import { cn } from '@/lib/cn';
 import { PurchaseSuccess } from '@/components/receipt/PurchaseSuccess';
 import { useAuth } from '@/hooks/useAuth';
+import { RecentNumbers } from '@/components/vtu/RecentNumbers';
 
 const NETWORKS: Network[] = ['MTN', 'Airtel', 'Glo', '9mobile'];
 const QUICK_AMOUNTS = [50, 100, 200, 500, 1000, 2000];
@@ -98,6 +99,10 @@ export default function AirtimePage() {
 
           {!showPin ? (
             <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
+              <RecentNumbers onSelect={(phone, net) => {
+                setValue('phone', phone, { shouldValidate: true, shouldDirty: true });
+                if (net && NETWORKS.includes(net as Network)) setNetwork(net as Network);
+              }} />
               <Input
                 label="Phone Number"
                 placeholder="0812 345 6789"

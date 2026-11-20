@@ -30,6 +30,8 @@ router.post('/forgot-password', authLimiter, ctrl.forgotPassword);
 router.post('/reset-password', authLimiter, ctrl.resetPassword);
 router.patch('/change-password', authenticate, ctrl.changePassword);
 router.patch('/change-pin', authenticate, ctrl.changePin);
+router.post('/forgot-pin', authLimiter, authenticate, ctrl.forgotPin);
+router.post('/reset-pin', authLimiter, authenticate, ctrl.resetPin);
 router.patch('/profile', authenticate, ctrl.updateProfile);
 router.post('/kyc', authenticate, ctrl.submitKyc);
 

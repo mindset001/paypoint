@@ -132,6 +132,9 @@ export const securityApi = {
     api.patch('/auth/change-password', { currentPassword, newPassword }),
   changePin: (currentPin: string, newPin: string) =>
     api.patch('/auth/change-pin', { currentPin, newPin }),
+  forgotPin: () => api.post('/auth/forgot-pin'),
+  resetPin: (otp: string, newPin: string) =>
+    api.post('/auth/reset-pin', { otp, newPin }),
 };
 
 // ── Notifications ─────────────────────────────────────────────────────
@@ -180,6 +183,11 @@ export const examApi = {
   types: () => api.get('/exam/types'),
   buy: (examType: string, quantity: number, amount: number, pin: string) =>
     api.post('/exam', { examType, quantity, amount, pin }),
+};
+
+// ── VTU shared ───────────────────────────────────────────────────────
+export const vtuApi = {
+  recentNumbers: () => api.get('/vtu/numbers'),
 };
 
 // ── Savings ──────────────────────────────────────────────────────────

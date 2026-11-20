@@ -103,6 +103,20 @@ const changePin = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+const forgotPin = async (req, res, next) => {
+  try {
+    const data = await authService.forgotPin(req.user._id);
+    return success(res, data, 'Reset code sent');
+  } catch (err) { next(err); }
+};
+
+const resetPin = async (req, res, next) => {
+  try {
+    const data = await authService.resetPin(req.user._id, req.body.otp, req.body.newPin);
+    return success(res, data, 'PIN reset successfully');
+  } catch (err) { next(err); }
+};
+
 const updateProfile = async (req, res, next) => {
   try {
     const data = await authService.updateProfile(req.user._id, req.body);
@@ -117,4 +131,4 @@ const submitKyc = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-module.exports = { register, verifyOtp, login, refresh, setPin, logout, resendOtp, me, forgotPassword, resetPassword, changePassword, changePin, updateProfile, submitKyc };
+module.exports = { register, verifyOtp, login, refresh, setPin, logout, resendOtp, me, forgotPassword, resetPassword, changePassword, changePin, forgotPin, resetPin, updateProfile, submitKyc };
