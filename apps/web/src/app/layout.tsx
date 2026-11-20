@@ -4,13 +4,13 @@ import './globals.css';
 import { Providers } from './providers';
 
 export const metadata: Metadata = {
-  title: 'WavyPay — Pay Bills & Buy Airtime',
-  description: 'Buy airtime, data, pay electricity bills, cable TV and more with WavyPay.',
+  title: 'Paycen — Pay Bills & Buy Airtime',
+  description: 'Buy airtime, data, pay electricity bills, cable TV and more with Paycen.',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'WavyPay',
+    title: 'Paycen',
   },
   icons: {
     apple: '/icons/icon-192.png',

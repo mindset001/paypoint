@@ -13,12 +13,12 @@ require('dotenv').config({ path: require('path').resolve(__dirname, '../../../.e
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/paypoint';
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/paycen';
 
 const ADMIN_FIRST_NAME = process.env.ADMIN_FIRST_NAME || 'Super';
 const ADMIN_LAST_NAME  = process.env.ADMIN_LAST_NAME  || 'Admin';
 const ADMIN_PHONE      = process.env.ADMIN_PHONE      || '08000000000';
-const ADMIN_EMAIL      = process.env.ADMIN_EMAIL      || 'admin@paypoint.ng';
+const ADMIN_EMAIL      = process.env.ADMIN_EMAIL      || 'admin@paycen.ng';
 const ADMIN_PASSWORD   = process.env.ADMIN_PASSWORD   || 'Admin@12345';
 
 async function seed() {

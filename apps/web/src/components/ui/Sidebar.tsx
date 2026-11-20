@@ -27,7 +27,7 @@ export function Sidebar() {
           <div className="w-9 h-9 bg-brand-blue rounded-xl flex items-center justify-center">
             <Zap size={18} className="text-white fill-white" />
           </div>
-          <span className="text-ink font-black text-xl tracking-tight">WavyPay</span>
+          <span className="text-ink font-black text-xl tracking-tight">Paycen</span>
         </Link>
         <ThemeToggle />
       </div>

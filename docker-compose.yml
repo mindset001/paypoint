@@ -3,18 +3,18 @@ version: '3.8'
 services:
   mongodb:
     image: mongo:7
-    container_name: paypoint_mongo
+    container_name: paycen_mongo
     restart: unless-stopped
     ports:
       - '27017:27017'
     volumes:
       - mongo_data:/data/db
     environment:
-      MONGO_INITDB_DATABASE: paypoint
+      MONGO_INITDB_DATABASE: paycen
 
   redis:
     image: redis:7-alpine
-    container_name: paypoint_redis
+    container_name: paycen_redis
     restart: unless-stopped
     ports:
       - '6379:6379'

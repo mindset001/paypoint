@@ -5,7 +5,7 @@ const env = {
   PORT: parseInt(process.env.PORT || '5000', 10),
   CLIENT_URL: process.env.CLIENT_URL || 'http://localhost:3000',
 
-  MONGODB_URI: process.env.MONGODB_URI || 'mongodb://localhost:27017/paypoint',
+  MONGODB_URI: process.env.MONGODB_URI || 'mongodb://localhost:27017/paycen',
   REDIS_URL: process.env.REDIS_URL || 'redis://localhost:6379',
 
   JWT_ACCESS_SECRET: process.env.JWT_ACCESS_SECRET,
@@ -20,7 +20,7 @@ const env = {
   AIDAPAY_USERNAME: process.env.AIDAPAY_USERNAME,
   AIDAPAY_PASSWORD: process.env.AIDAPAY_PASSWORD,
   // The 4-digit PIN on AidaPay's own merchant account, required by their
-  // POST /buy — unrelated to a WavyPay user's wallet PIN.
+  // POST /buy — unrelated to a Paycen user's wallet PIN.
   AIDAPAY_ACCOUNT_PIN: process.env.AIDAPAY_ACCOUNT_PIN,
 
   PAYSTACK_SECRET_KEY: process.env.PAYSTACK_SECRET_KEY,
@@ -36,7 +36,7 @@ const env = {
   MONNIFY_BASE_URL:      process.env.MONNIFY_BASE_URL || 'https://sandbox.monnify.com',
 
   TERMII_API_KEY: process.env.TERMII_API_KEY,
-  TERMII_SENDER_ID: process.env.TERMII_SENDER_ID || 'WavyPay',
+  TERMII_SENDER_ID: process.env.TERMII_SENDER_ID || 'Paycen',
 
   // Default to sandbox — switch DOJAH_BASE_URL to https://api.dojah.io
   // with live keys only when actually going to production.
@@ -48,7 +48,7 @@ const env = {
   SMTP_PORT: parseInt(process.env.SMTP_PORT || '465', 10),
   SMTP_USER: process.env.SMTP_USER,
   SMTP_PASS: process.env.SMTP_PASS,
-  EMAIL_FROM: process.env.EMAIL_FROM || 'noreply@paypoint.ng',
+  EMAIL_FROM: process.env.EMAIL_FROM || 'noreply@paycen.ng',
 
   SENTRY_DSN: process.env.SENTRY_DSN,
 };

@@ -37,7 +37,7 @@ export default function RegisterPage() {
   return (
     <div>
       <h1 className="text-2xl font-black text-gray-900 mb-1">Create account</h1>
-      <p className="text-gray-500 text-sm mb-8">Join millions using WavyPay daily</p>
+      <p className="text-gray-500 text-sm mb-8">Join millions using Paycen daily</p>
 
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
         <div className="grid grid-cols-2 gap-3">

@@ -30,9 +30,9 @@ const initializePayment = ({ txRef, amount, email, phone, name, redirectUrl, des
     customer: { email, phone_number: phone, name },
     meta,
     customizations: {
-      title: 'WavyPay Wallet',
-      description: description || 'Fund WavyPay wallet',
-      logo: 'https://paypoint.ng/logo.png',
+      title: 'Paycen Wallet',
+      description: description || 'Fund Paycen wallet',
+      logo: 'https://paycen.ng/logo.png',
     },
   });
 

@@ -38,7 +38,7 @@ export default function LoginPage() {
   return (
     <div>
       <h1 className="text-2xl font-black text-gray-900 mb-1">Welcome back</h1>
-      <p className="text-gray-500 text-sm mb-8">Sign in to your WavyPay account</p>
+      <p className="text-gray-500 text-sm mb-8">Sign in to your Paycen account</p>
 
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
         <Input

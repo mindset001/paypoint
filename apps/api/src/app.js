@@ -62,7 +62,7 @@ const globalLimiter = rateLimit({
 app.use('/api', globalLimiter);
 
 // Root + health — both respond so platform health checks always pass
-app.get('/',       (req, res) => res.json({ service: 'WavyPay API', status: 'ok', version: '1.0.0' }));
+app.get('/',       (req, res) => res.json({ service: 'Paycen API', status: 'ok', version: '1.0.0' }));
 app.get('/health', (req, res) => res.json({ status: 'ok', env: env.NODE_ENV }));
 
 app.use('/api/v1/auth', authRoutes);

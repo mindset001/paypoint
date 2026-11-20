@@ -27,11 +27,11 @@ const FAQS = [
   },
   {
     q: 'Can I withdraw money to my bank account?',
-    a: 'Bank withdrawals are coming soon — currently, transfers are between WavyPay wallets only.',
+    a: 'Bank withdrawals are coming soon — currently, transfers are between Paycen wallets only.',
   },
   {
-    q: 'Is my money safe on WavyPay?',
-    a: 'Yes. WavyPay operates within CBN guidelines. Funds in your wallet are held in a dedicated escrow account and are not used for any other purpose.',
+    q: 'Is my money safe on Paycen?',
+    a: 'Yes. Paycen operates within CBN guidelines. Funds in your wallet are held in a dedicated escrow account and are not used for any other purpose.',
   },
   {
     q: 'How do I verify my account (KYC)?',
@@ -78,7 +78,7 @@ export default function SupportPage() {
           <div>
             <h2 className="text-white text-xl font-black mb-1">We&apos;re here to help</h2>
             <p className="text-blue-200 text-sm leading-relaxed">
-              Questions, failed payments or wallet funding: email WavyPay support, or reach the team on WhatsApp.
+              Questions, failed payments or wallet funding: email Paycen support, or reach the team on WhatsApp.
             </p>
           </div>
           <a href={`mailto:${SUPPORT_EMAIL}`}
@@ -179,7 +179,7 @@ export default function SupportPage() {
               ))}
             </div>
 
-            <a href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent("Hi, I'd like to become a WavyPay reseller.")}`}
+            <a href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent("Hi, I'd like to become a Paycen reseller.")}`}
               target="_blank" rel="noopener noreferrer"
               className="bg-teal-600 text-white font-bold text-sm rounded-2xl py-3.5 flex items-center justify-center gap-2 hover:bg-teal-700 active:scale-[0.98] transition-all">
               <MessageCircle size={18} /> Apply on WhatsApp
@@ -188,7 +188,7 @@ export default function SupportPage() {
         </div>
 
         <p className="text-center text-xs text-ink-muted/70 pb-2">
-          WavyPay Support · Available 24/7
+          Paycen Support · Available 24/7
         </p>
       </div>
     </div>

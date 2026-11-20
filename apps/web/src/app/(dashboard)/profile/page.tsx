@@ -186,7 +186,7 @@ export default function ProfilePage() {
           </button>
         </div>
 
-        <p className="text-center text-xs text-ink-muted/70 mt-2">WavyPay v1.0.0</p>
+        <p className="text-center text-xs text-ink-muted/70 mt-2">Paycen v1.0.0</p>
       </div>
     </div>
   );

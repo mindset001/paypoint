@@ -1,5 +1,5 @@
 # Database Design
-## PayPoint — MongoDB Schema Reference
+## Paycen — MongoDB Schema Reference
 
 ---
 

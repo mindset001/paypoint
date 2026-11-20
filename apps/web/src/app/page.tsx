@@ -28,9 +28,9 @@ const TRUST_POINTS = [
 ];
 
 const TESTIMONIALS = [
-  { name: 'Chioma A.', location: 'Lagos', text: "WavyPay has made paying my DSTV subscription so easy. I don't have to visit any shop anymore!", rating: 5 },
+  { name: 'Chioma A.', location: 'Lagos', text: "Paycen has made paying my DSTV subscription so easy. I don't have to visit any shop anymore!", rating: 5 },
   { name: 'Emeka O.', location: 'Abuja', text: "Fastest airtime purchase I've ever used. The money left my wallet and the airtime was on my phone instantly.", rating: 5 },
-  { name: 'Fatima B.', location: 'Kano', text: 'I use WavyPay to buy data for my business phone every week. The SME data rates are the cheapest around.', rating: 5 },
+  { name: 'Fatima B.', location: 'Kano', text: 'I use Paycen to buy data for my business phone every week. The SME data rates are the cheapest around.', rating: 5 },
 ];
 
 export default function LandingPage() {
@@ -44,7 +44,7 @@ export default function LandingPage() {
             <div className="w-9 h-9 bg-brand-blue rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30">
               <Zap size={16} className="text-white fill-white" />
             </div>
-            <span className="text-white font-black text-xl tracking-tight">WavyPay</span>
+            <span className="text-white font-black text-xl tracking-tight">Paycen</span>
           </div>
 
           <div className="hidden md:flex items-center gap-8">
@@ -279,7 +279,7 @@ export default function LandingPage() {
       <section className="bg-gray-50 px-5 py-16 lg:py-24">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
-            <p className="text-brand-blue text-xs font-bold uppercase tracking-widest mb-2">Why WavyPay</p>
+            <p className="text-brand-blue text-xs font-bold uppercase tracking-widest mb-2">Why Paycen</p>
             <h2 className="text-gray-900 text-3xl lg:text-4xl font-black">Built for Nigeria. Built to last.</h2>
           </div>
 
@@ -301,7 +301,7 @@ export default function LandingPage() {
             <div>
               <p className="text-green-800 font-bold">CBN compliant</p>
               <p className="text-green-700/70 text-sm mt-0.5">
-                WavyPay operates within CBN guidelines for digital payments and agent banking in Nigeria.
+                Paycen operates within CBN guidelines for digital payments and agent banking in Nigeria.
               </p>
             </div>
           </div>
@@ -356,7 +356,7 @@ export default function LandingPage() {
             Start paying smarter today.<br />It&apos;s free.
           </h2>
           <p className="text-white/50 text-base mb-10 leading-relaxed">
-            Join over 50,000 Nigerians who pay bills, buy airtime and data on WavyPay every day.
+            Join over 50,000 Nigerians who pay bills, buy airtime and data on Paycen every day.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
@@ -382,7 +382,7 @@ export default function LandingPage() {
                 <div className="w-8 h-8 bg-brand-blue rounded-lg flex items-center justify-center">
                   <Zap size={14} className="text-white fill-white" />
                 </div>
-                <span className="text-white font-black text-lg">WavyPay</span>
+                <span className="text-white font-black text-lg">Paycen</span>
               </div>
               <p className="text-white/40 text-sm leading-relaxed">
                 Nigeria&apos;s fastest digital payments platform. Pay bills, buy airtime and data instantly.
@@ -412,7 +412,7 @@ export default function LandingPage() {
           </div>
 
           <div className="border-t border-white/10 pt-6 flex flex-col sm:flex-row justify-between gap-2">
-            <p className="text-white/30 text-xs">© {new Date().getFullYear()} WavyPay. All rights reserved.</p>
+            <p className="text-white/30 text-xs">© {new Date().getFullYear()} Paycen. All rights reserved.</p>
             <p className="text-white/20 text-xs">A digital payments platform operating in Nigeria.</p>
           </div>
         </div>

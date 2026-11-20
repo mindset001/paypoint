@@ -51,7 +51,7 @@ export default function ReferralsPage() {
 
   const shareCode = async () => {
     if (!code) return;
-    const text = `Join me on WavyPay! Use my code ${code} when you sign up.`;
+    const text = `Join me on Paycen! Use my code ${code} when you sign up.`;
     if (navigator.share) {
       try { await navigator.share({ text }); } catch { /* cancelled */ }
     } else {

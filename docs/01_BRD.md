@@ -1,5 +1,5 @@
 # Business Requirements Document (BRD)
-## PayPoint — Nigerian VTU & Bill Payment Platform
+## Paycen — Nigerian VTU & Bill Payment Platform
 **Version:** 1.0  
 **Date:** 2026-06-13  
 **Stack:** Node.js + Express + MongoDB | Next.js | React Native | AidaPay API
@@ -8,7 +8,7 @@
 
 ## 1. Executive Summary
 
-PayPoint is a B2C and B2B Virtual Top-Up (VTU) and bill payment platform targeting Nigerian consumers, agents, and resellers. It aggregates airtime, data, cable TV, electricity, exam pins, and other utility payments into a single wallet-powered interface — with a white-label reseller tier for sub-agents and an open API for third-party developers.
+Paycen is a B2C and B2B Virtual Top-Up (VTU) and bill payment platform targeting Nigerian consumers, agents, and resellers. It aggregates airtime, data, cable TV, electricity, exam pins, and other utility payments into a single wallet-powered interface — with a white-label reseller tier for sub-agents and an open API for third-party developers.
 
 ---
 
@@ -20,7 +20,7 @@ PayPoint is a B2C and B2B Virtual Top-Up (VTU) and bill payment platform targeti
 | **Agent/Reseller** | Business that buys at discounted rates and resells to customers |
 | **Sub-Agent** | Agent recruited by a top-level agent; earns from own sales |
 | **Admin** | Platform operator managing users, pricing, fraud, and reports |
-| **API Developer** | Third-party developer integrating PayPoint services into their app |
+| **API Developer** | Third-party developer integrating Paycen services into their app |
 
 ---
 
@@ -40,7 +40,7 @@ PayPoint is a B2C and B2B Virtual Top-Up (VTU) and bill payment platform targeti
 - Debit wallet on every transaction
 - Credit wallet on: refunds, cashback, referral bonus, commission
 - Transaction history with filters (date, type, status)
-- Wallet-to-wallet transfer between PayPoint users
+- Wallet-to-wallet transfer between Paycen users
 - Daily/weekly spend limits per user tier
 
 ### 3.3 VTU Services (via AidaPay API)

@@ -39,7 +39,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <Zap size={14} className="text-white fill-white" />
             </div>
             <div>
-              <p className="text-white font-black text-sm leading-none">WavyPay</p>
+              <p className="text-white font-black text-sm leading-none">Paycen</p>
               <p className="text-slate-500 text-xs mt-0.5">Admin Panel</p>
             </div>
           </div>

@@ -1,6 +1,6 @@
 {
-  "name": "WavyPay",
-  "short_name": "WavyPay",
+  "name": "Paycen",
+  "short_name": "Paycen",
   "description": "Buy airtime, data, pay bills and more",
   "start_url": "/",
   "display": "standalone",

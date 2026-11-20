@@ -108,7 +108,7 @@ const withdraw = async (userId, { bankAccountId, amountNGN, pin }) => {
   try {
     const result = await Paystack.initiateTransfer({
       amountKobo, recipientCode: account.recipientCode, reference: tx.reference,
-      reason: `WavyPay withdrawal — ${user.firstName} ${user.lastName}`,
+      reason: `Paycen withdrawal — ${user.firstName} ${user.lastName}`,
     });
 
     if (result.data?.status === 'success') {

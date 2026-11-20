@@ -1,5 +1,5 @@
 # System Architecture
-## PayPoint — Nigerian VTU & Bill Payment Platform
+## Paycen — Nigerian VTU & Bill Payment Platform
 
 ---
 

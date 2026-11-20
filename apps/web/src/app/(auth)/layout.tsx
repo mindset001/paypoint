@@ -5,9 +5,9 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       <div className="flex justify-center pt-12 pb-4 lg:pt-16">
         <div className="flex items-center gap-2">
           <div className="w-10 h-10 bg-brand-blue rounded-2xl flex items-center justify-center">
-            <span className="text-white font-black text-lg">W</span>
+            <span className="text-white font-black text-lg">P</span>
           </div>
-          <span className="text-white text-2xl font-black tracking-tight">WavyPay</span>
+          <span className="text-white text-2xl font-black tracking-tight">Paycen</span>
         </div>
       </div>
 
