@@ -24,10 +24,33 @@ interface ServiceCardProps {
   id: string;
   name: string;
   icon: string;
+  comingSoon?: boolean;
 }
 
-export function ServiceCard({ id, name, icon }: ServiceCardProps) {
+export function ServiceCard({ id, name, icon, comingSoon }: ServiceCardProps) {
   const Icon = icons[icon] ?? Phone;
+  const content = (
+    <>
+      <div className={cn('w-12 h-12 rounded-2xl flex items-center justify-center', comingSoon ? 'bg-surface-2 text-ink-muted/60' : colors[id] ?? 'bg-surface-2 text-ink-muted')}>
+        <Icon size={22} />
+      </div>
+      <span className={cn('text-xs font-medium text-center leading-tight', comingSoon ? 'text-ink-muted/60' : 'text-ink-muted')}>{name}</span>
+      {comingSoon && (
+        <span className="text-[9px] font-bold uppercase tracking-wide text-amber-600 bg-amber-50 dark:bg-amber-500/10 px-1.5 py-0.5 rounded-full -mt-1">
+          Soon
+        </span>
+      )}
+    </>
+  );
+
+  if (comingSoon) {
+    return (
+      <div className="flex flex-col items-center gap-2 p-3 rounded-2xl bg-surface shadow-sm opacity-70 cursor-not-allowed">
+        {content}
+      </div>
+    );
+  }
+
   return (
     <motion.div
       whileHover={{ y: -4, rotateX: -6, scale: 1.04 }}
@@ -42,10 +65,7 @@ export function ServiceCard({ id, name, icon }: ServiceCardProps) {
           'hover:shadow-lg',
         )}
       >
-        <div className={cn('w-12 h-12 rounded-2xl flex items-center justify-center', colors[id] ?? 'bg-surface-2 text-ink-muted')}>
-          <Icon size={22} />
-        </div>
-        <span className="text-xs font-medium text-ink-muted text-center leading-tight">{name}</span>
+        {content}
       </Link>
     </motion.div>
   );

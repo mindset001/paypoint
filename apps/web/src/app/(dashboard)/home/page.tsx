@@ -16,7 +16,7 @@ const SERVICES = [
   { id: 'data', name: 'Data', icon: 'wifi' },
   { id: 'cable', name: 'Cable TV', icon: 'tv' },
   { id: 'electricity', name: 'Electricity', icon: 'zap' },
-  { id: 'exam', name: 'Exam Pins', icon: 'book' },
+  { id: 'exam', name: 'Exam Pins', icon: 'book', comingSoon: true },
 ];
 
 const gridVariants = {

@@ -48,6 +48,7 @@ const SERVICES = [
     color: 'bg-green-50 dark:bg-green-500/10 text-green-600',
     border: 'border-green-100 dark:border-green-500/20',
     gradient: 'from-green-600 to-green-800',
+    comingSoon: true,
   },
   {
     id: 'savings',
@@ -72,25 +73,44 @@ export default function ServicesPage() {
       </div>
 
       <motion.div variants={stagger} initial="hidden" animate="show" className="px-4 py-5 flex flex-col gap-3">
-        {SERVICES.map(({ id, name, desc, icon: Icon, color, border, gradient }) => (
-          <motion.div key={id} variants={item} whileTap={{ scale: 0.98 }}>
-            <Link
-              href={`/${id}`}
-              className={`bg-surface rounded-2xl border ${border} p-4 flex items-center gap-4 hover:shadow-md transition-shadow`}
-            >
-              <div className={`w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 ${color}`}>
+        {SERVICES.map(({ id, name, desc, icon: Icon, color, border, gradient, comingSoon }) => {
+          const cardContent = (
+            <>
+              <div className={`w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 ${comingSoon ? 'bg-surface-2 text-ink-muted' : color}`}>
                 <Icon size={26} />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-bold text-ink">{name}</p>
                 <p className="text-ink-muted text-sm mt-0.5">{desc}</p>
               </div>
-              <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${gradient} flex items-center justify-center flex-shrink-0`}>
-                <span className="text-white text-lg font-bold leading-none">›</span>
-              </div>
-            </Link>
-          </motion.div>
-        ))}
+              {comingSoon ? (
+                <span className="text-[10px] font-bold uppercase tracking-wide text-amber-600 bg-amber-50 dark:bg-amber-500/10 px-2 py-1 rounded-full flex-shrink-0">
+                  Coming Soon
+                </span>
+              ) : (
+                <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${gradient} flex items-center justify-center flex-shrink-0`}>
+                  <span className="text-white text-lg font-bold leading-none">›</span>
+                </div>
+              )}
+            </>
+          );
+          return (
+            <motion.div key={id} variants={item} whileTap={comingSoon ? undefined : { scale: 0.98 }}>
+              {comingSoon ? (
+                <div className={`bg-surface rounded-2xl border ${border} p-4 flex items-center gap-4 opacity-70 cursor-not-allowed`}>
+                  {cardContent}
+                </div>
+              ) : (
+                <Link
+                  href={`/${id}`}
+                  className={`bg-surface rounded-2xl border ${border} p-4 flex items-center gap-4 hover:shadow-md transition-shadow`}
+                >
+                  {cardContent}
+                </Link>
+              )}
+            </motion.div>
+          );
+        })}
       </motion.div>
     </div>
   );

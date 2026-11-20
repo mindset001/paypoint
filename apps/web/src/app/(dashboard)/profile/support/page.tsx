@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, ChevronDown, Mail, MessageCircle, Phone, Headphones, Lightbulb, ExternalLink, Tag, PiggyBank, Crown } from 'lucide-react';
+import { ArrowLeft, ChevronDown, Mail, MessageCircle, Phone, Headphones, Lightbulb, ExternalLink, Crown } from 'lucide-react';
 import { cn } from '@/lib/cn';
 
 const WHATSAPP_NUMBER = '2348160071243';
@@ -135,55 +135,22 @@ export default function SupportPage() {
           </div>
         </div>
 
-        {/* Become a reseller */}
+        {/* Become a reseller — coming soon */}
         <div>
-          <p className="text-xs font-bold text-ink-muted uppercase tracking-widest mb-3 px-1">
-            Become a Reseller
-          </p>
-          <div className="bg-surface rounded-2xl border border-line p-4 flex flex-col gap-4">
-            <p className="text-sm text-ink-muted leading-relaxed">
-              Sell airtime, data and bills to your customers and earn on every sale.
+          <div className="flex items-center justify-between mb-3 px-1">
+            <p className="text-xs font-bold text-ink-muted uppercase tracking-widest">Become a Reseller</p>
+            <span className="text-[10px] font-bold uppercase tracking-wide text-amber-600 bg-amber-50 dark:bg-amber-500/10 px-2 py-0.5 rounded-full">
+              Coming Soon
+            </span>
+          </div>
+          <div className="bg-surface rounded-2xl border border-line p-6 flex flex-col items-center text-center gap-2">
+            <div className="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-500/10 text-amber-600 flex items-center justify-center">
+              <Crown size={22} />
+            </div>
+            <p className="text-sm font-bold text-ink">Reseller program coming soon</p>
+            <p className="text-xs text-ink-muted leading-relaxed max-w-xs">
+              We&apos;re reworking how the reseller program works. Check back soon.
             </p>
-
-            <div className="flex flex-col gap-3">
-              {[
-                { icon: Tag, title: 'Lower prices', sub: 'Reseller rates on data, airtime, cable TV and electricity.' },
-                { icon: PiggyBank, title: 'Keep the difference', sub: 'Buy at reseller rates, charge your own customers normally — the difference is your profit.' },
-                { icon: Crown, title: 'Reseller badge', sub: 'Shown on your profile once your account is upgraded.' },
-              ].map(({ icon: Icon, title, sub }) => (
-                <div key={title} className="flex items-start gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-amber-50 dark:bg-amber-500/10 text-amber-600 flex items-center justify-center flex-shrink-0">
-                    <Icon size={16} />
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold text-ink">{title}</p>
-                    <p className="text-xs text-ink-muted leading-relaxed">{sub}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="border-t border-line pt-4 flex flex-col gap-3">
-              <p className="text-xs font-bold text-ink-muted uppercase tracking-widest">How to become one</p>
-              {[
-                'Verify your email and fund your wallet.',
-                'Message us on WhatsApp that you want to become a reseller.',
-                'Our team upgrades your account. You\'ll see reseller prices right away.',
-              ].map((step, i) => (
-                <div key={step} className="flex items-start gap-3">
-                  <span className="w-5 h-5 rounded-full bg-blue-50 dark:bg-blue-500/10 text-brand-blue text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">
-                    {i + 1}
-                  </span>
-                  <p className="text-xs text-ink-muted leading-relaxed">{step}</p>
-                </div>
-              ))}
-            </div>
-
-            <a href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent("Hi, I'd like to become a Paycen reseller.")}`}
-              target="_blank" rel="noopener noreferrer"
-              className="bg-teal-600 text-white font-bold text-sm rounded-2xl py-3.5 flex items-center justify-center gap-2 hover:bg-teal-700 active:scale-[0.98] transition-all">
-              <MessageCircle size={18} /> Apply on WhatsApp
-            </a>
           </div>
         </div>
 
