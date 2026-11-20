@@ -1,10 +1,9 @@
-// VTU margin model: regular users pay AidaPay's raw cost plus a markup;
-// resellers ("agent" role, set manually by an admin after a WhatsApp
-// request) pay raw cost. The gap between what a reseller pays here and
-// what they charge their own downstream customers (outside this app) is
-// their margin — there's no separate commission ledger to maintain.
-const REGULAR_MARKUP = 0.02; // 2%
-const RESELLER_MARKUP = 0;   // 0%
+// VTU pricing model: everyone pays AidaPay's raw cost, no markup. A
+// reseller's margin (if any) comes from what they charge their own
+// downstream customers outside this app — there's no markup or
+// commission ledger to maintain here.
+const REGULAR_MARKUP = 0;
+const RESELLER_MARKUP = 0;
 
 const isReseller = (user) => user?.role === 'agent';
 

@@ -8,11 +8,10 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { PinInput } from '@/components/ui/PinInput';
 import { airtimeApi } from '@/lib/api';
-import { getErrorMessage, networkColors, priceWithMarkup, isReseller } from '@/lib/utils';
+import { getErrorMessage, networkColors } from '@/lib/utils';
 import type { Network } from '@/types';
 import { cn } from '@/lib/cn';
 import { PurchaseSuccess } from '@/components/receipt/PurchaseSuccess';
-import { useAuth } from '@/hooks/useAuth';
 import { RecentNumbers } from '@/components/vtu/RecentNumbers';
 
 const NETWORKS: Network[] = ['MTN', 'Airtel', 'Glo', '9mobile'];
@@ -25,7 +24,6 @@ interface AirtimeForm {
 
 export default function AirtimePage() {
   const router = useRouter();
-  const { user } = useAuth();
   const [network, setNetwork] = useState<Network>('MTN');
   const [showPin, setShowPin] = useState(false);
   const [formData, setFormData] = useState<AirtimeForm | null>(null);
@@ -149,11 +147,6 @@ export default function AirtimePage() {
               <div className="text-center mb-2">
                 <p className="text-ink-muted text-sm">Sending <strong>₦{formData?.amount}</strong> airtime to</p>
                 <p className="font-bold text-ink">{formData?.phone} ({network})</p>
-                {formData && !isReseller(user?.role) && (
-                  <p className="text-xs text-ink-muted mt-1">
-                    Total charge: ₦{priceWithMarkup(parseFloat(formData.amount), user?.role).toLocaleString()}
-                  </p>
-                )}
               </div>
               <PinInput length={4} onComplete={handlePinComplete} label="Enter Transaction PIN" />
               {loading && <div className="w-6 h-6 border-2 border-brand-blue border-t-transparent rounded-full animate-spin" />}
