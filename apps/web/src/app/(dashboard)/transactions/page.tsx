@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { AnimatePresence } from 'framer-motion';
+import { useRouter } from 'next/navigation';
 import { walletApi } from '@/lib/api';
 import { Button } from '@/components/ui/Button';
 import type { Transaction } from '@/types';
@@ -8,7 +8,6 @@ import { Filter, X, ArrowDownLeft, ArrowUpRight, Calendar } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { formatNGN, formatDate, txTypeLabel } from '@/lib/utils';
 import { EmptyStateIllustration } from '@/components/illustrations/EmptyState';
-import { ReceiptModal } from '@/components/receipt/ReceiptModal';
 
 const TYPE_FILTERS = ['All', 'airtime', 'data', 'cable', 'electricity', 'wallet_fund', 'refund'];
 const STATUS_FILTERS = ['Any', 'success', 'pending', 'failed'];
@@ -45,6 +44,7 @@ function TxRow({ tx, onClick }: { tx: Transaction; onClick: () => void }) {
 }
 
 export default function TransactionsPage() {
+  const router = useRouter();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [typeFilter, setTypeFilter] = useState('All');
@@ -54,7 +54,6 @@ export default function TransactionsPage() {
   const [showDate, setShowDate] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
-  const [selected, setSelected] = useState<Transaction | null>(null);
 
   const load = async (p = 1, type = typeFilter, status = statusFilter, f = from, t = to) => {
     setLoading(true);
@@ -176,7 +175,7 @@ export default function TransactionsPage() {
             </div>
           ) : (
             transactions.map((tx) => (
-              <TxRow key={tx._id} tx={tx} onClick={() => setSelected(tx)} />
+              <TxRow key={tx._id} tx={tx} onClick={() => router.push(`/receipt/${tx.reference}`)} />
             ))
           )}
         </div>
@@ -189,10 +188,6 @@ export default function TransactionsPage() {
           </div>
         )}
       </div>
-
-      <AnimatePresence>
-        {selected && <ReceiptModal tx={selected} onClose={() => setSelected(null)} />}
-      </AnimatePresence>
     </div>
   );
 }
