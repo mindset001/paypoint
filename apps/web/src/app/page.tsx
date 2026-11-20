@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import {
   Phone, Wifi, Tv, Zap, BookOpen,
   Shield, Clock, Zap as ZapIcon, Star,
@@ -41,9 +42,7 @@ export default function LandingPage() {
       <nav className="fixed top-0 left-0 right-0 z-50 bg-brand-dark/95 backdrop-blur-md border-b border-white/10">
         <div className="max-w-7xl mx-auto px-5 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2 animate-fade-in">
-            <div className="w-9 h-9 bg-brand-blue rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30">
-              <Zap size={16} className="text-white fill-white" />
-            </div>
+            <Image src="/icons/icon-96.png" alt="Paycen" width={36} height={36} priority />
             <span className="text-white font-black text-xl tracking-tight">Paycen</span>
           </div>
 
@@ -349,8 +348,8 @@ export default function LandingPage() {
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-96 bg-brand-blue/20 rounded-full blur-3xl" />
 
         <div className="relative max-w-2xl mx-auto text-center">
-          <div className="w-20 h-20 bg-brand-blue rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-2xl shadow-blue-500/40 animate-float-simple">
-            <Zap size={32} className="text-white fill-white" />
+          <div className="w-20 h-20 flex items-center justify-center mx-auto mb-6 animate-float-simple">
+            <Image src="/icons/icon-128.png" alt="" width={80} height={80} />
           </div>
           <h2 className="text-white text-3xl lg:text-4xl font-black mb-4">
             Start paying smarter today.<br />It&apos;s free.
@@ -379,9 +378,7 @@ export default function LandingPage() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-10">
             <div className="col-span-2 md:col-span-1">
               <div className="flex items-center gap-2 mb-4">
-                <div className="w-8 h-8 bg-brand-blue rounded-lg flex items-center justify-center">
-                  <Zap size={14} className="text-white fill-white" />
-                </div>
+                <Image src="/icons/icon-96.png" alt="Paycen" width={32} height={32} />
                 <span className="text-white font-black text-lg">Paycen</span>
               </div>
               <p className="text-white/40 text-sm leading-relaxed">

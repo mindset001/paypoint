@@ -69,9 +69,11 @@ export function ReceiptModal({ tx, onClose }: { tx: Transaction; onClose: () => 
         {/* Captured content */}
         <div ref={cardRef} className="bg-surface">
           <div className="flex items-center justify-center gap-2 pt-5 pb-1">
-            <div className="w-6 h-6 rounded-lg bg-brand-blue flex items-center justify-center">
-              <span className="text-white text-xs font-black">P</span>
-            </div>
+            {/* Plain <img>, not next/image — this element is captured by
+                html2canvas for the share/download receipt image, which
+                needs a synchronously-loaded element rather than Next's
+                lazy-loaded/optimized one. */}
+            <img src="/icons/icon-96.png" alt="" width={24} height={24} />
             <span className="font-black text-ink text-sm">Paycen</span>
           </div>
 

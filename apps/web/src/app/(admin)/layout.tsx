@@ -2,7 +2,8 @@
 import { useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { Zap, LayoutDashboard, Users, ArrowLeftRight, Settings, ChevronRight, LogOut, Home, ShieldAlert, ShieldCheck, History } from 'lucide-react';
+import Image from 'next/image';
+import { LayoutDashboard, Users, ArrowLeftRight, Settings, ChevronRight, LogOut, Home, ShieldAlert, ShieldCheck, History } from 'lucide-react';
 import { useAuthStore } from '@/store/auth.store';
 
 const NAV = [
@@ -38,9 +39,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         {/* Logo */}
         <div className="px-5 py-5 border-b border-slate-800">
           <div className="flex items-center gap-2 mb-1">
-            <div className="w-8 h-8 bg-brand-blue rounded-lg flex items-center justify-center">
-              <Zap size={14} className="text-white fill-white" />
-            </div>
+            <Image src="/icons/icon-96.png" alt="Paycen" width={32} height={32} />
             <div>
               <p className="text-white font-black text-sm leading-none">Paycen</p>
               <p className="text-slate-500 text-xs mt-0.5">Admin Panel</p>

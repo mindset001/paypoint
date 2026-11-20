@@ -1,12 +1,12 @@
+import Image from 'next/image';
+
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-gradient-to-b from-brand-dark to-brand-navy flex flex-col">
       {/* Logo */}
       <div className="flex justify-center pt-12 pb-4 lg:pt-16">
         <div className="flex items-center gap-2">
-          <div className="w-10 h-10 bg-brand-blue rounded-2xl flex items-center justify-center">
-            <span className="text-white font-black text-lg">P</span>
-          </div>
+          <Image src="/icons/icon-96.png" alt="Paycen" width={40} height={40} priority />
           <span className="text-white text-2xl font-black tracking-tight">Paycen</span>
         </div>
       </div>

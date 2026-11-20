@@ -1,7 +1,8 @@
 'use client';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
-import { Home, Wallet, Grid3X3, History, User, LogOut, Zap, ShieldCheck } from 'lucide-react';
+import { Home, Wallet, Grid3X3, History, User, LogOut, ShieldCheck } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useAuthStore } from '@/store/auth.store';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
@@ -23,10 +24,8 @@ export function Sidebar() {
     <aside className="hidden md:flex flex-col w-60 shrink-0 h-screen sticky top-0 bg-surface border-r border-line">
       {/* Logo */}
       <div className="px-5 py-5 border-b border-line flex items-center justify-between">
-        <Link href="/home" className="flex items-center gap-2.5">
-          <div className="w-9 h-9 bg-brand-blue rounded-xl flex items-center justify-center">
-            <Zap size={18} className="text-white fill-white" />
-          </div>
+        <Link href="/home" className="flex items-center gap-2">
+          <Image src="/icons/icon-96.png" alt="Paycen" width={36} height={36} priority />
           <span className="text-ink font-black text-xl tracking-tight">Paycen</span>
         </Link>
         <ThemeToggle />
