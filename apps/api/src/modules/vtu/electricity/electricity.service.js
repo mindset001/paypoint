@@ -94,8 +94,13 @@ const pay = async (userId, { disco, meterNumber, meterType, amount: rawAmount, p
     }
     return { message: token ? 'Electricity payment successful' : 'Electricity payment is processing', reference: tx.reference, token, units };
   } catch (providerErr) {
-    await walletService.credit(userId, amountKobo, null);
-    await Transaction.findByIdAndUpdate(tx._id, { status: 'failed', failureReason: providerErr.message });
+    const { balanceBefore: revBefore, balanceAfter: revAfter } = await walletService.credit(userId, amountKobo, null);
+    await Transaction.findByIdAndUpdate(tx._id, { status: 'failed', failureReason: providerErr.message, balanceAfter: revAfter });
+    await ledger.record({
+      transactionId: tx._id, userId, walletId: tx.walletId, entry: 'credit',
+      amount: amountKobo, balanceBefore: revBefore, balanceAfter: revAfter,
+      description: `Refund: ${disco} electricity payment failed`,
+    });
     throw Object.assign(new Error(`${providerErr.message} — your wallet has been reversed.`), { statusCode: 502 });
   }
 };

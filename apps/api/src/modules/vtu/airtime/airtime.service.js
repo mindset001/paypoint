@@ -88,11 +88,20 @@ const buy = async (userId, { network, phone, amount: rawAmount, pin }) => {
       .catch((err) => console.error('[referral]', err));
     return { message: 'Airtime purchased successfully', reference: tx.reference, network, phone, amount: rawAmount, charged: chargedAmount };
   } catch (providerErr) {
-    // Reverse debit on provider failure
-    await walletService.credit(userId, amountKobo, null);
+    // Reverse debit on provider failure — record it like any other money
+    // movement (ledger entry + the transaction's own balance snapshot
+    // updated), not just a silent wallet.balance change the receipt never
+    // reflects.
+    const { balanceBefore: revBefore, balanceAfter: revAfter } = await walletService.credit(userId, amountKobo, null);
     await Transaction.findByIdAndUpdate(tx._id, {
       status: 'failed',
       failureReason: providerErr.message,
+      balanceAfter: revAfter,
+    });
+    await ledger.record({
+      transactionId: tx._id, userId, walletId: tx.walletId, entry: 'credit',
+      amount: amountKobo, balanceBefore: revBefore, balanceAfter: revAfter,
+      description: `Refund: ${network} airtime purchase failed`,
     });
     notify.createNotification(userId, {
       title: 'Airtime Purchase Failed',

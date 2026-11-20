@@ -136,8 +136,13 @@ const withdraw = async (userId, { bankAccountId, amountNGN, pin }) => {
     });
     return { message: 'Withdrawal is processing', reference: tx.reference, status: 'pending' };
   } catch (providerErr) {
-    await walletService.credit(userId, amountKobo, null);
-    await Transaction.findByIdAndUpdate(tx._id, { status: 'failed', failureReason: providerErr.message });
+    const { balanceBefore: revBefore, balanceAfter: revAfter } = await walletService.credit(userId, amountKobo, null);
+    await Transaction.findByIdAndUpdate(tx._id, { status: 'failed', failureReason: providerErr.message, balanceAfter: revAfter });
+    await ledger.record({
+      transactionId: tx._id, userId, walletId: tx.walletId, entry: 'credit',
+      amount: amountKobo, balanceBefore: revBefore, balanceAfter: revAfter,
+      description: `Refund: withdrawal to ${account.bankName} ${account.accountNumber} failed`,
+    });
     throw Object.assign(new Error(`${providerErr.message} — your wallet has been reversed.`), { statusCode: 502 });
   }
 };

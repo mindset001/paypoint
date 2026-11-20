@@ -132,8 +132,13 @@ const buy = async (userId, { network, catalog, phone, planId, pin }) => {
       .catch((err) => console.error('[referral]', err));
     return { message: 'Data purchased successfully', reference: tx.reference };
   } catch (providerErr) {
-    await walletService.credit(userId, amountKobo, null);
-    await Transaction.findByIdAndUpdate(tx._id, { status: 'failed', failureReason: providerErr.message });
+    const { balanceBefore: revBefore, balanceAfter: revAfter } = await walletService.credit(userId, amountKobo, null);
+    await Transaction.findByIdAndUpdate(tx._id, { status: 'failed', failureReason: providerErr.message, balanceAfter: revAfter });
+    await ledger.record({
+      transactionId: tx._id, userId, walletId: tx.walletId, entry: 'credit',
+      amount: amountKobo, balanceBefore: revBefore, balanceAfter: revAfter,
+      description: `Refund: ${network} data purchase failed`,
+    });
     throw Object.assign(new Error(`${providerErr.message} — your wallet has been reversed.`), { statusCode: 502 });
   }
 };

@@ -335,10 +335,16 @@ const handleTransferWebhook = async (event) => {
       type: 'wallet', meta: { reference: tx.reference },
     });
   } else {
-    await credit(tx.userId, tx.amount, null);
+    const { balanceBefore: revBefore, balanceAfter: revAfter } = await credit(tx.userId, tx.amount, null);
     await Transaction.findByIdAndUpdate(tx._id, {
       status: 'failed', providerStatus: status, providerResponse: event.data,
       failureReason: `Paystack reported: ${event.event}`,
+      balanceAfter: revAfter,
+    });
+    await ledger.record({
+      transactionId: tx._id, userId: tx.userId, walletId: tx.walletId, entry: 'credit',
+      amount: tx.amount, balanceBefore: revBefore, balanceAfter: revAfter,
+      description: `Refund: withdrawal reported ${event.event} by Paystack`,
     });
     notify.createNotification(tx.userId, {
       title: 'Withdrawal Failed',
@@ -434,12 +440,18 @@ const handleAidaPayWebhook = async (event) => {
       });
     }
   } else if (status === 'Cancelled' || status === 'Refund') {
-    await credit(tx.userId, tx.amount, null);
+    const { balanceBefore: revBefore, balanceAfter: revAfter } = await credit(tx.userId, tx.amount, null);
     await Transaction.findByIdAndUpdate(tx._id, {
       status: 'failed',
       providerStatus: status,
       providerResponse: event,
       failureReason: `AidaPay reported status: ${status}`,
+      balanceAfter: revAfter,
+    });
+    await ledger.record({
+      transactionId: tx._id, userId: tx.userId, walletId: tx.walletId, entry: 'credit',
+      amount: tx.amount, balanceBefore: revBefore, balanceAfter: revAfter,
+      description: `Refund: AidaPay reported ${status}`,
     });
   }
   // Processing / Pending — still waiting, nothing to do yet.

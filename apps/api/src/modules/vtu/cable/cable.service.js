@@ -70,8 +70,13 @@ const subscribe = async (userId, { provider, smartcardNumber, planCode, pin }) =
       .catch((err) => console.error('[referral]', err));
     return { message: 'Cable subscription successful', reference: tx.reference };
   } catch (providerErr) {
-    await walletService.credit(userId, amountKobo, null);
-    await Transaction.findByIdAndUpdate(tx._id, { status: 'failed', failureReason: providerErr.message });
+    const { balanceBefore: revBefore, balanceAfter: revAfter } = await walletService.credit(userId, amountKobo, null);
+    await Transaction.findByIdAndUpdate(tx._id, { status: 'failed', failureReason: providerErr.message, balanceAfter: revAfter });
+    await ledger.record({
+      transactionId: tx._id, userId, walletId: tx.walletId, entry: 'credit',
+      amount: amountKobo, balanceBefore: revBefore, balanceAfter: revAfter,
+      description: `Refund: ${provider} cable subscription failed`,
+    });
     throw Object.assign(new Error(`${providerErr.message} — your wallet has been reversed.`), { statusCode: 502 });
   }
 };
