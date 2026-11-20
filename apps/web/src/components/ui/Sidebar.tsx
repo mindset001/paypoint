@@ -24,9 +24,8 @@ export function Sidebar() {
     <aside className="hidden md:flex flex-col w-60 shrink-0 h-screen sticky top-0 bg-surface border-r border-line">
       {/* Logo */}
       <div className="px-5 py-5 border-b border-line flex items-center justify-between">
-        <Link href="/home" className="flex items-center gap-2">
-          <Image src="/icons/icon-96.png" alt="Paycen" width={36} height={36} priority />
-          <span className="text-ink font-black text-xl tracking-tight">Paycen</span>
+        <Link href="/home" className="bg-white rounded-xl px-2.5 py-1.5 shadow-sm">
+          <Image src="/icons/wordmark.png" alt="Paycen" width={116} height={30} priority className="h-[30px] w-auto" />
         </Link>
         <ThemeToggle />
       </div>

@@ -41,9 +41,8 @@ export default function LandingPage() {
       {/* ── NAV ─────────────────────────────────────── */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-brand-dark/95 backdrop-blur-md border-b border-white/10">
         <div className="max-w-7xl mx-auto px-5 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2 animate-fade-in">
-            <Image src="/icons/icon-96.png" alt="Paycen" width={36} height={36} priority />
-            <span className="text-white font-black text-xl tracking-tight">Paycen</span>
+          <div className="animate-fade-in bg-white rounded-xl px-2.5 py-1.5 shadow-sm">
+            <Image src="/icons/wordmark.png" alt="Paycen" width={128} height={33} priority className="h-[30px] w-auto" />
           </div>
 
           <div className="hidden md:flex items-center gap-8">
@@ -377,9 +376,8 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-10">
             <div className="col-span-2 md:col-span-1">
-              <div className="flex items-center gap-2 mb-4">
-                <Image src="/icons/icon-96.png" alt="Paycen" width={32} height={32} />
-                <span className="text-white font-black text-lg">Paycen</span>
+              <div className="bg-white rounded-xl px-2.5 py-1.5 inline-block mb-4">
+                <Image src="/icons/wordmark.png" alt="Paycen" width={112} height={29} className="h-[27px] w-auto" />
               </div>
               <p className="text-white/40 text-sm leading-relaxed">
                 Nigeria&apos;s fastest digital payments platform. Pay bills, buy airtime and data instantly.

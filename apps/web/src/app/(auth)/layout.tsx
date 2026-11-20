@@ -5,9 +5,8 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
     <div className="min-h-screen bg-gradient-to-b from-brand-dark to-brand-navy flex flex-col">
       {/* Logo */}
       <div className="flex justify-center pt-12 pb-4 lg:pt-16">
-        <div className="flex items-center gap-2">
-          <Image src="/icons/icon-96.png" alt="Paycen" width={40} height={40} priority />
-          <span className="text-white text-2xl font-black tracking-tight">Paycen</span>
+        <div className="bg-white rounded-2xl px-4 py-2.5 shadow-lg">
+          <Image src="/icons/wordmark.png" alt="Paycen" width={160} height={41} priority className="h-[38px] w-auto" />
         </div>
       </div>
 

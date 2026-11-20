@@ -38,13 +38,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <aside className="w-60 shrink-0 h-screen sticky top-0 flex flex-col bg-slate-900 border-r border-slate-800">
         {/* Logo */}
         <div className="px-5 py-5 border-b border-slate-800">
-          <div className="flex items-center gap-2 mb-1">
-            <Image src="/icons/icon-96.png" alt="Paycen" width={32} height={32} />
-            <div>
-              <p className="text-white font-black text-sm leading-none">Paycen</p>
-              <p className="text-slate-500 text-xs mt-0.5">Admin Panel</p>
-            </div>
+          <div className="bg-white rounded-xl px-2.5 py-1.5 inline-block mb-1.5 shadow-sm">
+            <Image src="/icons/wordmark.png" alt="Paycen" width={104} height={27} className="h-[26px] w-auto" />
           </div>
+          <p className="text-slate-500 text-xs">Admin Panel</p>
         </div>
 
         {/* Nav */}
