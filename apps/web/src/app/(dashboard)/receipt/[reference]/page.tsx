@@ -161,9 +161,11 @@ export default function ReceiptPage() {
             >
               {/* Captured card */}
               <div ref={cardRef} className="bg-surface rounded-t-3xl shadow-xl overflow-hidden">
-                {/* Brand header */}
+                {/* Brand header — bg-surface above goes dark in dark mode,
+                    where the logo's navy text has no contrast, so the white
+                    backing only shows there. */}
                 <div className="flex justify-center pt-6 pb-4">
-                  <div className="bg-white rounded-xl px-3 py-1.5 shadow-sm">
+                  <div className="dark:bg-white dark:rounded-xl dark:px-3 dark:py-1.5 dark:shadow-sm">
                     <img src="/icons/wordmark.png" alt="Paycen" width={100} height={26} />
                   </div>
                 </div>

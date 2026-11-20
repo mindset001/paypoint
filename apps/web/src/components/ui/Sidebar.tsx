@@ -24,7 +24,9 @@ export function Sidebar() {
     <aside className="hidden md:flex flex-col w-60 shrink-0 h-screen sticky top-0 bg-surface border-r border-line">
       {/* Logo */}
       <div className="px-5 py-5 border-b border-line flex items-center justify-between">
-        <Link href="/home" className="bg-white rounded-xl px-2.5 py-1.5 shadow-sm">
+        {/* bg-surface above goes dark in dark mode, where the logo's navy
+            text has no contrast — so the white backing only shows there. */}
+        <Link href="/home" className="dark:bg-white dark:rounded-xl dark:px-2.5 dark:py-1.5 dark:shadow-sm">
           <Image src="/icons/wordmark.png" alt="Paycen" width={116} height={30} priority className="h-[30px] w-auto" />
         </Link>
         <ThemeToggle />
