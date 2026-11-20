@@ -110,6 +110,57 @@ const updateReferralBonusSettings = async (req, res) => {
   }
 };
 
+const getStuckDeposits = async (req, res) => {
+  try {
+    const data = await adminService.getStuckDeposits();
+    return success(res, data, 'Stuck deposits fetched');
+  } catch (err) {
+    return error(res, err.message, 500);
+  }
+};
+
+const reconcileDeposit = async (req, res) => {
+  try {
+    const data = await adminService.reconcileDeposit(req.params.id);
+    return success(res, data, 'Deposit reconciled');
+  } catch (err) {
+    return error(res, err.message, err.statusCode || 400);
+  }
+};
+
+const getPendingWithdrawals = async (req, res) => {
+  try {
+    const data = await adminService.getPendingWithdrawals();
+    return success(res, data, 'Pending withdrawals fetched');
+  } catch (err) {
+    return error(res, err.message, 500);
+  }
+};
+
+const reconcileWithdrawal = async (req, res) => {
+  try {
+    const data = await adminService.reconcileWithdrawal(req.params.id);
+    return success(res, data, 'Withdrawal reconciled');
+  } catch (err) {
+    return error(res, err.message, err.statusCode || 400);
+  }
+};
+
+const getLedger = async (req, res) => {
+  try {
+    const { page, limit, userId, search } = req.query;
+    const data = await adminService.getLedger({
+      page: Number(page) || 1,
+      limit: Math.min(Number(limit) || 30, 100),
+      userId: userId ?? '',
+      search: search ?? '',
+    });
+    return success(res, data, 'Ledger fetched');
+  } catch (err) {
+    return error(res, err.message, 500);
+  }
+};
+
 module.exports = {
   getStats,
   getUsers,
@@ -120,4 +171,9 @@ module.exports = {
   getUserTransactions,
   getReferralBonusSettings,
   updateReferralBonusSettings,
+  getStuckDeposits,
+  reconcileDeposit,
+  getPendingWithdrawals,
+  reconcileWithdrawal,
+  getLedger,
 };

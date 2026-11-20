@@ -55,4 +55,9 @@ const initiateTransfer = ({ amountKobo, recipientCode, reference, reason }) =>
     source: 'balance', amount: amountKobo, recipient: recipientCode, reference, reason,
   });
 
-module.exports = { initializeTransaction, verifyTransaction, getBanks, resolveAccount, createTransferRecipient, initiateTransfer };
+// Re-checks a transfer left "pending"/"otp" at initiation — used for manual
+// admin reconciliation when the transfer.success/failed webhook never arrived.
+const verifyTransfer = (transferCodeOrId) =>
+  client.get(`/transfer/${transferCodeOrId}`);
+
+module.exports = { initializeTransaction, verifyTransaction, getBanks, resolveAccount, createTransferRecipient, initiateTransfer, verifyTransfer };

@@ -90,6 +90,19 @@ export interface AdminTransactionRow extends Transaction {
   userId?: { _id: string; firstName: string; lastName: string; phone: { number: string } };
 }
 
+export interface AdminLedgerEntry {
+  _id: string;
+  transactionId?: { _id: string; reference: string; type: string; status: string };
+  userId?: { _id: string; firstName: string; lastName: string; phone: { number: string } };
+  walletId: string;
+  entry: 'debit' | 'credit';
+  amount: number;
+  balanceBefore: number;
+  balanceAfter: number;
+  description: string;
+  createdAt: string;
+}
+
 export interface PaginatedResponse<T> {
   items: T[];
   total: number;

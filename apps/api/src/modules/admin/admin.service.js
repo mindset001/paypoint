@@ -1,7 +1,15 @@
 const User = require('../../models/User');
 const Wallet = require('../../models/Wallet');
 const Transaction = require('../../models/Transaction');
+const Ledger = require('../../models/Ledger');
 const referralService = require('../referral/referral.service');
+const walletService = require('../wallet/wallet.service');
+const Paystack = require('../../providers/paystack/paystack.client');
+
+// A wallet_fund past this age that's still "pending" means the webhook
+// never arrived and nobody completed the browser-side verify call either —
+// worth surfacing to an admin instead of staying stuck forever.
+const STUCK_DEPOSIT_AGE_MS = 15 * 60 * 1000;
 
 const getStats = async () => {
   const now = new Date();
@@ -184,6 +192,93 @@ const updateReferralBonusSettings = async ({ basic, standard, premium }) => {
   };
 };
 
+// ── Financial reconciliation ─────────────────────────────────────────────
+//
+// These exist because completion of a deposit/withdrawal normally happens
+// automatically (provider webhook, or the browser-side verify call after
+// checkout redirects back) — this is the manual fallback for when neither
+// one fires, so an admin doesn't have to reach for a one-off DB script.
+
+const getStuckDeposits = async () => {
+  const cutoff = new Date(Date.now() - STUCK_DEPOSIT_AGE_MS);
+  const deposits = await Transaction.find({
+    type: 'wallet_fund',
+    status: 'pending',
+    createdAt: { $lt: cutoff },
+  })
+    .sort({ createdAt: 1 }) // oldest first — longest-stuck is most urgent
+    .populate('userId', 'firstName lastName email phone')
+    .select('reference userId amount meta createdAt');
+  return deposits;
+};
+
+// Re-runs the same provider-verify + completion logic the browser-side
+// /wallet/fund/verify call would have run — safe to call repeatedly
+// (completeWalletFund only ever claims a still-pending row once).
+const reconcileDeposit = async (txId) => {
+  const tx = await Transaction.findById(txId);
+  if (!tx) throw Object.assign(new Error('Transaction not found'), { statusCode: 404 });
+  if (tx.type !== 'wallet_fund') throw Object.assign(new Error('Not a deposit transaction'), { statusCode: 400 });
+  if (tx.status !== 'pending') return { outcome: 'already_processed', status: tx.status };
+
+  try {
+    const result = await walletService.verifyPayment(tx.meta?.provider, tx.reference);
+    return { outcome: 'credited', ...result };
+  } catch (err) {
+    // The provider genuinely hasn't marked this successful (yet, or ever) —
+    // that's a normal, expected outcome here, not a server error.
+    return { outcome: 'not_successful', message: err.message };
+  }
+};
+
+const getPendingWithdrawals = async () => {
+  const withdrawals = await Transaction.find({ type: 'withdrawal', status: 'pending' })
+    .sort({ createdAt: 1 })
+    .populate('userId', 'firstName lastName email phone')
+    .select('reference userId amount meta providerReference providerStatus createdAt');
+  return withdrawals;
+};
+
+// Paystack transfers left "pending"/"otp" resolve via the business
+// account's own approval, then a transfer.success/failed/reversed webhook —
+// this re-checks that status directly for when the webhook never arrived.
+const reconcileWithdrawal = async (txId) => {
+  const tx = await Transaction.findById(txId);
+  if (!tx) throw Object.assign(new Error('Transaction not found'), { statusCode: 404 });
+  if (tx.type !== 'withdrawal') throw Object.assign(new Error('Not a withdrawal transaction'), { statusCode: 400 });
+  if (tx.status !== 'pending') return { outcome: 'already_processed', status: tx.status };
+  if (!tx.providerReference) return { outcome: 'no_provider_reference' };
+
+  const result = await Paystack.verifyTransfer(tx.providerReference);
+  const status = result.data?.status;
+
+  if (status === 'success') {
+    await walletService.handlePaystackWebhook({ event: 'transfer.success', data: { reference: tx.reference, status } });
+    return { outcome: 'completed', status };
+  }
+  if (status === 'failed' || status === 'reversed') {
+    await walletService.handlePaystackWebhook({ event: `transfer.${status}`, data: { reference: tx.reference, status } });
+    return { outcome: 'refunded', status };
+  }
+  return { outcome: 'still_pending', status };
+};
+
+const getLedger = async ({ page = 1, limit = 30, userId = '', search = '' } = {}) => {
+  const skip = (page - 1) * limit;
+  const filter = {};
+  if (userId) filter.userId = userId;
+  if (search) filter.description = new RegExp(search, 'i');
+
+  const [entries, total] = await Promise.all([
+    Ledger.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit)
+      .populate('userId', 'firstName lastName phone')
+      .populate('transactionId', 'reference type status'),
+    Ledger.countDocuments(filter),
+  ]);
+
+  return { entries, total, page, limit, pages: Math.ceil(total / limit) };
+};
+
 module.exports = {
   getStats,
   getUsers,
@@ -194,4 +289,9 @@ module.exports = {
   getUserTransactions,
   getReferralBonusSettings,
   updateReferralBonusSettings,
+  getStuckDeposits,
+  reconcileDeposit,
+  getPendingWithdrawals,
+  reconcileWithdrawal,
+  getLedger,
 };

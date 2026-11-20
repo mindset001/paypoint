@@ -176,6 +176,16 @@ export const adminApi = {
     api.get('/admin/settings/referral-bonus'),
   updateReferralBonusSettings: (data: { basic: number; standard: number; premium: number }) =>
     api.patch('/admin/settings/referral-bonus', data),
+  stuckDeposits: () =>
+    api.get('/admin/deposits/stuck'),
+  reconcileDeposit: (id: string) =>
+    api.post(`/admin/deposits/${id}/reconcile`),
+  pendingWithdrawals: () =>
+    api.get('/admin/withdrawals/pending'),
+  reconcileWithdrawal: (id: string) =>
+    api.post(`/admin/withdrawals/${id}/reconcile`),
+  ledger: (params?: { page?: number; limit?: number; userId?: string; search?: string }) =>
+    api.get('/admin/ledger', { params }),
 };
 
 // ── Exam ─────────────────────────────────────────────────────────────

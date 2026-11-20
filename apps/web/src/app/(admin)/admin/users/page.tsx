@@ -172,7 +172,7 @@ export default function AdminUsersPage() {
             {/* Wallet */}
             <div>
               <p className="text-slate-300 text-sm">
-                {u.wallet ? formatNGN(u.wallet.balance / 100) : '—'}
+                {u.wallet ? formatNGN(u.wallet.balance) : '—'}
               </p>
               {u.wallet && <p className="text-slate-600 text-xs">{u.wallet.tier}</p>}
             </div>

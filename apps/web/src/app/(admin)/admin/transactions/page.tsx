@@ -192,7 +192,7 @@ function TransactionsInner() {
 
             {/* Amount */}
             <p className={`text-sm font-semibold ${tx.direction === 'credit' ? 'text-green-400' : 'text-white'}`}>
-              {tx.direction === 'credit' ? '+' : '−'}{formatNGN(tx.amount / 100)}
+              {tx.direction === 'credit' ? '+' : '−'}{formatNGN(tx.amount)}
             </p>
 
             {/* Status */}

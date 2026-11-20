@@ -195,7 +195,7 @@ export default function AdminUserDetailPage() {
                   </div>
                   <div className="text-right shrink-0">
                     <p className={`text-sm font-semibold ${tx.direction === 'credit' ? 'text-green-400' : 'text-slate-300'}`}>
-                      {tx.direction === 'credit' ? '+' : '−'}{formatNGN(tx.amount / 100)}
+                      {tx.direction === 'credit' ? '+' : '−'}{formatNGN(tx.amount)}
                     </p>
                     <p className={`text-xs ${TX_STATUS_COLOR[tx.status] ?? ''}`}>{tx.status}</p>
                   </div>
@@ -216,20 +216,20 @@ export default function AdminUserDetailPage() {
             </div>
             {wallet ? (
               <>
-                <p className="text-white text-2xl font-black mb-1">{formatNGN(wallet.balance / 100)}</p>
+                <p className="text-white text-2xl font-black mb-1">{formatNGN(wallet.balance)}</p>
                 <span className="text-xs bg-slate-700 text-slate-300 px-2 py-0.5 rounded-full">{wallet.tier}</span>
                 <div className="mt-4 space-y-2 pt-3 border-t border-slate-700/40">
                   <div className="flex justify-between text-sm">
                     <span className="text-slate-500">Total funded</span>
-                    <span className="text-slate-200">{formatNGN(wallet.totalFunded / 100)}</span>
+                    <span className="text-slate-200">{formatNGN(wallet.totalFunded)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-slate-500">Total spent</span>
-                    <span className="text-slate-200">{formatNGN(wallet.totalSpent / 100)}</span>
+                    <span className="text-slate-200">{formatNGN(wallet.totalSpent)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-slate-500">Daily limit</span>
-                    <span className="text-slate-200">{formatNGN(wallet.dailySpendLimit / 100)}</span>
+                    <span className="text-slate-200">{formatNGN(wallet.dailySpendLimit)}</span>
                   </div>
                 </div>
               </>

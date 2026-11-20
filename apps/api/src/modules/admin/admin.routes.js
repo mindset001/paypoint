@@ -14,4 +14,10 @@ router.get('/transactions',                ...isAdmin, ctrl.getTransactions);
 router.get('/settings/referral-bonus',     ...isAdmin, ctrl.getReferralBonusSettings);
 router.patch('/settings/referral-bonus',   ...isAdmin, ctrl.updateReferralBonusSettings);
 
+router.get('/deposits/stuck',              ...isAdmin, ctrl.getStuckDeposits);
+router.post('/deposits/:id/reconcile',     ...isAdmin, ctrl.reconcileDeposit);
+router.get('/withdrawals/pending',         ...isAdmin, ctrl.getPendingWithdrawals);
+router.post('/withdrawals/:id/reconcile',  ...isAdmin, ctrl.reconcileWithdrawal);
+router.get('/ledger',                      ...isAdmin, ctrl.getLedger);
+
 module.exports = router;
