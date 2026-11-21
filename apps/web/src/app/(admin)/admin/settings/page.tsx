@@ -162,7 +162,8 @@ function CashbackCard() {
   );
 }
 
-interface FeatureFlags { exam: boolean; reseller: boolean; savings: boolean }
+type FeatureStatus = 'live' | 'coming_soon' | 'hidden';
+interface FeatureFlags { exam: FeatureStatus; reseller: FeatureStatus; savings: FeatureStatus }
 
 const FEATURE_LABELS: Record<keyof FeatureFlags, { label: string; sub: string }> = {
   exam:     { label: 'Exam Pins',       sub: 'WAEC, NECO, NABTEB, JAMB purchases' },
@@ -170,8 +171,20 @@ const FEATURE_LABELS: Record<keyof FeatureFlags, { label: string; sub: string }>
   reseller: { label: 'Reseller Program', sub: 'The "Become a Reseller" section on support' },
 };
 
+const STATUS_OPTIONS: { value: FeatureStatus; label: string }[] = [
+  { value: 'live', label: 'Live' },
+  { value: 'coming_soon', label: 'Coming Soon' },
+  { value: 'hidden', label: 'Hidden' },
+];
+
+const STATUS_PILL: Record<FeatureStatus, string> = {
+  live: 'bg-green-500/15 text-green-400 border-green-500/30',
+  coming_soon: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
+  hidden: 'bg-slate-600/20 text-slate-400 border-slate-600/40',
+};
+
 function FeatureFlagsCard() {
-  const [flags, setFlags] = useState<FeatureFlags>({ exam: false, reseller: false, savings: true });
+  const [flags, setFlags] = useState<FeatureFlags>({ exam: 'coming_soon', reseller: 'coming_soon', savings: 'live' });
   const [loading, setLoading] = useState(true);
   const [busyKey, setBusyKey] = useState<keyof FeatureFlags | null>(null);
 
@@ -182,13 +195,13 @@ function FeatureFlagsCard() {
       .finally(() => setLoading(false));
   }, []);
 
-  const toggle = async (key: keyof FeatureFlags) => {
-    const next = !flags[key];
+  const setStatus = async (key: keyof FeatureFlags, status: FeatureStatus) => {
+    if (status === flags[key]) return;
     setBusyKey(key);
     try {
-      const r = await adminApi.updateFeatureFlags({ [key]: next });
+      const r = await adminApi.updateFeatureFlags({ [key]: status });
       setFlags(r.data.data);
-      toast.success(`${FEATURE_LABELS[key].label} ${next ? 'enabled' : 'set to Coming Soon'}`);
+      toast.success(`${FEATURE_LABELS[key].label} set to ${STATUS_OPTIONS.find((o) => o.value === status)?.label}`);
     } catch (e) {
       toast.error(getErrorMessage(e));
     } finally {
@@ -197,26 +210,40 @@ function FeatureFlagsCard() {
   };
 
   return (
-    <SettingsCard icon={Eye} title="Feature Visibility" sub="Hide a feature behind a Coming Soon badge without deploying code.">
+    <SettingsCard icon={Eye} title="Feature Visibility" sub="Live, Coming Soon (visible but disabled), or Hidden (not shown at all) — no deploy needed.">
       {loading ? (
         <div className="space-y-3 animate-pulse">
-          {[...Array(3)].map((_, i) => <div key={i} className="h-14 bg-slate-700/50 rounded-xl" />)}
+          {[...Array(3)].map((_, i) => <div key={i} className="h-16 bg-slate-700/50 rounded-xl" />)}
         </div>
       ) : (
         <div className="flex flex-col gap-2">
           {(Object.keys(FEATURE_LABELS) as (keyof FeatureFlags)[]).map((key) => (
-            <div key={key} className="flex items-center justify-between gap-4 px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl">
-              <div className="min-w-0">
-                <p className="text-white text-sm font-semibold">{FEATURE_LABELS[key].label}</p>
-                <p className="text-slate-500 text-xs mt-0.5">{FEATURE_LABELS[key].sub}</p>
+            <div key={key} className="flex flex-col gap-2.5 px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl">
+              <div className="flex items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <p className="text-white text-sm font-semibold">{FEATURE_LABELS[key].label}</p>
+                  <p className="text-slate-500 text-xs mt-0.5">{FEATURE_LABELS[key].sub}</p>
+                </div>
+                <span className={`flex-shrink-0 text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded-full border ${STATUS_PILL[flags[key]]}`}>
+                  {STATUS_OPTIONS.find((o) => o.value === flags[key])?.label}
+                </span>
               </div>
-              <button
-                onClick={() => toggle(key)}
-                disabled={busyKey === key}
-                className={`relative flex-shrink-0 w-11 h-6 rounded-full transition-colors disabled:opacity-50 ${flags[key] ? 'bg-green-500' : 'bg-slate-600'}`}
-              >
-                <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${flags[key] ? 'translate-x-5' : 'translate-x-0'}`} />
-              </button>
+              <div className="flex gap-1.5">
+                {STATUS_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.value}
+                    onClick={() => setStatus(key, opt.value)}
+                    disabled={busyKey === key}
+                    className={`flex-1 text-xs font-semibold py-1.5 rounded-lg border transition-colors disabled:opacity-50 ${
+                      flags[key] === opt.value
+                        ? 'bg-brand-blue border-brand-blue text-white'
+                        : 'bg-slate-900 border-slate-700 text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
             </div>
           ))}
         </div>

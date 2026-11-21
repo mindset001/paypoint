@@ -183,7 +183,7 @@ export const adminApi = {
     api.patch('/admin/settings/cashback', data),
   getFeatureFlags: () =>
     api.get('/admin/settings/features'),
-  updateFeatureFlags: (data: Partial<{ exam: boolean; reseller: boolean; savings: boolean }>) =>
+  updateFeatureFlags: (data: Partial<Record<'exam' | 'reseller' | 'savings', 'live' | 'coming_soon' | 'hidden'>>) =>
     api.patch('/admin/settings/features', data),
   stuckDeposits: () =>
     api.get('/admin/deposits/stuck'),

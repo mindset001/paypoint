@@ -33,7 +33,7 @@ export default function HomePage() {
   const { wallet, transactions, loading, fetchWallet, fetchTransactions } = useWallet();
   const [unread, setUnread] = useState(0);
   // Mirrors the API's own defaults so there's no flash before the real flags load.
-  const [featureFlags, setFeatureFlags] = useState<Record<string, boolean>>({ exam: false, reseller: false, savings: true });
+  const [featureFlags, setFeatureFlags] = useState<Record<string, string>>({ exam: 'coming_soon', reseller: 'coming_soon', savings: 'live' });
 
   useEffect(() => {
     fetchWallet();
@@ -79,9 +79,9 @@ export default function HomePage() {
             animate="show"
             className="grid grid-cols-3 gap-3"
           >
-            {SERVICES.map((s) => (
+            {SERVICES.filter((s) => s.id !== 'exam' || featureFlags.exam !== 'hidden').map((s) => (
               <motion.div key={s.id} variants={itemVariants}>
-                <ServiceCard {...s} comingSoon={s.id === 'exam' ? !featureFlags.exam : false} />
+                <ServiceCard {...s} comingSoon={s.id === 'exam' && featureFlags.exam === 'coming_soon'} />
               </motion.div>
             ))}
           </motion.div>

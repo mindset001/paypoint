@@ -70,12 +70,12 @@ const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.06 } } };
 const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0, transition: { duration: 0.3, ease: 'easeOut' as const } } };
 
 // Mirrors the API's own defaults (apps/api/src/services/featureFlags.service.js)
-// so the tile doesn't flash "Coming Soon" for an already-enabled feature
-// (savings) in the gap before the real flags load.
-const DEFAULT_FLAGS = { exam: false, reseller: false, savings: true };
+// so a tile doesn't flash the wrong state (e.g. "Coming Soon" for
+// already-live savings) in the gap before the real flags load.
+const DEFAULT_FLAGS = { exam: 'coming_soon', reseller: 'coming_soon', savings: 'live' };
 
 export default function ServicesPage() {
-  const [featureFlags, setFeatureFlags] = useState<Record<string, boolean>>(DEFAULT_FLAGS);
+  const [featureFlags, setFeatureFlags] = useState<Record<string, string>>(DEFAULT_FLAGS);
 
   useEffect(() => {
     servicesApi.features().then((r) => setFeatureFlags(r.data.data)).catch(() => {});
@@ -89,9 +89,12 @@ export default function ServicesPage() {
       </div>
 
       <motion.div variants={stagger} initial="hidden" animate="show" className="px-4 py-5 flex flex-col gap-3">
-        {SERVICES.map(({ id, name, desc, icon: Icon, color, border, gradient }) => {
+        {SERVICES.filter(({ id }) => {
           const flagKey = FEATURE_KEY_BY_SERVICE[id];
-          const comingSoon = flagKey ? !featureFlags[flagKey] : false;
+          return !flagKey || featureFlags[flagKey] !== 'hidden';
+        }).map(({ id, name, desc, icon: Icon, color, border, gradient }) => {
+          const flagKey = FEATURE_KEY_BY_SERVICE[id];
+          const comingSoon = flagKey ? featureFlags[flagKey] === 'coming_soon' : false;
           const cardContent = (
             <>
               <div className={`w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 ${comingSoon ? 'bg-surface-2 text-ink-muted' : color}`}>
