@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { useAuthStore } from '@/store/auth.store';
 import { useAuth } from '@/hooks/useAuth';
-import { User, Copy, LogOut, ChevronRight, Shield, Bell, HelpCircle, Pencil, Check, X, FileCheck } from 'lucide-react';
+import { User, Copy, LogOut, ChevronRight, Shield, Bell, HelpCircle, Pencil, Check, X, FileCheck, ShieldCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
 import { profileApi } from '@/lib/api';
@@ -177,6 +177,9 @@ export default function ProfilePage() {
           <MenuItem icon={Shield} label="Security & PIN" href="/profile/security" />
           <MenuItem icon={Bell} label="Notifications" href="/profile/notifications" />
           <MenuItem icon={HelpCircle} label="Help & Support" href="/profile/support" />
+          {(user?.role === 'admin' || user?.role === 'developer') && (
+            <MenuItem icon={ShieldCheck} label="Admin Panel" href="/admin" />
+          )}
           <button
             onClick={logout}
             className="w-full flex items-center gap-3 p-4 text-red-500"
