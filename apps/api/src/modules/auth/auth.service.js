@@ -67,7 +67,12 @@ const verifyOtp = async ({ identifier, otpCode }) => {
   const isPhone = /^\+?[0-9]{10,14}$/.test(identifier);
   const key = isPhone ? `phone:${identifier}` : `email:${identifier.toLowerCase()}`;
 
-  const result = await otp.verify(key, otpCode);
+  // Doesn't delete the OTP yet — the account-creation step below can
+  // legitimately fail (see the race check), and burning the code on a
+  // failed attempt would strand the user: every retry with the same
+  // (correct) code would then see "invalid or expired" forever, since the
+  // record would already be gone. Only consumed once everything succeeds.
+  const result = await otp.peekAndValidate(key, otpCode);
   if (!result) throw Object.assign(new Error('Invalid or expired OTP'), { statusCode: 400 });
 
   let user;
@@ -75,6 +80,21 @@ const verifyOtp = async ({ identifier, otpCode }) => {
     // First time this identifier is verified — the account didn't exist
     // until now; create it from the payload stashed at register() time.
     const payload = result.pending;
+
+    // register()'s own duplicate check only looks at already-created
+    // Users — it can't see another pending (unverified) registration that
+    // reserved the same phone/email. Two people (or one person retrying
+    // with a reused test phone) can both pass that check and each hold a
+    // valid OTP for the same phone number; whichever verifies first wins,
+    // so re-check right before creating instead of letting User.create()
+    // throw a raw duplicate-key error after the OTP's already consumed.
+    const conflict = await User.findOne({
+      $or: [{ 'email.address': payload.email }, { 'phone.number': payload.phone }],
+    });
+    if (conflict) {
+      const field = conflict.email.address === payload.email ? 'Email' : 'Phone number';
+      throw Object.assign(new Error(`${field} was registered by someone else while this code was pending — please sign up again`), { statusCode: 409 });
+    }
 
     let code;
     do {
@@ -96,6 +116,8 @@ const verifyOtp = async ({ identifier, otpCode }) => {
     if (payload.referredBy) {
       await referralService.createPendingReferral(payload.referredBy, user._id, payload.referralCode);
     }
+
+    await otp.consume(key);
   } else {
     // Existing, already-created account verifying phone/email after the fact.
     const query = isPhone
@@ -113,6 +135,7 @@ const verifyOtp = async ({ identifier, otpCode }) => {
       user.email.verifiedAt = new Date();
     }
     await user.save();
+    await otp.consume(key);
   }
 
   const tokens = issueTokens(user);
