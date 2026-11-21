@@ -7,6 +7,9 @@ const isAdmin = [authenticate, authorize('admin', 'developer')];
 router.get('/stats',                       ...isAdmin, ctrl.getStats);
 router.get('/stats/charts',                ...isAdmin, ctrl.getChartData);
 router.get('/aidapay/overview',            ...isAdmin, ctrl.getAidapayOverview);
+router.get('/data-plans',                  ...isAdmin, ctrl.getDataPlansAdmin);
+router.patch('/data-plans/:planId',        ...isAdmin, ctrl.setDataPlanPrice);
+router.delete('/data-plans/:planId',       ...isAdmin, ctrl.removeDataPlanPrice);
 router.get('/users/export',                ...isAdmin, ctrl.exportUsersCsv); // before /users/:id — "export" would otherwise match as an id
 router.get('/users',                       ...isAdmin, ctrl.getUsers);
 router.get('/users/:id',                   ...isAdmin, ctrl.getUserById);

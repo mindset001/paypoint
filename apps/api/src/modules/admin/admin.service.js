@@ -13,6 +13,8 @@ const cashbackService = require('../../services/cashback.service');
 const featureFlags = require('../../services/featureFlags.service');
 const Notification = require('../../models/Notification');
 const Announcement = require('../../models/Announcement');
+const dataService = require('../vtu/data/data.service');
+const dataPlanPricing = require('../../services/dataPlanPricing.service');
 
 // A wallet_fund past this age that's still "pending" means the webhook
 // never arrived and nobody completed the browser-side verify call either —
@@ -252,6 +254,53 @@ const getAidapayOverview = async () => {
     commissionBalance: Math.round((d.commission_balance ?? 0) * 100),
     lowBalanceThreshold: aidapayMonitor.LOW_BALANCE_KOBO,
   };
+};
+
+// ── Data plan pricing ─────────────────────────────────────────────────────
+//
+// Users never see AidaPay's raw cost directly — only plans an admin has
+// explicitly priced show up for purchase (data.service.js#getPlans). This
+// surfaces every AidaPay plan across every known network/catalog, merged
+// with whatever price (if any) is currently set, so admin can see and price
+// the full live catalog in one place.
+
+const getDataPlansAdmin = async () => {
+  const combos = dataService.getAllNetworkCatalogs();
+  const allPrices = await dataPlanPricing.getAllPrices();
+
+  return Promise.all(combos.map(async ({ network, catalogKey, catalogLabel }) => {
+    const plans = await dataService.getRawPlans(network, catalogKey);
+    return {
+      network,
+      catalogKey,
+      catalogLabel,
+      plans: plans.map((p) => {
+        const entry = allPrices[p.planId];
+        return {
+          ...p,
+          customerPrice: entry?.customer != null ? entry.customer / 100 : null,
+          agentPrice: entry?.agent != null ? entry.agent / 100 : null,
+        };
+      }),
+    };
+  }));
+};
+
+const setDataPlanPrice = async (planId, { customer, agent }, { adminId, ip } = {}) => {
+  if (customer == null || agent == null || Number(customer) < 0 || Number(agent) < 0) {
+    throw Object.assign(new Error('Both customer and reseller prices are required and must be non-negative'), { statusCode: 400 });
+  }
+  const before = (await dataPlanPricing.getAllPrices())[planId] ?? null;
+  const after = await dataPlanPricing.setPrice(planId, { customer: Number(customer) * 100, agent: Number(agent) * 100 });
+  audit.record({ adminId, action: 'data_plan.price.update', before, after: { planId, ...after }, ip });
+  return { planId, customerPrice: after.customer / 100, agentPrice: after.agent / 100 };
+};
+
+const removeDataPlanPrice = async (planId, { adminId, ip } = {}) => {
+  const before = (await dataPlanPricing.getAllPrices())[planId] ?? null;
+  await dataPlanPricing.removePrice(planId);
+  audit.record({ adminId, action: 'data_plan.price.remove', before, after: { planId }, ip });
+  return { planId };
 };
 
 // ── Broadcasts ─────────────────────────────────────────────────────────
@@ -644,4 +693,7 @@ module.exports = {
   sendAnnouncement,
   getAnnouncements,
   getAidapayOverview,
+  getDataPlansAdmin,
+  setDataPlanPrice,
+  removeDataPlanPrice,
 };

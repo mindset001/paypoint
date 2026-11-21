@@ -156,6 +156,34 @@ const getAidapayOverview = async (req, res) => {
   }
 };
 
+const getDataPlansAdmin = async (req, res) => {
+  try {
+    const data = await adminService.getDataPlansAdmin();
+    return success(res, data, 'Data plans fetched');
+  } catch (err) {
+    return error(res, err.message, err.statusCode || 500);
+  }
+};
+
+const setDataPlanPrice = async (req, res) => {
+  try {
+    const { customer, agent } = req.body;
+    const data = await adminService.setDataPlanPrice(req.params.planId, { customer, agent }, { adminId: req.user._id, ip: req.ip });
+    return success(res, data, 'Price updated');
+  } catch (err) {
+    return error(res, err.message, err.statusCode || 400);
+  }
+};
+
+const removeDataPlanPrice = async (req, res) => {
+  try {
+    const data = await adminService.removeDataPlanPrice(req.params.planId, { adminId: req.user._id, ip: req.ip });
+    return success(res, data, 'Price removed — plan hidden from users');
+  } catch (err) {
+    return error(res, err.message, 500);
+  }
+};
+
 const sendAnnouncement = async (req, res) => {
   try {
     const { title, body, displayType } = req.body;
@@ -352,4 +380,7 @@ module.exports = {
   sendAnnouncement,
   getAnnouncements,
   getAidapayOverview,
+  getDataPlansAdmin,
+  setDataPlanPrice,
+  removeDataPlanPrice,
 };

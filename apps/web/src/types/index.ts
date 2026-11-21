@@ -95,6 +95,22 @@ export interface AidapayOverview {
   lowBalanceThreshold: number;
 }
 
+export interface AdminDataPlanRow {
+  planId: string;
+  name: string;
+  rawAmount: number;
+  validity: string;
+  customerPrice: number | null;
+  agentPrice: number | null;
+}
+
+export interface AdminDataPlanGroup {
+  network: string;
+  catalogKey: string;
+  catalogLabel: string;
+  plans: AdminDataPlanRow[];
+}
+
 export interface AdminTransactionRow extends Transaction {
   userId?: { _id: string; firstName: string; lastName: string; phone: { number: string } };
 }

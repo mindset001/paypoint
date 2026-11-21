@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { LayoutDashboard, Users, ArrowLeftRight, Settings, ChevronRight, LogOut, Home, ShieldAlert, ShieldCheck, History, Megaphone, Menu, X } from 'lucide-react';
+import { LayoutDashboard, Users, ArrowLeftRight, Settings, ChevronRight, LogOut, Home, ShieldAlert, ShieldCheck, History, Megaphone, Menu, X, Wifi } from 'lucide-react';
 import { useAuthStore } from '@/store/auth.store';
 
 const NAV = [
@@ -12,6 +12,7 @@ const NAV = [
   { href: '/admin/transactions',   icon: ArrowLeftRight,  label: 'Transactions' },
   { href: '/admin/reconciliation', icon: ShieldAlert,     label: 'Reconciliation' },
   { href: '/admin/kyc',            icon: ShieldCheck,     label: 'KYC Review' },
+  { href: '/admin/data-plans',     icon: Wifi,            label: 'Data Plans' },
   { href: '/admin/announcements',  icon: Megaphone,       label: 'Announcements' },
   { href: '/admin/audit-log',      icon: History,         label: 'Audit Log' },
   { href: '/admin/settings',       icon: Settings,        label: 'Settings' },

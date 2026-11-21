@@ -8,6 +8,7 @@ const otp = require('../../../utils/otp');
 const referralService = require('../../referral/referral.service');
 const cashbackService = require('../../../services/cashback.service');
 const pricing = require('../../../services/pricing.service');
+const dataPlanPricing = require('../../../services/dataPlanPricing.service');
 
 // AidaPay's data-bundle-sme catalog doesn't map one network to one
 // provider_code — several networks offer more than one catalog under this
@@ -64,16 +65,54 @@ const categorizeValidity = (name) => {
   return 'Other';
 };
 
-const getPlans = async (network, catalogKey, user) => {
+// Admin-only: every plan AidaPay offers for a network/catalog, with their
+// raw cost — not gated by admin pricing, used to build the pricing UI where
+// unpriced plans still need to show up (so admin can price them).
+const getRawPlans = async (network, catalogKey) => {
   const providerCode = resolveDataProviderCode(network, catalogKey);
   const result = await AidaPay.getPackages(providerCode);
   const packages = result.data?.data ?? [];
   return packages.map((p) => ({
     planId: p.package_api_code,
     name: p.package_name,
-    amount: pricing.priceFor(Number(p.package_amount), user),
+    rawAmount: Number(p.package_amount),
     validity: categorizeValidity(p.package_name),
   }));
+};
+
+// Every network/catalog combination this app knows about — used by the
+// admin pricing page to enumerate what to fetch, instead of duplicating
+// the DATA_CATALOGS list.
+const getAllNetworkCatalogs = () =>
+  Object.entries(DATA_CATALOGS).flatMap(([network, catalogs]) =>
+    catalogs.map(({ key, label }) => ({ network, catalogKey: key, catalogLabel: label }))
+  );
+
+// Customer-facing: AidaPay's raw cost is never shown or charged directly —
+// only plans an admin has explicitly priced (see dataPlanPricing.service.js)
+// are returned here, at that admin-set price. An AidaPay plan with no price
+// set stays invisible until someone reviews and prices it.
+const getPlans = async (network, catalogKey, user) => {
+  const providerCode = resolveDataProviderCode(network, catalogKey);
+  const result = await AidaPay.getPackages(providerCode);
+  const packages = result.data?.data ?? [];
+  const allPrices = await dataPlanPricing.getAllPrices();
+  const reseller = pricing.isReseller(user);
+
+  return packages
+    .map((p) => {
+      const planId = p.package_api_code;
+      const entry = allPrices[planId];
+      const priceKobo = entry ? (reseller ? entry.agent : entry.customer) : null;
+      if (priceKobo == null) return null;
+      return {
+        planId,
+        name: p.package_name,
+        amount: priceKobo / 100,
+        validity: categorizeValidity(p.package_name),
+      };
+    })
+    .filter(Boolean);
 };
 
 // Looks up a package's real AidaPay price directly — never trusts a
@@ -92,9 +131,15 @@ const buy = async (userId, { network, catalog, phone, planId, pin }) => {
   if (!await user.comparePin(pin)) throw Object.assign(new Error('Invalid transaction PIN'), { statusCode: 403 });
 
   const providerCode = resolveDataProviderCode(network, catalog);
+  // rawAmount is AidaPay's actual cost — still needed below for the margin
+  // figure and the post-purchase price-mismatch sanity check, even though
+  // it's no longer what the user is charged.
   const rawAmount = await getRawPackagePrice(providerCode, planId);
-  const chargedAmount = pricing.priceFor(rawAmount, user);
-  const amountKobo = Math.round(chargedAmount * 100);
+
+  const amountKobo = await dataPlanPricing.getPriceKobo(planId, pricing.isReseller(user));
+  if (amountKobo == null) {
+    throw Object.assign(new Error('This plan is not currently available'), { statusCode: 400 });
+  }
 
   await fraud.checkVelocity(userId);
   await fraud.checkDuplicate(userId, 'data', { phone, amount: amountKobo });
@@ -146,4 +191,4 @@ const buy = async (userId, { network, catalog, phone, planId, pin }) => {
   }
 };
 
-module.exports = { getCatalogs, getPlans, buy };
+module.exports = { getCatalogs, getPlans, getRawPlans, getAllNetworkCatalogs, buy };

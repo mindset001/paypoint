@@ -215,6 +215,12 @@ export const adminApi = {
     api.get('/admin/stats/charts'),
   aidapayOverview: () =>
     api.get('/admin/aidapay/overview'),
+  dataPlans: () =>
+    api.get('/admin/data-plans'),
+  setDataPlanPrice: (planId: string, data: { customer: number; agent: number }) =>
+    api.patch(`/admin/data-plans/${encodeURIComponent(planId)}`, data),
+  removeDataPlanPrice: (planId: string) =>
+    api.delete(`/admin/data-plans/${encodeURIComponent(planId)}`),
   exportTransactionsCsv: (params?: { type?: string; status?: string; userId?: string; from?: string; to?: string }) =>
     api.get('/admin/transactions/export', { params, responseType: 'blob' }),
   exportUsersCsv: (params?: { search?: string; role?: string; status?: string }) =>
