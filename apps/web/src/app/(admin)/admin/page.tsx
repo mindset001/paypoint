@@ -10,10 +10,6 @@ import { adminApi } from '@/lib/api';
 import { formatNGN, getErrorMessage } from '@/lib/utils';
 import type { AdminStats, AdminChartData, AidapayOverview } from '@/types';
 
-// Below this, purchases start failing provider-side — worth a loud warning
-// rather than admins finding out from a wave of failed-transaction reports.
-const AIDAPAY_LOW_BALANCE_KOBO = 500000; // ₦5,000
-
 function AidapayOverviewCard() {
   const [data, setData] = useState<AidapayOverview | null>(null);
   const [err, setErr] = useState('');
@@ -61,7 +57,7 @@ function AidapayOverviewCard() {
               value={formatNGN(data.balance)}
               sub={data.phone ?? undefined}
               icon={Wallet}
-              color={data.balance < AIDAPAY_LOW_BALANCE_KOBO ? 'bg-red-500/20 text-red-400' : 'bg-teal-500/20 text-teal-400'}
+              color={data.balance < data.lowBalanceThreshold ? 'bg-red-500/20 text-red-400' : 'bg-teal-500/20 text-teal-400'}
             />
             <StatCard
               label="Commission Earned"
@@ -71,7 +67,7 @@ function AidapayOverviewCard() {
               color="bg-amber-500/20 text-amber-400"
             />
           </div>
-          {data.balance < AIDAPAY_LOW_BALANCE_KOBO && (
+          {data.balance < data.lowBalanceThreshold && (
             <div className="mt-3 flex items-center gap-2 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-2.5">
               <AlertTriangle size={15} className="text-red-400 shrink-0" />
               <p className="text-red-300 text-sm">

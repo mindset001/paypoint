@@ -10,6 +10,9 @@ if (env.SENTRY_DSN) {
 const app = require('./app');
 const { connect: connectDB } = require('./config/database');
 const redis = require('./config/redis');
+const aidapayMonitor = require('./services/aidapayMonitor.service');
+
+const AIDAPAY_CHECK_INTERVAL_MS = 30 * 60 * 1000; // 30 minutes
 
 const start = async () => {
   await connectDB();
@@ -18,6 +21,14 @@ const start = async () => {
   app.listen(env.PORT, () => {
     console.log(`Paycen API running on port ${env.PORT} [${env.NODE_ENV}]`);
   });
+
+  // Single-instance in-process scheduler — fine at this app's current scale
+  // (one Render web service, no horizontal scaling), would need moving to a
+  // dedicated worker/cron if that changes, to avoid every instance alerting.
+  aidapayMonitor.checkBalance().catch((err) => console.error('[aidapay-monitor] startup check failed:', err.message));
+  setInterval(() => {
+    aidapayMonitor.checkBalance().catch((err) => console.error('[aidapay-monitor] check failed:', err.message));
+  }, AIDAPAY_CHECK_INTERVAL_MS);
 };
 
 start().catch((err) => {

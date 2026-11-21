@@ -92,6 +92,7 @@ export interface AidapayOverview {
   phone: string | null;
   balance: number;
   commissionBalance: number;
+  lowBalanceThreshold: number;
 }
 
 export interface AdminTransactionRow extends Transaction {

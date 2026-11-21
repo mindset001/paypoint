@@ -7,6 +7,7 @@ const referralService = require('../referral/referral.service');
 const walletService = require('../wallet/wallet.service');
 const Paystack = require('../../providers/paystack/paystack.client');
 const AidaPay = require('../../providers/aidapay/aidapay.client');
+const aidapayMonitor = require('../../services/aidapayMonitor.service');
 const audit = require('../../services/audit.service');
 const cashbackService = require('../../services/cashback.service');
 const featureFlags = require('../../services/featureFlags.service');
@@ -249,6 +250,7 @@ const getAidapayOverview = async () => {
     phone: d.phone ?? null,
     balance: Math.round((d.balance ?? 0) * 100),
     commissionBalance: Math.round((d.commission_balance ?? 0) * 100),
+    lowBalanceThreshold: aidapayMonitor.LOW_BALANCE_KOBO,
   };
 };
 
