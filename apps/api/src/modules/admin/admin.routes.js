@@ -16,6 +16,10 @@ router.get('/transactions/export',         ...isAdmin, ctrl.exportTransactionsCs
 router.get('/transactions',                ...isAdmin, ctrl.getTransactions);
 router.get('/settings/referral-bonus',     ...isAdmin, ctrl.getReferralBonusSettings);
 router.patch('/settings/referral-bonus',   ...isAdmin, ctrl.updateReferralBonusSettings);
+router.get('/settings/cashback',           ...isAdmin, ctrl.getCashbackSettings);
+router.patch('/settings/cashback',         ...isAdmin, ctrl.updateCashbackSettings);
+router.get('/settings/features',           ...isAdmin, ctrl.getFeatureFlags);
+router.patch('/settings/features',         ...isAdmin, ctrl.updateFeatureFlags);
 
 router.get('/deposits/stuck',              ...isAdmin, ctrl.getStuckDeposits);
 router.post('/deposits/:id/reconcile',     ...isAdmin, ctrl.reconcileDeposit);

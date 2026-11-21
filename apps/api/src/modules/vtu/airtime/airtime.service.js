@@ -7,6 +7,7 @@ const Transaction = require('../../../models/Transaction');
 const otp = require('../../../utils/otp');
 const notify = require('../../notifications/notifications.service');
 const referralService = require('../../referral/referral.service');
+const cashbackService = require('../../../services/cashback.service');
 const pricing = require('../../../services/pricing.service');
 
 const NETWORKS = ['MTN', 'Airtel', 'Glo', '9mobile'];
@@ -86,6 +87,8 @@ const buy = async (userId, { network, phone, amount: rawAmount, pin }) => {
     });
     referralService.creditReferralBonusIfQualifying(userId, tx._id)
       .catch((err) => console.error('[referral]', err));
+    cashbackService.creditCashbackIfApplicable(userId, user.role, tx._id, amountKobo)
+      .catch((err) => console.error('[cashback]', err));
     return { message: 'Airtime purchased successfully', reference: tx.reference, network, phone, amount: rawAmount, charged: chargedAmount };
   } catch (providerErr) {
     // Reverse debit on provider failure — record it like any other money

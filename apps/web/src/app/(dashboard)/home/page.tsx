@@ -8,7 +8,7 @@ import { WalletCard } from '@/components/ui/WalletCard';
 import { ServiceCard } from '@/components/ui/ServiceCard';
 import { TransactionItem } from '@/components/ui/TransactionItem';
 import { EmptyStateIllustration } from '@/components/illustrations/EmptyState';
-import { notificationsApi } from '@/lib/api';
+import { notificationsApi, servicesApi } from '@/lib/api';
 import Link from 'next/link';
 
 const SERVICES = [
@@ -16,7 +16,7 @@ const SERVICES = [
   { id: 'data', name: 'Data', icon: 'wifi' },
   { id: 'cable', name: 'Cable TV', icon: 'tv' },
   { id: 'electricity', name: 'Electricity', icon: 'zap' },
-  { id: 'exam', name: 'Exam Pins', icon: 'book', comingSoon: true },
+  { id: 'exam', name: 'Exam Pins', icon: 'book' },
 ];
 
 const gridVariants = {
@@ -32,12 +32,17 @@ export default function HomePage() {
   const { user } = useAuthStore();
   const { wallet, transactions, loading, fetchWallet, fetchTransactions } = useWallet();
   const [unread, setUnread] = useState(0);
+  // Mirrors the API's own defaults so there's no flash before the real flags load.
+  const [featureFlags, setFeatureFlags] = useState<Record<string, boolean>>({ exam: false, reseller: false, savings: true });
 
   useEffect(() => {
     fetchWallet();
     fetchTransactions({ page: 1 });
     notificationsApi.unreadCount()
       .then((r) => setUnread(r.data.data.count))
+      .catch(() => {});
+    servicesApi.features()
+      .then((r) => setFeatureFlags(r.data.data))
       .catch(() => {});
   }, []);
 
@@ -76,7 +81,7 @@ export default function HomePage() {
           >
             {SERVICES.map((s) => (
               <motion.div key={s.id} variants={itemVariants}>
-                <ServiceCard {...s} />
+                <ServiceCard {...s} comingSoon={s.id === 'exam' ? !featureFlags.exam : false} />
               </motion.div>
             ))}
           </motion.div>

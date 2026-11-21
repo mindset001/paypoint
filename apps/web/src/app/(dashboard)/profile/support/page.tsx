@@ -1,8 +1,9 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, ChevronDown, Mail, MessageCircle, Phone, Headphones, Lightbulb, ExternalLink, Crown } from 'lucide-react';
 import { cn } from '@/lib/cn';
+import { servicesApi } from '@/lib/api';
 
 const WHATSAPP_NUMBER = '2348160071243';
 const SUPPORT_EMAIL = 'smademola01@gmail.com';
@@ -62,6 +63,13 @@ function FaqItem({ q, a }: { q: string; a: string }) {
 
 export default function SupportPage() {
   const router = useRouter();
+  // Default matches the API's own default (reseller: false) so there's no
+  // flash before the real flag loads.
+  const [resellerEnabled, setResellerEnabled] = useState(false);
+
+  useEffect(() => {
+    servicesApi.features().then((r) => setResellerEnabled(!!r.data.data.reseller)).catch(() => {});
+  }, []);
 
   return (
     <div>
@@ -135,23 +143,44 @@ export default function SupportPage() {
           </div>
         </div>
 
-        {/* Become a reseller — coming soon */}
+        {/* Become a reseller — visibility controlled by Admin > Settings */}
         <div>
           <div className="flex items-center justify-between mb-3 px-1">
             <p className="text-xs font-bold text-ink-muted uppercase tracking-widest">Become a Reseller</p>
-            <span className="text-[10px] font-bold uppercase tracking-wide text-amber-600 bg-amber-50 dark:bg-amber-500/10 px-2 py-0.5 rounded-full">
-              Coming Soon
-            </span>
+            {!resellerEnabled && (
+              <span className="text-[10px] font-bold uppercase tracking-wide text-amber-600 bg-amber-50 dark:bg-amber-500/10 px-2 py-0.5 rounded-full">
+                Coming Soon
+              </span>
+            )}
           </div>
-          <div className="bg-surface rounded-2xl border border-line p-6 flex flex-col items-center text-center gap-2">
-            <div className="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-500/10 text-amber-600 flex items-center justify-center">
-              <Crown size={22} />
+          {resellerEnabled ? (
+            <div className="bg-surface rounded-2xl border border-line p-6 flex flex-col items-center text-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-500/10 text-amber-600 flex items-center justify-center">
+                <Crown size={22} />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-ink">Sell to your own customers</p>
+                <p className="text-xs text-ink-muted leading-relaxed max-w-xs mt-1">
+                  Message us on WhatsApp to apply — our team reviews and upgrades your account.
+                </p>
+              </div>
+              <a href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent("Hi, I'd like to become a Paycen reseller.")}`}
+                target="_blank" rel="noopener noreferrer"
+                className="w-full bg-teal-600 text-white font-bold text-sm rounded-2xl py-3.5 flex items-center justify-center gap-2 hover:bg-teal-700 active:scale-[0.98] transition-all">
+                <MessageCircle size={18} /> Apply on WhatsApp
+              </a>
             </div>
-            <p className="text-sm font-bold text-ink">Reseller program coming soon</p>
-            <p className="text-xs text-ink-muted leading-relaxed max-w-xs">
-              We&apos;re reworking how the reseller program works. Check back soon.
-            </p>
-          </div>
+          ) : (
+            <div className="bg-surface rounded-2xl border border-line p-6 flex flex-col items-center text-center gap-2">
+              <div className="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-500/10 text-amber-600 flex items-center justify-center">
+                <Crown size={22} />
+              </div>
+              <p className="text-sm font-bold text-ink">Reseller program coming soon</p>
+              <p className="text-xs text-ink-muted leading-relaxed max-w-xs">
+                We&apos;re reworking how the reseller program works. Check back soon.
+              </p>
+            </div>
+          )}
         </div>
 
         <p className="text-center text-xs text-ink-muted/70 pb-2">

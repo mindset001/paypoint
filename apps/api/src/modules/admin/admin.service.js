@@ -7,6 +7,8 @@ const referralService = require('../referral/referral.service');
 const walletService = require('../wallet/wallet.service');
 const Paystack = require('../../providers/paystack/paystack.client');
 const audit = require('../../services/audit.service');
+const cashbackService = require('../../services/cashback.service');
+const featureFlags = require('../../services/featureFlags.service');
 
 // A wallet_fund past this age that's still "pending" means the webhook
 // never arrived and nobody completed the browser-side verify call either —
@@ -206,6 +208,26 @@ const updateReferralBonusSettings = async ({ basic, standard, premium }) => {
     standard: updatedKobo.standard / 100,
     premium: updatedKobo.premium / 100,
   };
+};
+
+// ── Cashback & feature flags ─────────────────────────────────────────────
+
+const getCashbackSettings = async () => cashbackService.getCashbackRates();
+
+const updateCashbackSettings = async ({ customer, agent }, { adminId, ip } = {}) => {
+  const before = await cashbackService.getCashbackRates();
+  const after = await cashbackService.updateCashbackRates({ customer, agent });
+  audit.record({ adminId, action: 'settings.cashback.update', before, after, ip });
+  return after;
+};
+
+const getFeatureFlagsAdmin = async () => featureFlags.getFlags();
+
+const updateFeatureFlagsAdmin = async (partial, { adminId, ip } = {}) => {
+  const before = await featureFlags.getFlags();
+  const after = await featureFlags.updateFlags(partial);
+  audit.record({ adminId, action: 'settings.features.update', before, after, ip });
+  return after;
 };
 
 // ── Financial reconciliation ─────────────────────────────────────────────
@@ -543,6 +565,10 @@ module.exports = {
   getUserTransactions,
   getReferralBonusSettings,
   updateReferralBonusSettings,
+  getCashbackSettings,
+  updateCashbackSettings,
+  getFeatureFlagsAdmin,
+  updateFeatureFlagsAdmin,
   getStuckDeposits,
   reconcileDeposit,
   getPendingWithdrawals,

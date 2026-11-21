@@ -6,6 +6,7 @@ const fraud = require('../../../services/fraud.service');
 const Transaction = require('../../../models/Transaction');
 const otp = require('../../../utils/otp');
 const referralService = require('../../referral/referral.service');
+const cashbackService = require('../../../services/cashback.service');
 const pricing = require('../../../services/pricing.service');
 
 // AidaPay's provider_name strings for DisCos don't reliably contain the
@@ -91,6 +92,8 @@ const pay = async (userId, { disco, meterNumber, meterType, amount: rawAmount, p
     if (token) {
       referralService.creditReferralBonusIfQualifying(userId, tx._id)
         .catch((err) => console.error('[referral]', err));
+      cashbackService.creditCashbackIfApplicable(userId, user.role, tx._id, amountKobo)
+        .catch((err) => console.error('[cashback]', err));
     }
     return { message: token ? 'Electricity payment successful' : 'Electricity payment is processing', reference: tx.reference, token, units };
   } catch (providerErr) {

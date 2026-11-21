@@ -110,6 +110,43 @@ const updateReferralBonusSettings = async (req, res) => {
   }
 };
 
+const getCashbackSettings = async (req, res) => {
+  try {
+    const data = await adminService.getCashbackSettings();
+    return success(res, data, 'Cashback settings fetched');
+  } catch (err) {
+    return error(res, err.message, 500);
+  }
+};
+
+const updateCashbackSettings = async (req, res) => {
+  try {
+    const { customer, agent } = req.body;
+    const data = await adminService.updateCashbackSettings({ customer, agent }, { adminId: req.user._id, ip: req.ip });
+    return success(res, data, 'Cashback settings updated');
+  } catch (err) {
+    return error(res, err.message, 400);
+  }
+};
+
+const getFeatureFlags = async (req, res) => {
+  try {
+    const data = await adminService.getFeatureFlagsAdmin();
+    return success(res, data, 'Feature flags fetched');
+  } catch (err) {
+    return error(res, err.message, 500);
+  }
+};
+
+const updateFeatureFlags = async (req, res) => {
+  try {
+    const data = await adminService.updateFeatureFlagsAdmin(req.body, { adminId: req.user._id, ip: req.ip });
+    return success(res, data, 'Feature flags updated');
+  } catch (err) {
+    return error(res, err.message, 400);
+  }
+};
+
 const getStuckDeposits = async (req, res) => {
   try {
     const data = await adminService.getStuckDeposits();
@@ -262,6 +299,10 @@ module.exports = {
   getUserTransactions,
   getReferralBonusSettings,
   updateReferralBonusSettings,
+  getCashbackSettings,
+  updateCashbackSettings,
+  getFeatureFlags,
+  updateFeatureFlags,
   getStuckDeposits,
   reconcileDeposit,
   getPendingWithdrawals,

@@ -6,6 +6,7 @@ const fraud = require('../../../services/fraud.service');
 const Transaction = require('../../../models/Transaction');
 const otp = require('../../../utils/otp');
 const referralService = require('../../referral/referral.service');
+const cashbackService = require('../../../services/cashback.service');
 const pricing = require('../../../services/pricing.service');
 
 // AidaPay has no dedicated "exam types" endpoint — exam boards are listed
@@ -77,6 +78,8 @@ const buy = async (userId, { examType, quantity = 1, pin }) => {
     });
     referralService.creditReferralBonusIfQualifying(userId, tx._id)
       .catch((err) => console.error('[referral]', err));
+    cashbackService.creditCashbackIfApplicable(userId, user.role, tx._id, amountKobo)
+      .catch((err) => console.error('[cashback]', err));
     return { message: 'Exam PIN purchased', reference: tx.reference, pin: pins[0], pins };
   } catch (providerErr) {
     const { balanceBefore: revBefore, balanceAfter: revAfter } = await walletService.credit(userId, amountKobo, null);

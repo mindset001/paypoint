@@ -80,6 +80,7 @@ export const walletApi = {
 // ── Services ─────────────────────────────────────────────────────────
 export const servicesApi = {
   list: () => api.get('/services'),
+  features: () => api.get('/services/features'),
 };
 
 // ── Airtime ──────────────────────────────────────────────────────────
@@ -176,6 +177,14 @@ export const adminApi = {
     api.get('/admin/settings/referral-bonus'),
   updateReferralBonusSettings: (data: { basic: number; standard: number; premium: number }) =>
     api.patch('/admin/settings/referral-bonus', data),
+  getCashbackSettings: () =>
+    api.get('/admin/settings/cashback'),
+  updateCashbackSettings: (data: { customer: number; agent: number }) =>
+    api.patch('/admin/settings/cashback', data),
+  getFeatureFlags: () =>
+    api.get('/admin/settings/features'),
+  updateFeatureFlags: (data: Partial<{ exam: boolean; reseller: boolean; savings: boolean }>) =>
+    api.patch('/admin/settings/features', data),
   stuckDeposits: () =>
     api.get('/admin/deposits/stuck'),
   reconcileDeposit: (id: string) =>

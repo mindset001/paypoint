@@ -6,6 +6,7 @@ const fraud = require('../../../services/fraud.service');
 const Transaction = require('../../../models/Transaction');
 const otp = require('../../../utils/otp');
 const referralService = require('../../referral/referral.service');
+const cashbackService = require('../../../services/cashback.service');
 const pricing = require('../../../services/pricing.service');
 
 // AidaPay's data-bundle-sme catalog doesn't map one network to one
@@ -130,6 +131,8 @@ const buy = async (userId, { network, catalog, phone, planId, pin }) => {
     await Transaction.findByIdAndUpdate(tx._id, { status: 'success', providerReference: txn?.transaction_hash, providerStatus: txn?.status, providerResponse: result.data });
     referralService.creditReferralBonusIfQualifying(userId, tx._id)
       .catch((err) => console.error('[referral]', err));
+    cashbackService.creditCashbackIfApplicable(userId, user.role, tx._id, amountKobo)
+      .catch((err) => console.error('[cashback]', err));
     return { message: 'Data purchased successfully', reference: tx.reference };
   } catch (providerErr) {
     const { balanceBefore: revBefore, balanceAfter: revAfter } = await walletService.credit(userId, amountKobo, null);

@@ -51,6 +51,9 @@ const transactionSchema = new mongoose.Schema(
       accountNumber: String,
       // Referral
       refereeId: mongoose.Schema.Types.ObjectId,
+      // Cashback
+      sourceTransactionId: mongoose.Schema.Types.ObjectId,
+      cashbackRate: Number, // percent, e.g. 1.5, as applied at the time
     },
     providerReference: String,
     providerStatus: String,

@@ -1,7 +1,13 @@
 'use client';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Phone, Wifi, Tv, Zap, BookOpen, PiggyBank } from 'lucide-react';
+import { servicesApi } from '@/lib/api';
+
+// Services whose visibility is admin-controlled (Admin > Settings > Feature
+// Visibility) rather than always live — maps a tile's id to its flag key.
+const FEATURE_KEY_BY_SERVICE: Record<string, string> = { exam: 'exam', savings: 'savings' };
 
 const SERVICES = [
   {
@@ -48,7 +54,6 @@ const SERVICES = [
     color: 'bg-green-50 dark:bg-green-500/10 text-green-600',
     border: 'border-green-100 dark:border-green-500/20',
     gradient: 'from-green-600 to-green-800',
-    comingSoon: true,
   },
   {
     id: 'savings',
@@ -64,7 +69,18 @@ const SERVICES = [
 const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.06 } } };
 const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0, transition: { duration: 0.3, ease: 'easeOut' as const } } };
 
+// Mirrors the API's own defaults (apps/api/src/services/featureFlags.service.js)
+// so the tile doesn't flash "Coming Soon" for an already-enabled feature
+// (savings) in the gap before the real flags load.
+const DEFAULT_FLAGS = { exam: false, reseller: false, savings: true };
+
 export default function ServicesPage() {
+  const [featureFlags, setFeatureFlags] = useState<Record<string, boolean>>(DEFAULT_FLAGS);
+
+  useEffect(() => {
+    servicesApi.features().then((r) => setFeatureFlags(r.data.data)).catch(() => {});
+  }, []);
+
   return (
     <div>
       <div className="bg-gradient-to-b from-brand-dark to-brand-navy px-6 pt-14 md:pt-8 pb-6">
@@ -73,7 +89,9 @@ export default function ServicesPage() {
       </div>
 
       <motion.div variants={stagger} initial="hidden" animate="show" className="px-4 py-5 flex flex-col gap-3">
-        {SERVICES.map(({ id, name, desc, icon: Icon, color, border, gradient, comingSoon }) => {
+        {SERVICES.map(({ id, name, desc, icon: Icon, color, border, gradient }) => {
+          const flagKey = FEATURE_KEY_BY_SERVICE[id];
+          const comingSoon = flagKey ? !featureFlags[flagKey] : false;
           const cardContent = (
             <>
               <div className={`w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 ${comingSoon ? 'bg-surface-2 text-ink-muted' : color}`}>
