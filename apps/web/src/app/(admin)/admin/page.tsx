@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import {
   ResponsiveContainer, AreaChart, Area, BarChart, Bar, LineChart, Line,
@@ -8,30 +8,32 @@ import {
 import { Users, ArrowLeftRight, TrendingUp, AlertTriangle, Clock, CheckCircle, XCircle, ChevronRight, Coins, Wallet, RefreshCw } from 'lucide-react';
 import { adminApi } from '@/lib/api';
 import { formatNGN, getErrorMessage } from '@/lib/utils';
+import { useAutoRefresh } from '@/hooks/useAutoRefresh';
 import type { AdminStats, AdminChartData, AidapayOverview } from '@/types';
 
 function AidapayOverviewCard() {
   const [data, setData] = useState<AidapayOverview | null>(null);
   const [err, setErr] = useState('');
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true); // initial load only — gates the skeleton
+  const [refreshing, setRefreshing] = useState(false); // any load — gates the spin icon
 
-  const load = () => {
-    setLoading(true);
-    setErr('');
+  const load = useCallback(() => {
+    setRefreshing(true);
     adminApi.aidapayOverview()
-      .then((r) => setData(r.data.data))
+      .then((r) => { setData(r.data.data); setErr(''); })
       .catch((e) => setErr(getErrorMessage(e)))
-      .finally(() => setLoading(false));
-  };
+      .finally(() => { setLoading(false); setRefreshing(false); });
+  }, []);
 
-  useEffect(load, []);
+  useEffect(() => { load(); }, [load]);
+  useAutoRefresh(load);
 
   return (
     <section className="mb-8">
       <div className="flex items-center justify-between mb-3">
         <p className="text-slate-400 text-xs font-semibold uppercase tracking-widest">AidaPay Account</p>
         <button onClick={load} className="flex items-center gap-2 text-slate-400 hover:text-white text-xs transition-colors">
-          <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
+          <RefreshCw size={13} className={refreshing ? 'animate-spin' : ''} />
           Refresh
         </button>
       </div>
@@ -141,18 +143,24 @@ function StatCard({ label, value, sub, icon: Icon, color }: { label: string; val
 export default function AdminOverviewPage() {
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [charts, setCharts] = useState<AdminChartData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true); // initial load only — gates the skeleton
+  const [refreshing, setRefreshing] = useState(false);
   const [err, setErr] = useState('');
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
-  useEffect(() => {
+  const load = useCallback(() => {
+    setRefreshing(true);
     adminApi.stats()
-      .then((r) => setStats(r.data.data))
+      .then((r) => { setStats(r.data.data); setErr(''); setLastUpdated(new Date()); })
       .catch((e) => setErr(e.response?.data?.message ?? 'Failed to load stats'))
-      .finally(() => setLoading(false));
+      .finally(() => { setLoading(false); setRefreshing(false); });
     adminApi.chartData()
       .then((r) => setCharts(r.data.data))
       .catch(() => setCharts(null));
   }, []);
+
+  useEffect(() => { load(); }, [load]);
+  useAutoRefresh(load);
 
   if (loading) return (
     <div className="p-8 space-y-4">
@@ -162,7 +170,10 @@ export default function AdminOverviewPage() {
     </div>
   );
 
-  if (err) return (
+  // Only replace the whole page with the error view if we never got data
+  // at all — a background auto-refresh hiccup shouldn't blow away an
+  // already-rendered dashboard, just surface a small inline warning below.
+  if (err && !stats) return (
     <div className="p-8 flex items-center gap-3 text-red-400">
       <AlertTriangle size={18} />
       {err}
@@ -175,10 +186,30 @@ export default function AdminOverviewPage() {
   return (
     <div className="p-6 lg:p-8 max-w-6xl">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-white text-2xl font-black">Overview</h1>
-        <p className="text-slate-400 text-sm mt-1">Platform health at a glance</p>
+      <div className="mb-8 flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-white text-2xl font-black">Overview</h1>
+          <p className="text-slate-400 text-sm mt-1">Platform health at a glance</p>
+        </div>
+        <div className="flex items-center gap-3 shrink-0">
+          {lastUpdated && (
+            <p className="text-slate-500 text-xs">
+              Updated {lastUpdated.toLocaleTimeString('en-NG', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+            </p>
+          )}
+          <button onClick={load} className="flex items-center gap-2 text-slate-400 hover:text-white text-sm transition-colors">
+            <RefreshCw size={15} className={refreshing ? 'animate-spin' : ''} />
+            Refresh
+          </button>
+        </div>
       </div>
+
+      {err && (
+        <div className="mb-6 flex items-center gap-2 text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-2.5 text-sm">
+          <AlertTriangle size={15} className="shrink-0" />
+          Showing the last successful refresh — {err}
+        </div>
+      )}
 
       <AidapayOverviewCard />
 
