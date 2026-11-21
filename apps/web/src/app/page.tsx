@@ -29,9 +29,9 @@ const TRUST_POINTS = [
 ];
 
 const TESTIMONIALS = [
-  { name: 'Chioma A.', location: 'Lagos', text: "Paycen has made paying my DSTV subscription so easy. I don't have to visit any shop anymore!", rating: 5 },
-  { name: 'Emeka O.', location: 'Abuja', text: "Fastest airtime purchase I've ever used. The money left my wallet and the airtime was on my phone instantly.", rating: 5 },
-  { name: 'Fatima B.', location: 'Kano', text: 'I use Paycen to buy data for my business phone every week. The SME data rates are the cheapest around.', rating: 5 },
+  { name: 'Babatunde Quadri', location: 'Lagos', text: "Paycen has made paying my DSTV subscription so easy. I don't have to visit any shop anymore!", rating: 5 },
+  { name: 'Babatunde Gideon', location: 'Abuja', text: "Fastest airtime purchase I've ever used. The money left my wallet and the airtime was on my phone instantly.", rating: 5 },
+  { name: 'Aderibigbe Micheal', location: 'Kano', text: 'I use Paycen to buy data for my business phone every week. The SME data rates are the cheapest around.', rating: 5 },
 ];
 
 export default function LandingPage() {
