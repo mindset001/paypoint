@@ -24,6 +24,15 @@ const getUnreadCount = async (req, res) => {
   }
 };
 
+const getPopups = async (req, res) => {
+  try {
+    const data = await svc.getPopupAnnouncements(req.user._id);
+    return success(res, data, 'Popup announcements fetched');
+  } catch (err) {
+    return error(res, err.message, 500);
+  }
+};
+
 const markAsRead = async (req, res) => {
   try {
     const notification = await svc.markAsRead(req.user._id, req.params.id);
@@ -43,4 +52,4 @@ const markAllRead = async (req, res) => {
   }
 };
 
-module.exports = { getNotifications, getUnreadCount, markAsRead, markAllRead };
+module.exports = { getNotifications, getUnreadCount, getPopups, markAsRead, markAllRead };

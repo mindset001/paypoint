@@ -147,6 +147,30 @@ const updateFeatureFlags = async (req, res) => {
   }
 };
 
+const sendAnnouncement = async (req, res) => {
+  try {
+    const { title, body, displayType } = req.body;
+    if (!title || !body) return error(res, 'Title and body are required', 400);
+    if (!['notification', 'popup'].includes(displayType)) {
+      return error(res, 'displayType must be "notification" or "popup"', 400);
+    }
+    const data = await adminService.sendAnnouncement({ title, body, displayType }, { adminId: req.user._id, ip: req.ip });
+    return success(res, data, 'Announcement sent');
+  } catch (err) {
+    return error(res, err.message, 400);
+  }
+};
+
+const getAnnouncements = async (req, res) => {
+  try {
+    const { page, limit } = req.query;
+    const data = await adminService.getAnnouncements({ page: Number(page) || 1, limit: Math.min(Number(limit) || 20, 50) });
+    return success(res, data, 'Announcements fetched');
+  } catch (err) {
+    return error(res, err.message, 500);
+  }
+};
+
 const getStuckDeposits = async (req, res) => {
   try {
     const data = await adminService.getStuckDeposits();
@@ -316,4 +340,6 @@ module.exports = {
   exportTransactionsCsv,
   exportUsersCsv,
   getChartData,
+  sendAnnouncement,
+  getAnnouncements,
 };

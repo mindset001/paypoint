@@ -34,4 +34,7 @@ router.post('/kyc/:id/reject',             ...isAdmin, ctrl.rejectKyc);
 router.get('/savings',                     ...isAdmin, ctrl.getSavingsLocks);
 router.get('/audit-log',                   ...isAdmin, ctrl.getAuditLog);
 
+router.get('/announcements',               ...isAdmin, ctrl.getAnnouncements);
+router.post('/announcements',              ...isAdmin, ctrl.sendAnnouncement);
+
 module.exports = router;

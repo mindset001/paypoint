@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useAuthStore } from '@/store/auth.store';
 import { BottomNav } from '@/components/ui/BottomNav';
 import { Sidebar } from '@/components/ui/Sidebar';
+import { AnnouncementPopup } from '@/components/ui/AnnouncementPopup';
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const { isAuthenticated, _hasHydrated } = useAuthStore();
@@ -29,6 +30,8 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen bg-canvas flex">
+      <AnnouncementPopup />
+
       {/* Desktop sidebar */}
       <Sidebar />
 

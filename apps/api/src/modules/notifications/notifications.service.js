@@ -17,6 +17,12 @@ const getUnreadCount = async (userId) => {
   return Notification.countDocuments({ userId, read: false });
 };
 
+// Unread broadcasts flagged to show as a blocking modal rather than just
+// sitting in the bell icon's list — checked once per dashboard load.
+const getPopupAnnouncements = async (userId) => {
+  return Notification.find({ userId, read: false, 'meta.displayType': 'popup' }).sort({ createdAt: -1 });
+};
+
 const markAsRead = async (userId, notificationId) => {
   return Notification.findOneAndUpdate(
     { _id: notificationId, userId },
@@ -42,4 +48,4 @@ const createNotification = async (userId, { title, body, type = 'system', meta =
   }
 };
 
-module.exports = { getNotifications, getUnreadCount, markAsRead, markAllRead, createNotification };
+module.exports = { getNotifications, getUnreadCount, getPopupAnnouncements, markAsRead, markAllRead, createNotification };

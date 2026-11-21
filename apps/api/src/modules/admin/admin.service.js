@@ -9,6 +9,8 @@ const Paystack = require('../../providers/paystack/paystack.client');
 const audit = require('../../services/audit.service');
 const cashbackService = require('../../services/cashback.service');
 const featureFlags = require('../../services/featureFlags.service');
+const Notification = require('../../models/Notification');
+const Announcement = require('../../models/Announcement');
 
 // A wallet_fund past this age that's still "pending" means the webhook
 // never arrived and nobody completed the browser-side verify call either —
@@ -228,6 +230,41 @@ const updateFeatureFlagsAdmin = async (partial, { adminId, ip } = {}) => {
   const after = await featureFlags.updateFlags(partial);
   audit.record({ adminId, action: 'settings.features.update', before, after, ip });
   return after;
+};
+
+// ── Broadcasts ─────────────────────────────────────────────────────────
+//
+// Fans out a Notification to every non-suspended user, then logs the send
+// itself as an Announcement so admins have a history separate from the
+// (much larger, per-user) Notification collection. displayType 'popup'
+// flags it in Notification.meta so the dashboard shows it as a blocking
+// modal on next load instead of just sitting in the bell icon's list.
+
+const sendAnnouncement = async ({ title, body, displayType }, { adminId, ip } = {}) => {
+  const users = await User.find({ status: { $ne: 'suspended' } }, '_id');
+  const docs = users.map((u) => ({
+    userId: u._id,
+    title,
+    body,
+    type: 'promo',
+    meta: { broadcast: true, displayType },
+  }));
+  if (docs.length) await Notification.insertMany(docs);
+
+  const announcement = await Announcement.create({
+    title, body, displayType, sentBy: adminId, recipientCount: docs.length,
+  });
+  audit.record({ adminId, action: 'announcement.send', after: { title, displayType, recipientCount: docs.length }, ip });
+  return announcement;
+};
+
+const getAnnouncements = async ({ page = 1, limit = 20 } = {}) => {
+  const skip = (page - 1) * limit;
+  const [items, total] = await Promise.all([
+    Announcement.find().sort({ createdAt: -1 }).skip(skip).limit(limit).populate('sentBy', 'firstName lastName'),
+    Announcement.countDocuments(),
+  ]);
+  return { items, total, page, limit, pages: Math.ceil(total / limit) };
 };
 
 // ── Financial reconciliation ─────────────────────────────────────────────
@@ -582,4 +619,6 @@ module.exports = {
   exportTransactionsCsv,
   exportUsersCsv,
   getChartData,
+  sendAnnouncement,
+  getAnnouncements,
 };

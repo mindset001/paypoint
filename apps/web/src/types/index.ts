@@ -50,7 +50,7 @@ export interface Notification {
   type: 'transaction' | 'security' | 'promo' | 'system' | 'wallet';
   read: boolean;
   readAt?: string;
-  meta?: Record<string, string>;
+  meta?: Record<string, unknown>;
   createdAt: string;
 }
 

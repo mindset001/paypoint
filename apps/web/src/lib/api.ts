@@ -152,6 +152,8 @@ export const notificationsApi = {
     api.patch(`/notifications/${id}/read`),
   markAllRead: () =>
     api.patch('/notifications/read-all'),
+  popups: () =>
+    api.get('/notifications/popups'),
 };
 
 // ── Referral ─────────────────────────────────────────────────────────
@@ -215,6 +217,10 @@ export const adminApi = {
     api.get('/admin/transactions/export', { params, responseType: 'blob' }),
   exportUsersCsv: (params?: { search?: string; role?: string; status?: string }) =>
     api.get('/admin/users/export', { params, responseType: 'blob' }),
+  announcements: (params?: { page?: number; limit?: number }) =>
+    api.get('/admin/announcements', { params }),
+  sendAnnouncement: (data: { title: string; body: string; displayType: 'notification' | 'popup' }) =>
+    api.post('/admin/announcements', data),
 };
 
 // ── Exam ─────────────────────────────────────────────────────────────
