@@ -407,7 +407,7 @@ export default function LandingPage() {
           </div>
 
           <div className="border-t border-white/10 pt-6 flex flex-col sm:flex-row justify-between gap-2">
-            <p className="text-white/30 text-xs">© {new Date().getFullYear()} Paycen. All rights reserved.</p>
+            <p className="text-white/30 text-xs">© {new Date().getFullYear()} Paycen. All rights reserved. Powered by Demlinks Digital Innovations.</p>
             <p className="text-white/20 text-xs">A digital payments platform operating in Nigeria.</p>
           </div>
         </div>
