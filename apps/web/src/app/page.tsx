@@ -4,7 +4,7 @@ import {
   Phone, Wifi, Tv, Zap, BookOpen,
   Shield, Clock, Zap as ZapIcon, Star,
   ArrowRight, CheckCircle, ChevronRight,
-  Users, TrendingUp, Award,
+  Layers, Smartphone,
 } from 'lucide-react';
 
 const SERVICES = [
@@ -111,9 +111,9 @@ export default function LandingPage() {
 
               <div className="grid grid-cols-3 gap-4 pt-8 border-t border-white/10 animate-fade-up-5">
                 {[
-                  { value: '50K+', label: 'Active users', icon: Users },
-                  { value: '₦2B+', label: 'Processed', icon: TrendingUp },
-                  { value: '99.9%', label: 'Uptime', icon: Award },
+                  { value: '5', label: 'Bill services', icon: Layers },
+                  { value: '4', label: 'Networks supported', icon: Smartphone },
+                  { value: 'Instant', label: 'Delivery', icon: ZapIcon },
                 ].map((s) => (
                   <div key={s.label} className="text-center group">
                     <p className="text-white text-2xl font-black group-hover:text-brand-blue transition-colors">{s.value}</p>
