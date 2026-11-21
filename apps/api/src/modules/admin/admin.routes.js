@@ -6,6 +6,7 @@ const isAdmin = [authenticate, authorize('admin', 'developer')];
 
 router.get('/stats',                       ...isAdmin, ctrl.getStats);
 router.get('/stats/charts',                ...isAdmin, ctrl.getChartData);
+router.get('/aidapay/overview',            ...isAdmin, ctrl.getAidapayOverview);
 router.get('/users/export',                ...isAdmin, ctrl.exportUsersCsv); // before /users/:id — "export" would otherwise match as an id
 router.get('/users',                       ...isAdmin, ctrl.getUsers);
 router.get('/users/:id',                   ...isAdmin, ctrl.getUserById);

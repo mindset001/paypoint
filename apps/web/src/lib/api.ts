@@ -213,6 +213,8 @@ export const adminApi = {
     api.get('/admin/audit-log', { params }),
   chartData: () =>
     api.get('/admin/stats/charts'),
+  aidapayOverview: () =>
+    api.get('/admin/aidapay/overview'),
   exportTransactionsCsv: (params?: { type?: string; status?: string; userId?: string; from?: string; to?: string }) =>
     api.get('/admin/transactions/export', { params, responseType: 'blob' }),
   exportUsersCsv: (params?: { search?: string; role?: string; status?: string }) =>

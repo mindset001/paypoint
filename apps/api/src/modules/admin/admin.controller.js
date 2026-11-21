@@ -147,6 +147,15 @@ const updateFeatureFlags = async (req, res) => {
   }
 };
 
+const getAidapayOverview = async (req, res) => {
+  try {
+    const data = await adminService.getAidapayOverview();
+    return success(res, data, 'AidaPay overview fetched');
+  } catch (err) {
+    return error(res, err.message, err.statusCode || 502);
+  }
+};
+
 const sendAnnouncement = async (req, res) => {
   try {
     const { title, body, displayType } = req.body;
@@ -342,4 +351,5 @@ module.exports = {
   getChartData,
   sendAnnouncement,
   getAnnouncements,
+  getAidapayOverview,
 };

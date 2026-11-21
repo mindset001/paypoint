@@ -86,6 +86,14 @@ export interface AdminStats {
   recentUsers: AdminUserRow[];
 }
 
+export interface AidapayOverview {
+  name: string | null;
+  email: string | null;
+  phone: string | null;
+  balance: number;
+  commissionBalance: number;
+}
+
 export interface AdminTransactionRow extends Transaction {
   userId?: { _id: string; firstName: string; lastName: string; phone: { number: string } };
 }

@@ -6,6 +6,7 @@ const SavingsLock = require('../../models/SavingsLock');
 const referralService = require('../referral/referral.service');
 const walletService = require('../wallet/wallet.service');
 const Paystack = require('../../providers/paystack/paystack.client');
+const AidaPay = require('../../providers/aidapay/aidapay.client');
 const audit = require('../../services/audit.service');
 const cashbackService = require('../../services/cashback.service');
 const featureFlags = require('../../services/featureFlags.service');
@@ -230,6 +231,25 @@ const updateFeatureFlagsAdmin = async (partial, { adminId, ip } = {}) => {
   const after = await featureFlags.updateFlags(partial);
   audit.record({ adminId, action: 'settings.features.update', before, after, ip });
   return after;
+};
+
+// ── AidaPay provider account ─────────────────────────────────────────────
+//
+// The VTU wallet AidaPay debits for every airtime/data/cable/electricity
+// purchase — surfaced so admins can see it's running low before it starts
+// failing live purchases. AidaPay returns balances in naira; converted to
+// kobo here so the frontend can reuse formatNGN() like everywhere else.
+
+const getAidapayOverview = async () => {
+  const res = await AidaPay.getAccountInfo();
+  const d = res.data?.data ?? {};
+  return {
+    name: d.names ?? null,
+    email: d.email ?? null,
+    phone: d.phone ?? null,
+    balance: Math.round((d.balance ?? 0) * 100),
+    commissionBalance: Math.round((d.commission_balance ?? 0) * 100),
+  };
 };
 
 // ── Broadcasts ─────────────────────────────────────────────────────────
@@ -621,4 +641,5 @@ module.exports = {
   getChartData,
   sendAnnouncement,
   getAnnouncements,
+  getAidapayOverview,
 };

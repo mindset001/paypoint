@@ -5,10 +5,85 @@ import {
   ResponsiveContainer, AreaChart, Area, BarChart, Bar, LineChart, Line,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, Cell,
 } from 'recharts';
-import { Users, ArrowLeftRight, TrendingUp, AlertTriangle, Clock, CheckCircle, XCircle, ChevronRight, Coins } from 'lucide-react';
+import { Users, ArrowLeftRight, TrendingUp, AlertTriangle, Clock, CheckCircle, XCircle, ChevronRight, Coins, Wallet, RefreshCw } from 'lucide-react';
 import { adminApi } from '@/lib/api';
-import { formatNGN } from '@/lib/utils';
-import type { AdminStats, AdminChartData } from '@/types';
+import { formatNGN, getErrorMessage } from '@/lib/utils';
+import type { AdminStats, AdminChartData, AidapayOverview } from '@/types';
+
+// Below this, purchases start failing provider-side — worth a loud warning
+// rather than admins finding out from a wave of failed-transaction reports.
+const AIDAPAY_LOW_BALANCE_KOBO = 500000; // ₦5,000
+
+function AidapayOverviewCard() {
+  const [data, setData] = useState<AidapayOverview | null>(null);
+  const [err, setErr] = useState('');
+  const [loading, setLoading] = useState(true);
+
+  const load = () => {
+    setLoading(true);
+    setErr('');
+    adminApi.aidapayOverview()
+      .then((r) => setData(r.data.data))
+      .catch((e) => setErr(getErrorMessage(e)))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(load, []);
+
+  return (
+    <section className="mb-8">
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-slate-400 text-xs font-semibold uppercase tracking-widest">AidaPay Account</p>
+        <button onClick={load} className="flex items-center gap-2 text-slate-400 hover:text-white text-xs transition-colors">
+          <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
+          Refresh
+        </button>
+      </div>
+
+      {loading && (
+        <div className="grid grid-cols-2 gap-4">
+          {[...Array(2)].map((_, i) => <div key={i} className="h-24 bg-slate-800/40 rounded-2xl animate-pulse" />)}
+        </div>
+      )}
+
+      {!loading && err && (
+        <div className="flex items-center gap-2 text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 text-sm">
+          <AlertTriangle size={15} className="shrink-0" />
+          Couldn&apos;t reach AidaPay: {err}
+        </div>
+      )}
+
+      {!loading && !err && data && (
+        <>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <StatCard
+              label="Provider Balance"
+              value={formatNGN(data.balance)}
+              sub={data.phone ?? undefined}
+              icon={Wallet}
+              color={data.balance < AIDAPAY_LOW_BALANCE_KOBO ? 'bg-red-500/20 text-red-400' : 'bg-teal-500/20 text-teal-400'}
+            />
+            <StatCard
+              label="Commission Earned"
+              value={formatNGN(data.commissionBalance)}
+              sub={data.name ?? undefined}
+              icon={Coins}
+              color="bg-amber-500/20 text-amber-400"
+            />
+          </div>
+          {data.balance < AIDAPAY_LOW_BALANCE_KOBO && (
+            <div className="mt-3 flex items-center gap-2 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-2.5">
+              <AlertTriangle size={15} className="text-red-400 shrink-0" />
+              <p className="text-red-300 text-sm">
+                AidaPay balance is low — fund the account or live VTU purchases will start failing.
+              </p>
+            </div>
+          )}
+        </>
+      )}
+    </section>
+  );
+}
 
 // Status triad reused from the badges already used across admin pages, for
 // visual consistency — the green/yellow pair sits in the CVD 6-8 "warn but
@@ -108,6 +183,8 @@ export default function AdminOverviewPage() {
         <h1 className="text-white text-2xl font-black">Overview</h1>
         <p className="text-slate-400 text-sm mt-1">Platform health at a glance</p>
       </div>
+
+      <AidapayOverviewCard />
 
       {/* User stats */}
       <section className="mb-8">
