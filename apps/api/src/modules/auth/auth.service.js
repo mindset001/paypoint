@@ -10,6 +10,18 @@ const Dojah = require('../../providers/dojah/dojah.client');
 
 const generateReferralCode = () => crypto.randomBytes(4).toString('hex').toUpperCase();
 
+// The OTP is always saved to the DB before this runs — a transient email-
+// provider failure (e.g. a send-domain outage) shouldn't turn into a hard
+// 500 that blocks registration/login/reset entirely. devOtp (non-prod) and
+// a later resend both still work off the same saved record either way.
+const sendOtpEmailSafely = async (to, code, opts) => {
+  try {
+    await emailService.sendOtpEmail(to, code, opts);
+  } catch (err) {
+    console.error(`Failed to send OTP email to ${to}:`, err.message);
+  }
+};
+
 // Nothing is written to User/Wallet here — the account only gets created
 // once the OTP is verified (see verifyOtp below), so an unconfirmed email
 // never leaves an orphaned record behind.
@@ -43,7 +55,7 @@ const register = async ({ firstName, lastName, email, phone, password, referralC
   });
 
   console.log(`[OTP] ${normalizedEmail}: ${otpCode}`);
-  await emailService.sendOtpEmail(normalizedEmail, otpCode, { heading: 'Your verification code' });
+  await sendOtpEmailSafely(normalizedEmail, otpCode, { heading: 'Your verification code' });
 
   return {
     message: 'OTP sent to your email address. Verify it to finish creating your account.',
@@ -129,11 +141,7 @@ const login = async ({ identifier, password, ip }) => {
     const code = otp.generate();
     await otp.save(`email:${user.email.address}`, code);
     console.log(`[OTP] ${user.email.address}: ${code}`);
-    try {
-      await emailService.sendOtpEmail(user.email.address, code, { heading: 'Your verification code' });
-    } catch (err) {
-      console.error('Failed to send login-verification OTP:', err.message);
-    }
+    await sendOtpEmailSafely(user.email.address, code, { heading: 'Your verification code' });
   }
 
   user.lastLoginAt = new Date();
@@ -189,7 +197,7 @@ const resendOtp = async (identifier) => {
   const code = otp.generate();
   await otp.save(key, code, pendingPayload);
   console.log(`[OTP] ${identifier}: ${code}`);
-  if (!isPhone) await emailService.sendOtpEmail(identifier, code, { heading: 'Your verification code' });
+  if (!isPhone) await sendOtpEmailSafely(identifier, code, { heading: 'Your verification code' });
   return {
     message: 'OTP resent',
     ...(process.env.NODE_ENV !== 'production' && { devOtp: code }),
@@ -225,7 +233,7 @@ const forgotPassword = async (identifier) => {
   const code = otp.generate();
   await otp.save(`reset:${identifier}`, code);
   console.log(`[RESET OTP] ${identifier}: ${code}`);
-  if (!isPhone) await emailService.sendOtpEmail(user.email.address, code, { heading: 'Your password reset code' });
+  if (!isPhone) await sendOtpEmailSafely(user.email.address, code, { heading: 'Your password reset code' });
   return {
     message: 'Reset code sent',
     ...(process.env.NODE_ENV !== 'production' && { devOtp: code }),
@@ -246,6 +254,10 @@ const resetPassword = async (identifier, otpCode, newPassword) => {
   return { message: 'Password reset successfully' };
 };
 
+// Checks the current password, then emails an OTP instead of changing it
+// outright — the change only actually happens in confirmChangePassword once
+// that code comes back, so a stolen/active session alone can't silently
+// swap the password.
 const changePassword = async (userId, currentPassword, newPassword) => {
   const user = await User.findById(userId).select('+passwordHash');
   if (!user) throw Object.assign(new Error('User not found'), { statusCode: 404 });
@@ -253,11 +265,30 @@ const changePassword = async (userId, currentPassword, newPassword) => {
   const match = await user.comparePassword(currentPassword);
   if (!match) throw Object.assign(new Error('Current password is incorrect'), { statusCode: 400 });
 
-  user.passwordHash = await User.hashPassword(newPassword);
+  const newPasswordHash = await User.hashPassword(newPassword);
+  const code = otp.generate();
+  await otp.save(`changepw:${userId}`, code, { newPasswordHash });
+  console.log(`[CHANGE PASSWORD OTP] ${user.email.address}: ${code}`);
+  await sendOtpEmailSafely(user.email.address, code, { heading: 'Confirm your password change' });
+  return {
+    message: 'Enter the code sent to your email to confirm the password change',
+    ...(process.env.NODE_ENV !== 'production' && { devOtp: code }),
+  };
+};
+
+const confirmChangePassword = async (userId, otpCode) => {
+  const result = await otp.verify(`changepw:${userId}`, otpCode);
+  if (!result) throw Object.assign(new Error('Invalid or expired code'), { statusCode: 400 });
+
+  const user = await User.findById(userId);
+  if (!user) throw Object.assign(new Error('User not found'), { statusCode: 404 });
+
+  user.passwordHash = result.pending.newPasswordHash;
   await user.save();
   return { message: 'Password changed successfully' };
 };
 
+// Same confirm-by-OTP pattern as changePassword above.
 const changePin = async (userId, currentPin, newPin) => {
   const user = await User.findById(userId).select('+pinHash');
   if (!user) throw Object.assign(new Error('User not found'), { statusCode: 404 });
@@ -267,7 +298,25 @@ const changePin = async (userId, currentPin, newPin) => {
     if (!match) throw Object.assign(new Error('Current PIN is incorrect'), { statusCode: 400 });
   }
 
-  user.pinHash = await User.hashPin(newPin);
+  const newPinHash = await User.hashPin(newPin);
+  const code = otp.generate();
+  await otp.save(`changepin:${userId}`, code, { newPinHash });
+  console.log(`[CHANGE PIN OTP] ${user.email.address}: ${code}`);
+  await sendOtpEmailSafely(user.email.address, code, { heading: 'Confirm your PIN change' });
+  return {
+    message: 'Enter the code sent to your email to confirm the PIN change',
+    ...(process.env.NODE_ENV !== 'production' && { devOtp: code }),
+  };
+};
+
+const confirmChangePin = async (userId, otpCode) => {
+  const result = await otp.verify(`changepin:${userId}`, otpCode);
+  if (!result) throw Object.assign(new Error('Invalid or expired code'), { statusCode: 400 });
+
+  const user = await User.findById(userId);
+  if (!user) throw Object.assign(new Error('User not found'), { statusCode: 404 });
+
+  user.pinHash = result.pending.newPinHash;
   await user.save();
   return { message: 'PIN changed successfully' };
 };
@@ -281,7 +330,7 @@ const forgotPin = async (userId) => {
   const code = otp.generate();
   await otp.save(`pinreset:${userId}`, code);
   console.log(`[PIN RESET OTP] ${user.email.address}: ${code}`);
-  await emailService.sendOtpEmail(user.email.address, code, { heading: 'Your PIN reset code' });
+  await sendOtpEmailSafely(user.email.address, code, { heading: 'Your PIN reset code' });
   return {
     message: 'A reset code has been sent to your email',
     ...(process.env.NODE_ENV !== 'production' && { devOtp: code }),
@@ -354,4 +403,4 @@ const submitKyc = async (userId, { nin, bvn }) => {
   };
 };
 
-module.exports = { register, verifyOtp, login, refreshTokens, setPin, logout, resendOtp, forgotPassword, resetPassword, changePassword, changePin, forgotPin, resetPin, updateProfile, submitKyc };
+module.exports = { register, verifyOtp, login, refreshTokens, setPin, logout, resendOtp, forgotPassword, resetPassword, changePassword, confirmChangePassword, changePin, confirmChangePin, forgotPin, resetPin, updateProfile, submitKyc };

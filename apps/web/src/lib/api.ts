@@ -131,8 +131,12 @@ export const securityApi = {
     api.post('/auth/reset-password', { identifier, otp, newPassword }),
   changePassword: (currentPassword: string, newPassword: string) =>
     api.patch('/auth/change-password', { currentPassword, newPassword }),
+  confirmChangePassword: (otp: string) =>
+    api.post('/auth/change-password/confirm', { otp }),
   changePin: (currentPin: string, newPin: string) =>
     api.patch('/auth/change-pin', { currentPin, newPin }),
+  confirmChangePin: (otp: string) =>
+    api.post('/auth/change-pin/confirm', { otp }),
   forgotPin: () => api.post('/auth/forgot-pin'),
   resetPin: (otp: string, newPin: string) =>
     api.post('/auth/reset-pin', { otp, newPin }),

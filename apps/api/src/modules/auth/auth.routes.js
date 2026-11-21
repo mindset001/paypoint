@@ -18,20 +18,33 @@ const authLimiter = rateLimit({
   message: { success: false, message: 'Too many attempts, try again later.' },
 });
 
+// verify-otp/resend-otp were sharing authLimiter's 10-per-15min budget with
+// register/login/password-reset. One normal signup (register -> mistype ->
+// resend -> verify) could burn through the whole budget, so genuine OTP
+// attempts right after started getting a generic 429 that looked like a
+// broken OTP flow. A 6-digit single-use code doesn't need as tight a cap.
+const otpLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  message: { success: false, message: 'Too many attempts, try again later.' },
+});
+
 router.post('/register', authLimiter, registerValidator, validate, ctrl.register);
-router.post('/verify-otp', authLimiter, verifyOtpValidator, validate, ctrl.verifyOtp);
-router.post('/resend-otp', authLimiter, ctrl.resendOtp);
+router.post('/verify-otp', otpLimiter, verifyOtpValidator, validate, ctrl.verifyOtp);
+router.post('/resend-otp', otpLimiter, ctrl.resendOtp);
 router.post('/login', authLimiter, loginValidator, validate, ctrl.login);
 router.post('/refresh', refreshValidator, validate, ctrl.refresh);
 router.post('/set-pin', authenticate, setPinValidator, validate, ctrl.setPin);
 router.post('/logout', authenticate, ctrl.logout);
 router.get('/me', authenticate, ctrl.me);
 router.post('/forgot-password', authLimiter, ctrl.forgotPassword);
-router.post('/reset-password', authLimiter, ctrl.resetPassword);
+router.post('/reset-password', otpLimiter, ctrl.resetPassword);
 router.patch('/change-password', authenticate, ctrl.changePassword);
+router.post('/change-password/confirm', otpLimiter, authenticate, ctrl.confirmChangePassword);
 router.patch('/change-pin', authenticate, ctrl.changePin);
+router.post('/change-pin/confirm', otpLimiter, authenticate, ctrl.confirmChangePin);
 router.post('/forgot-pin', authLimiter, authenticate, ctrl.forgotPin);
-router.post('/reset-pin', authLimiter, authenticate, ctrl.resetPin);
+router.post('/reset-pin', otpLimiter, authenticate, ctrl.resetPin);
 router.patch('/profile', authenticate, ctrl.updateProfile);
 router.post('/kyc', authenticate, ctrl.submitKyc);
 

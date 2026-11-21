@@ -16,7 +16,7 @@ interface PasswordForm {
   confirmPassword: string;
 }
 
-type PinStep = 'current' | 'new' | 'confirm';
+type PinStep = 'current' | 'new' | 'confirm' | 'otp';
 type PinMode = 'change' | 'forgot-otp' | 'forgot-new' | 'forgot-confirm';
 
 export default function SecurityPage() {
@@ -24,6 +24,7 @@ export default function SecurityPage() {
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [pwLoading, setPwLoading] = useState(false);
+  const [pwOtpStep, setPwOtpStep] = useState(false);
 
   const [pinStep, setPinStep] = useState<PinStep>('current');
   const [currentPin, setCurrentPin] = useState('');
@@ -91,13 +92,38 @@ export default function SecurityPage() {
     setPwLoading(true);
     try {
       await securityApi.changePassword(data.currentPassword, data.newPassword);
-      toast.success('Password changed successfully');
-      reset();
+      toast.success('Code sent to your email');
+      setPwOtpStep(true);
     } catch (err) {
       toast.error(getErrorMessage(err));
     } finally {
       setPwLoading(false);
     }
+  };
+
+  const cancelPasswordOtp = () => {
+    setPwOtpStep(false);
+  };
+
+  const onConfirmPassword = async (otpCode: string) => {
+    if (otpCode.length < 6) return;
+    setPwLoading(true);
+    try {
+      await securityApi.confirmChangePassword(otpCode);
+      toast.success('Password changed successfully');
+      reset();
+      cancelPasswordOtp();
+    } catch (err) {
+      toast.error(getErrorMessage(err));
+    } finally {
+      setPwLoading(false);
+    }
+  };
+
+  const resetPinChangeFlow = () => {
+    setPinStep('current');
+    setCurrentPin('');
+    setNewPin('');
   };
 
   const handlePinStep = async (pin: string) => {
@@ -107,7 +133,7 @@ export default function SecurityPage() {
     } else if (pinStep === 'new') {
       setNewPin(pin);
       setPinStep('confirm');
-    } else {
+    } else if (pinStep === 'confirm') {
       if (pin !== newPin) {
         toast.error('PINs do not match, try again');
         setPinStep('new');
@@ -117,15 +143,23 @@ export default function SecurityPage() {
       setPinLoading(true);
       try {
         await securityApi.changePin(currentPin, newPin);
-        toast.success('PIN changed successfully');
-        setPinStep('current');
-        setCurrentPin('');
-        setNewPin('');
+        toast.success('Code sent to your email');
+        setPinStep('otp');
       } catch (err) {
         toast.error(getErrorMessage(err));
-        setPinStep('current');
-        setCurrentPin('');
-        setNewPin('');
+        resetPinChangeFlow();
+      } finally {
+        setPinLoading(false);
+      }
+    } else {
+      setPinLoading(true);
+      try {
+        await securityApi.confirmChangePin(pin);
+        toast.success('PIN changed successfully');
+        resetPinChangeFlow();
+      } catch (err) {
+        toast.error(getErrorMessage(err));
+        resetPinChangeFlow();
       } finally {
         setPinLoading(false);
       }
@@ -136,6 +170,7 @@ export default function SecurityPage() {
     current: 'Enter current 4-digit PIN',
     new: 'Enter new 4-digit PIN',
     confirm: 'Confirm new PIN',
+    otp: 'Enter 6-digit code',
   };
 
   return (
@@ -157,50 +192,62 @@ export default function SecurityPage() {
             </div>
             <div>
               <p className="font-bold text-ink">Change Password</p>
-              <p className="text-xs text-ink-muted">Update your login password</p>
+              <p className="text-xs text-ink-muted">
+                {pwOtpStep ? 'Enter the code sent to your email to confirm' : 'Update your login password'}
+              </p>
             </div>
           </div>
 
-          <form onSubmit={handleSubmit(onChangePassword)} className="flex flex-col gap-3">
-            <Input
-              label="Current Password"
-              type={showCurrent ? 'text' : 'password'}
-              placeholder="Enter current password"
-              error={errors.currentPassword?.message}
-              suffix={
-                <button type="button" onClick={() => setShowCurrent(!showCurrent)} className="text-ink-muted cursor-pointer hover:text-ink">
-                  {showCurrent ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
-              }
-              {...register('currentPassword', { required: 'Current password is required' })}
-            />
-            <Input
-              label="New Password"
-              type={showNew ? 'text' : 'password'}
-              placeholder="Min. 8 chars, 1 uppercase, 1 number"
-              error={errors.newPassword?.message}
-              suffix={
-                <button type="button" onClick={() => setShowNew(!showNew)} className="text-ink-muted cursor-pointer hover:text-ink">
-                  {showNew ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
-              }
-              {...register('newPassword', {
-                required: 'New password is required',
-                minLength: { value: 8, message: 'Minimum 8 characters' },
-                pattern: { value: /(?=.*[A-Z])(?=.*[0-9])/, message: 'Must have uppercase & number' },
-              })}
-            />
-            <Input
-              label="Confirm New Password"
-              type={showNew ? 'text' : 'password'}
-              placeholder="Re-enter new password"
-              error={errors.confirmPassword?.message}
-              {...register('confirmPassword', { required: 'Please confirm your password' })}
-            />
-            <Button type="submit" fullWidth loading={pwLoading} className="mt-1">
-              Update Password
-            </Button>
-          </form>
+          {pwOtpStep ? (
+            <div className="flex flex-col items-center gap-4">
+              <PinInput length={6} onComplete={onConfirmPassword} label="Enter 6-digit code" />
+              {pwLoading && <div className="w-5 h-5 border-2 border-brand-blue border-t-transparent rounded-full animate-spin" />}
+              <button onClick={cancelPasswordOtp} className="text-sm text-ink-muted underline">
+                Cancel
+              </button>
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit(onChangePassword)} className="flex flex-col gap-3">
+              <Input
+                label="Current Password"
+                type={showCurrent ? 'text' : 'password'}
+                placeholder="Enter current password"
+                error={errors.currentPassword?.message}
+                suffix={
+                  <button type="button" onClick={() => setShowCurrent(!showCurrent)} className="text-ink-muted cursor-pointer hover:text-ink">
+                    {showCurrent ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                }
+                {...register('currentPassword', { required: 'Current password is required' })}
+              />
+              <Input
+                label="New Password"
+                type={showNew ? 'text' : 'password'}
+                placeholder="Min. 8 chars, 1 uppercase, 1 number"
+                error={errors.newPassword?.message}
+                suffix={
+                  <button type="button" onClick={() => setShowNew(!showNew)} className="text-ink-muted cursor-pointer hover:text-ink">
+                    {showNew ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                }
+                {...register('newPassword', {
+                  required: 'New password is required',
+                  minLength: { value: 8, message: 'Minimum 8 characters' },
+                  pattern: { value: /(?=.*[A-Z])(?=.*[0-9])/, message: 'Must have uppercase & number' },
+                })}
+              />
+              <Input
+                label="Confirm New Password"
+                type={showNew ? 'text' : 'password'}
+                placeholder="Re-enter new password"
+                error={errors.confirmPassword?.message}
+                {...register('confirmPassword', { required: 'Please confirm your password' })}
+              />
+              <Button type="submit" fullWidth loading={pwLoading} className="mt-1">
+                Update Password
+              </Button>
+            </form>
+          )}
         </div>
 
         {/* Change / Forgot PIN */}
@@ -213,7 +260,7 @@ export default function SecurityPage() {
               <p className="font-bold text-ink">{pinMode === 'change' ? 'Change Transaction PIN' : 'Reset Forgotten PIN'}</p>
               <p className="text-xs text-ink-muted">
                 {pinMode === 'change'
-                  ? `Step ${pinStep === 'current' ? 1 : pinStep === 'new' ? 2 : 3} of 3 — ${pinStep === 'current' ? 'verify current' : pinStep === 'new' ? 'enter new' : 'confirm new'}`
+                  ? `Step ${pinStep === 'current' ? 1 : pinStep === 'new' ? 2 : pinStep === 'confirm' ? 3 : 4} of 4 — ${pinStep === 'current' ? 'verify current' : pinStep === 'new' ? 'enter new' : pinStep === 'confirm' ? 'confirm new' : 'confirm via email'}`
                   : pinMode === 'forgot-otp'
                     ? 'Enter the code sent to your email'
                     : pinMode === 'forgot-new'
@@ -225,7 +272,7 @@ export default function SecurityPage() {
 
           {pinMode === 'change' ? (
             <div className="flex flex-col items-center gap-4">
-              <PinInput key={pinStep} length={4} onComplete={handlePinStep} label={pinLabels[pinStep]} />
+              <PinInput key={pinStep} length={pinStep === 'otp' ? 6 : 4} onComplete={handlePinStep} label={pinLabels[pinStep]} />
               {pinLoading && <div className="w-5 h-5 border-2 border-green-600 border-t-transparent rounded-full animate-spin" />}
               {pinStep !== 'current' && (
                 <button

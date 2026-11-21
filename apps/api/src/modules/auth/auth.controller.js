@@ -92,6 +92,13 @@ const resetPassword = async (req, res, next) => {
 const changePassword = async (req, res, next) => {
   try {
     const data = await authService.changePassword(req.user._id, req.body.currentPassword, req.body.newPassword);
+    return success(res, data, 'Confirmation code sent');
+  } catch (err) { next(err); }
+};
+
+const confirmChangePassword = async (req, res, next) => {
+  try {
+    const data = await authService.confirmChangePassword(req.user._id, req.body.otp);
     return success(res, data, 'Password changed');
   } catch (err) { next(err); }
 };
@@ -99,6 +106,13 @@ const changePassword = async (req, res, next) => {
 const changePin = async (req, res, next) => {
   try {
     const data = await authService.changePin(req.user._id, req.body.currentPin, req.body.newPin);
+    return success(res, data, 'Confirmation code sent');
+  } catch (err) { next(err); }
+};
+
+const confirmChangePin = async (req, res, next) => {
+  try {
+    const data = await authService.confirmChangePin(req.user._id, req.body.otp);
     return success(res, data, 'PIN changed');
   } catch (err) { next(err); }
 };
@@ -131,4 +145,4 @@ const submitKyc = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-module.exports = { register, verifyOtp, login, refresh, setPin, logout, resendOtp, me, forgotPassword, resetPassword, changePassword, changePin, forgotPin, resetPin, updateProfile, submitKyc };
+module.exports = { register, verifyOtp, login, refresh, setPin, logout, resendOtp, me, forgotPassword, resetPassword, changePassword, confirmChangePassword, changePin, confirmChangePin, forgotPin, resetPin, updateProfile, submitKyc };
