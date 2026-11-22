@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
-import { Gift, RefreshCw, Percent, Eye } from 'lucide-react';
+import { Gift, RefreshCw, Percent, Eye, UserPlus } from 'lucide-react';
 import { adminApi } from '@/lib/api';
 import { getErrorMessage } from '@/lib/utils';
 
@@ -162,6 +162,56 @@ function CashbackCard() {
   );
 }
 
+function SignupBonusCard() {
+  const [amount, setAmount] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    adminApi.getSignupBonusSettings()
+      .then((r) => setAmount(r.data.data.amount))
+      .catch((e) => toast.error(getErrorMessage(e)))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const onSave = async () => {
+    setSaving(true);
+    try {
+      const r = await adminApi.updateSignupBonusSettings(amount);
+      setAmount(r.data.data.amount);
+      toast.success('Signup bonus updated');
+    } catch (e) {
+      toast.error(getErrorMessage(e));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <SettingsCard icon={UserPlus} title="Signup Bonus" sub="Paid to a new user instantly when they register with a referral code. Set to 0 to disable.">
+      {loading ? (
+        <div className="h-11 bg-slate-700/50 rounded-xl animate-pulse" />
+      ) : (
+        <div className="flex flex-col gap-4">
+          <div className="relative">
+            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 text-sm">₦</span>
+            <input
+              type="number" min={0} step="1"
+              value={amount}
+              onChange={(e) => setAmount(Number(e.target.value))}
+              className="w-full bg-slate-800 border border-slate-700 rounded-xl pl-8 pr-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-brand-blue/60 transition-colors"
+            />
+          </div>
+          <button onClick={onSave} disabled={saving}
+            className="w-full bg-brand-blue text-white font-bold py-3 rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+            {saving ? 'Saving…' : 'Save changes'}
+          </button>
+        </div>
+      )}
+    </SettingsCard>
+  );
+}
+
 type FeatureStatus = 'live' | 'coming_soon' | 'hidden';
 interface FeatureFlags {
   exam: FeatureStatus; reseller: FeatureStatus; savings: FeatureStatus;
@@ -307,6 +357,7 @@ export default function AdminSettingsPage() {
           keys={FEATURE_GROUPS[2].map((g) => g.key)}
         />
         <CashbackCard />
+        <SignupBonusCard />
         <ReferralBonusCard />
       </div>
     </div>

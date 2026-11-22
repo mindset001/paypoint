@@ -32,6 +32,79 @@ const updateBonusByTier = async ({ basic, standard, premium }) => {
   return next;
 };
 
+// ── Signup bonus — paid to the NEW user themselves for registering with a
+// referral code (separate from the bonus above, which pays the referrer
+// once the referee makes their first transaction) ──────────────────────
+
+const SIGNUP_BONUS_KEY = 'referral_signup_bonus';
+const DEFAULT_SIGNUP_BONUS = 10000; // kobo = ₦100
+
+const getSignupBonus = async () => {
+  const stored = await settings.get(SIGNUP_BONUS_KEY);
+  return stored ?? DEFAULT_SIGNUP_BONUS;
+};
+
+const updateSignupBonus = async (amountNGN) => {
+  const kobo = Math.max(0, Math.round(amountNGN * 100));
+  await settings.set(SIGNUP_BONUS_KEY, kobo);
+  return kobo;
+};
+
+// Called once, right after a new account + wallet is created from a
+// registration that carried a valid referral code. Runs in its own
+// transaction since account creation itself isn't wrapped in one.
+const creditSignupBonus = async (userId) => {
+  const bonusAmount = await getSignupBonus();
+  if (!bonusAmount) return null; // admin set it to 0 — disabled
+
+  const session = await mongoose.startSession();
+  session.startTransaction();
+  try {
+    const { balanceBefore, balanceAfter, wallet } = await walletService.credit(userId, bonusAmount, session);
+
+    const ref = otp.generateRef();
+    const [tx] = await Transaction.create([{
+      reference: ref,
+      userId,
+      walletId: wallet._id,
+      type: 'signup_bonus',
+      direction: 'credit',
+      amount: bonusAmount,
+      status: 'success',
+      balanceBefore,
+      balanceAfter,
+      meta: { narration: 'Signup bonus — registered with a referral code' },
+      processedAt: new Date(),
+    }], { session });
+
+    await ledger.record({
+      transactionId: tx._id,
+      userId,
+      walletId: wallet._id,
+      entry: 'credit',
+      amount: bonusAmount,
+      balanceBefore,
+      balanceAfter,
+      description: 'Signup bonus — registered with a referral code',
+    }, session);
+
+    await session.commitTransaction();
+
+    notify.createNotification(userId, {
+      title: 'Welcome Bonus 🎉',
+      body: `You earned ₦${(bonusAmount / 100).toLocaleString()} for signing up with a referral code!`,
+      type: 'wallet',
+    });
+
+    return bonusAmount;
+  } catch (err) {
+    await session.abortTransaction();
+    throw err;
+  } finally {
+    session.endSession();
+  }
+};
+
 // ── Called at signup when a valid referral code was used ──────────────
 
 const createPendingReferral = async (referrerId, refereeId, referralCode) => {
@@ -133,6 +206,7 @@ const getStats = async (userId) => {
   ]);
 
   const totalEarnedKobo = earnedAgg[0]?.total ?? 0;
+  const signupBonusKobo = await getSignupBonus();
 
   return {
     referralCode: user?.referralCode ?? null,
@@ -140,6 +214,7 @@ const getStats = async (userId) => {
     completed,
     pending,
     totalEarnedNGN: totalEarnedKobo / 100,
+    signupBonusNGN: signupBonusKobo / 100,
   };
 };
 
@@ -162,6 +237,9 @@ module.exports = {
   getBonusAmountForTier,
   getBonusByTier,
   updateBonusByTier,
+  getSignupBonus,
+  updateSignupBonus,
+  creditSignupBonus,
   creditReferralBonusIfQualifying,
   getStats,
   getHistory,

@@ -14,6 +14,7 @@ interface Stats {
   completed: number;
   pending: number;
   totalEarnedNGN: number;
+  signupBonusNGN: number;
 }
 
 interface Referral {
@@ -42,6 +43,8 @@ export default function ReferralsPage() {
   }, []);
 
   const code = stats?.referralCode;
+  const bonus = stats?.signupBonusNGN ?? 100;
+  const link = code && typeof window !== 'undefined' ? `${window.location.origin}/register?ref=${code}` : '';
 
   const copyCode = () => {
     if (!code) return;
@@ -49,9 +52,15 @@ export default function ReferralsPage() {
     toast.success('Referral code copied!');
   };
 
+  const copyLink = () => {
+    if (!link) return;
+    navigator.clipboard.writeText(link);
+    toast.success('Referral link copied!');
+  };
+
   const shareCode = async () => {
     if (!code) return;
-    const text = `Join me on Paycen! Use my code ${code} when you sign up.`;
+    const text = `Join me on Paycen! Sign up with my referral link and earn ₦${bonus.toLocaleString()}: ${link}`;
     if (navigator.share) {
       try { await navigator.share({ text }); } catch { /* cancelled */ }
     } else {
@@ -65,7 +74,7 @@ export default function ReferralsPage() {
       <div className="bg-gradient-to-br from-brand-blue to-blue-700 px-6 pt-14 md:pt-8 pb-8">
         <button onClick={() => router.back()} className="text-white mb-4"><ArrowLeft size={22} /></button>
         <h1 className="text-white text-2xl font-black">Referrals</h1>
-        <p className="text-blue-100 text-sm">Invite friends, earn a bonus on their first transaction</p>
+        <p className="text-blue-100 text-sm">Invite friends — they earn ₦{bonus.toLocaleString()}, you earn a bonus on their first transaction</p>
       </div>
 
       <div className="px-5 -mt-4 pb-8 flex flex-col gap-4">
@@ -77,10 +86,23 @@ export default function ReferralsPage() {
           ) : (
             <p className="text-2xl font-black text-brand-blue tracking-widest">{code}</p>
           )}
+
+          {!loading && link && (
+            <button onClick={copyLink}
+              className="flex items-center gap-2 bg-surface-2 border border-line rounded-xl px-3 py-2.5 text-left">
+              <span className="flex-1 min-w-0 truncate text-xs text-ink-muted font-mono">{link}</span>
+              <Copy size={13} className="text-ink-muted flex-shrink-0" />
+            </button>
+          )}
+
+          <div className="bg-green-50 dark:bg-green-500/10 border border-green-100 dark:border-green-500/20 rounded-xl px-3 py-2.5 text-xs text-green-700 dark:text-green-400 font-medium">
+            🎁 Your friend earns ₦{bonus.toLocaleString()} the moment they register with your link or code.
+          </div>
+
           <div className="grid grid-cols-2 gap-2">
             <button onClick={copyCode}
               className="flex items-center justify-center gap-1.5 text-sm text-brand-blue font-semibold bg-blue-50 dark:bg-blue-500/10 px-3 py-2.5 rounded-xl">
-              <Copy size={14} /> Copy
+              <Copy size={14} /> Copy Code
             </button>
             <button onClick={shareCode}
               className="flex items-center justify-center gap-1.5 text-sm text-white font-semibold bg-brand-blue px-3 py-2.5 rounded-xl">

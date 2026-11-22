@@ -161,6 +161,7 @@ export const referralApi = {
   stats: () => api.get('/referral/stats'),
   history: (params?: { page?: number; limit?: number }) =>
     api.get('/referral/history', { params }),
+  signupBonus: () => api.get('/referral/signup-bonus'),
 };
 
 // ── Admin ─────────────────────────────────────────────────────────────
@@ -183,6 +184,10 @@ export const adminApi = {
     api.get('/admin/settings/referral-bonus'),
   updateReferralBonusSettings: (data: { basic: number; standard: number; premium: number }) =>
     api.patch('/admin/settings/referral-bonus', data),
+  getSignupBonusSettings: () =>
+    api.get('/admin/settings/signup-bonus'),
+  updateSignupBonusSettings: (amount: number) =>
+    api.patch('/admin/settings/signup-bonus', { amount }),
   getCashbackSettings: () =>
     api.get('/admin/settings/cashback'),
   updateCashbackSettings: (data: { customer: number; agent: number }) =>

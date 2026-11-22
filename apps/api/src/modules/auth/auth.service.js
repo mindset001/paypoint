@@ -116,6 +116,13 @@ const verifyOtp = async ({ identifier, otpCode }) => {
 
     if (payload.referredBy) {
       await referralService.createPendingReferral(payload.referredBy, user._id, payload.referralCode);
+      // Best-effort — a failure here shouldn't block account creation
+      // itself, which has already succeeded by this point.
+      try {
+        await referralService.creditSignupBonus(user._id);
+      } catch (err) {
+        console.error(`Failed to credit signup bonus for user ${user._id}:`, err.message);
+      }
     }
 
     await otp.consume(key);

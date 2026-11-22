@@ -19,4 +19,11 @@ const getHistory = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-module.exports = { getStats, getHistory };
+const getSignupBonus = async (req, res, next) => {
+  try {
+    const kobo = await referralService.getSignupBonus();
+    return success(res, { amount: kobo / 100 }, 'Signup bonus fetched');
+  } catch (err) { next(err); }
+};
+
+module.exports = { getStats, getHistory, getSignupBonus };

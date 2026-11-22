@@ -110,6 +110,24 @@ const updateReferralBonusSettings = async (req, res) => {
   }
 };
 
+const getSignupBonusSettings = async (req, res) => {
+  try {
+    const data = await adminService.getSignupBonusSettings();
+    return success(res, data, 'Signup bonus setting fetched');
+  } catch (err) {
+    return error(res, err.message, 500);
+  }
+};
+
+const updateSignupBonusSettings = async (req, res) => {
+  try {
+    const data = await adminService.updateSignupBonusSettings(req.body.amount);
+    return success(res, data, 'Signup bonus setting updated');
+  } catch (err) {
+    return error(res, err.message, 400);
+  }
+};
+
 const getCashbackSettings = async (req, res) => {
   try {
     const data = await adminService.getCashbackSettings();
@@ -360,6 +378,8 @@ module.exports = {
   getUserTransactions,
   getReferralBonusSettings,
   updateReferralBonusSettings,
+  getSignupBonusSettings,
+  updateSignupBonusSettings,
   getCashbackSettings,
   updateCashbackSettings,
   getFeatureFlags,

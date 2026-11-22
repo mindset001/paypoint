@@ -216,6 +216,16 @@ const updateReferralBonusSettings = async ({ basic, standard, premium }) => {
   };
 };
 
+const getSignupBonusSettings = async () => {
+  const kobo = await referralService.getSignupBonus();
+  return { amount: kobo / 100 };
+};
+
+const updateSignupBonusSettings = async (amount) => {
+  const kobo = await referralService.updateSignupBonus(amount);
+  return { amount: kobo / 100 };
+};
+
 // ── Cashback & feature flags ─────────────────────────────────────────────
 
 const getCashbackSettings = async () => cashbackService.getCashbackRates();
@@ -673,6 +683,8 @@ module.exports = {
   getUserTransactions,
   getReferralBonusSettings,
   updateReferralBonusSettings,
+  getSignupBonusSettings,
+  updateSignupBonusSettings,
   getCashbackSettings,
   updateCashbackSettings,
   getFeatureFlagsAdmin,

@@ -20,6 +20,8 @@ router.get('/transactions/export',         ...isAdmin, ctrl.exportTransactionsCs
 router.get('/transactions',                ...isAdmin, ctrl.getTransactions);
 router.get('/settings/referral-bonus',     ...isAdmin, ctrl.getReferralBonusSettings);
 router.patch('/settings/referral-bonus',   ...isAdmin, ctrl.updateReferralBonusSettings);
+router.get('/settings/signup-bonus',       ...isAdmin, ctrl.getSignupBonusSettings);
+router.patch('/settings/signup-bonus',     ...isAdmin, ctrl.updateSignupBonusSettings);
 router.get('/settings/cashback',           ...isAdmin, ctrl.getCashbackSettings);
 router.patch('/settings/cashback',         ...isAdmin, ctrl.updateCashbackSettings);
 router.get('/settings/features',           ...isAdmin, ctrl.getFeatureFlags);

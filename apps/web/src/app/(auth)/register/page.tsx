@@ -1,13 +1,13 @@
 'use client';
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useState, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, Gift } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { authApi } from '@/lib/api';
+import { authApi, referralApi } from '@/lib/api';
 import { getErrorMessage } from '@/lib/utils';
 
 interface RegisterForm {
@@ -19,10 +19,20 @@ interface RegisterForm {
   referralCode?: string;
 }
 
-export default function RegisterPage() {
+function RegisterContent() {
   const router = useRouter();
+  const params = useSearchParams();
+  const refCode = params.get('ref') || '';
   const [showPw, setShowPw] = useState(false);
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<RegisterForm>();
+  const [signupBonus, setSignupBonus] = useState(100);
+  const { register, handleSubmit, setValue, formState: { errors, isSubmitting } } = useForm<RegisterForm>({
+    defaultValues: { referralCode: refCode },
+  });
+
+  useEffect(() => {
+    if (refCode) setValue('referralCode', refCode);
+    referralApi.signupBonus().then((r) => setSignupBonus(r.data.data.amount)).catch(() => {});
+  }, [refCode, setValue]);
 
   const onSubmit = async (data: RegisterForm) => {
     try {
@@ -37,7 +47,16 @@ export default function RegisterPage() {
   return (
     <div>
       <h1 className="text-2xl font-black text-gray-900 mb-1">Create account</h1>
-      <p className="text-gray-500 text-sm mb-8">Join millions using Paycen daily</p>
+      <p className="text-gray-500 text-sm mb-6">Join millions using Paycen daily</p>
+
+      {refCode && (
+        <div className="flex items-center gap-2.5 bg-green-50 border border-green-100 rounded-xl px-3.5 py-3 mb-6">
+          <Gift size={18} className="text-green-600 flex-shrink-0" />
+          <p className="text-sm text-green-700">
+            You&apos;ll earn <span className="font-bold">₦{signupBonus.toLocaleString()}</span> for signing up with code <span className="font-bold">{refCode}</span>!
+          </p>
+        </div>
+      )}
 
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
         <div className="grid grid-cols-2 gap-3">
@@ -110,5 +129,13 @@ export default function RegisterPage() {
         <Link href="/login" className="text-brand-blue font-semibold">Sign in</Link>
       </p>
     </div>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense>
+      <RegisterContent />
+    </Suspense>
   );
 }
