@@ -7,7 +7,24 @@ const VALID_STATUSES = ['live', 'coming_soon', 'hidden'];
 // source of truth the frontend reads instead of a hardcoded comingSoon flag.
 // 'live' = fully usable, 'coming_soon' = visible but disabled with a badge,
 // 'hidden' = not shown at all.
-const DEFAULT_FLAGS = { exam: 'coming_soon', reseller: 'coming_soon', savings: 'live' };
+const DEFAULT_FLAGS = {
+  exam: 'coming_soon',
+  reseller: 'coming_soon',
+  savings: 'live',
+  // Wallet funding providers — paystack is the only one actually wired up
+  // and verified live; flutterwave/monnify have client code but no verified
+  // live integration yet.
+  paystack: 'live',
+  flutterwave: 'coming_soon',
+  monnify: 'coming_soon',
+  // KYC verification methods on the Identity Verification page — bvn/nin
+  // go through Dojah today; "number" (phone-based verification) has no
+  // automated provider wired up, so a submission there is just queued for
+  // manual admin review instead of an automated lookup.
+  kyc_bvn: 'live',
+  kyc_nin: 'live',
+  kyc_number: 'coming_soon',
+};
 
 // Earlier today this setting stored plain booleans (true = live, false =
 // coming soon, no "hidden" concept yet) — coerce any leftover legacy value

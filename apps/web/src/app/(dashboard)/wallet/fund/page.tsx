@@ -1,20 +1,27 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, CreditCard, Building2, Copy, CheckCircle, ChevronRight, RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { walletApi } from '@/lib/api';
+import { walletApi, servicesApi } from '@/lib/api';
 import { getErrorMessage } from '@/lib/utils';
 import { useAuthStore } from '@/store/auth.store';
 import { cn } from '@/lib/cn';
 
 type Provider = 'paystack' | 'flutterwave' | 'monnify';
+type FeatureStatus = 'live' | 'coming_soon' | 'hidden';
 
 const QUICK_AMOUNTS = [500, 1000, 2000, 5000, 10000, 20000];
 
-const PROVIDERS: { id: Provider; name: string; tagline: string; methods: string[]; logo: string; comingSoon?: boolean }[] = [
+// Mirrors the API's defaults (apps/api/src/services/featureFlags.service.js)
+// so a provider doesn't flash the wrong state before the real flags load.
+const DEFAULT_FLAGS: Record<Provider, FeatureStatus> = {
+  paystack: 'live', flutterwave: 'coming_soon', monnify: 'coming_soon',
+};
+
+const PROVIDERS: { id: Provider; name: string; tagline: string; methods: string[]; logo: string }[] = [
   {
     id: 'paystack',
     name: 'Paystack',
@@ -28,7 +35,6 @@ const PROVIDERS: { id: Provider; name: string; tagline: string; methods: string[
     tagline: 'Card, bank transfer, USSD',
     methods: ['Visa', 'Mastercard', 'Bank transfer', 'USSD'],
     logo: '🦋',
-    comingSoon: true,
   },
   {
     id: 'monnify',
@@ -36,7 +42,6 @@ const PROVIDERS: { id: Provider; name: string; tagline: string; methods: string[
     tagline: 'Bank transfer · instant',
     methods: ['Bank transfer', 'Card'],
     logo: '🏦',
-    comingSoon: true,
   },
 ];
 
@@ -57,6 +62,17 @@ export default function FundWalletPage() {
   const [vaLoading,    setVaLoading]    = useState(false);
   const [virtualAcct,  setVirtualAcct]  = useState<VirtualAccount | null>(null);
   const [copied,       setCopied]       = useState(false);
+  const [flags,        setFlags]        = useState<Record<Provider, FeatureStatus>>(DEFAULT_FLAGS);
+
+  useEffect(() => {
+    servicesApi.features().then((r) => {
+      const next = { ...DEFAULT_FLAGS, ...r.data.data };
+      setFlags(next);
+      // If the default/selected provider got hidden by admin, fall back to
+      // the first one that's still visible instead of leaving a dead choice selected.
+      setProvider((p) => (next[p] === 'hidden' ? (PROVIDERS.find((x) => next[x.id] !== 'hidden')?.id ?? p) : p));
+    }).catch(() => {});
+  }, []);
 
   const handleFund = async () => {
     const val = parseFloat(amount);
@@ -138,46 +154,49 @@ export default function FundWalletPage() {
           <p className="text-xs font-semibold text-ink-muted uppercase tracking-widest mb-3">Payment provider</p>
 
           <div className="space-y-2">
-            {PROVIDERS.map((p) => (
-              <button
-                key={p.id}
-                disabled={p.comingSoon}
-                onClick={() => { if (p.comingSoon) return; setProvider(p.id); setVirtualAcct(null); }}
-                className={cn(
-                  'w-full flex items-center gap-4 p-4 rounded-2xl border-2 transition-all text-left',
-                  p.comingSoon
-                    ? 'border-line bg-surface-2/50 opacity-60 cursor-not-allowed'
-                    : provider === p.id
-                      ? 'border-brand-blue bg-blue-50/50 dark:bg-blue-500/10'
-                      : 'border-line hover:border-brand-blue/30 bg-surface-2/50',
-                )}
-              >
-                <div className="w-10 h-10 rounded-xl bg-surface shadow-sm flex items-center justify-center text-xl shrink-0">
-                  {p.logo}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className={cn('font-bold text-sm', !p.comingSoon && provider === p.id ? 'text-brand-blue' : 'text-ink')}>
-                      {p.name}
-                    </p>
-                    {p.comingSoon && (
-                      <span className="text-[10px] font-semibold uppercase tracking-wide bg-surface-2 border border-line text-ink-muted px-1.5 py-0.5 rounded-full">
-                        Coming soon
-                      </span>
-                    )}
+            {PROVIDERS.filter((p) => flags[p.id] !== 'hidden').map((p) => {
+              const comingSoon = flags[p.id] === 'coming_soon';
+              return (
+                <button
+                  key={p.id}
+                  disabled={comingSoon}
+                  onClick={() => { if (comingSoon) return; setProvider(p.id); setVirtualAcct(null); }}
+                  className={cn(
+                    'w-full flex items-center gap-4 p-4 rounded-2xl border-2 transition-all text-left',
+                    comingSoon
+                      ? 'border-line bg-surface-2/50 opacity-60 cursor-not-allowed'
+                      : provider === p.id
+                        ? 'border-brand-blue bg-blue-50/50 dark:bg-blue-500/10'
+                        : 'border-line hover:border-brand-blue/30 bg-surface-2/50',
+                  )}
+                >
+                  <div className="w-10 h-10 rounded-xl bg-surface shadow-sm flex items-center justify-center text-xl shrink-0">
+                    {p.logo}
                   </div>
-                  <p className="text-ink-muted text-xs mt-0.5">{p.tagline}</p>
-                </div>
-                {!p.comingSoon && (
-                  <div className={cn(
-                    'w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all',
-                    provider === p.id ? 'border-brand-blue bg-brand-blue' : 'border-line',
-                  )}>
-                    {provider === p.id && <div className="w-2 h-2 bg-white rounded-full" />}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className={cn('font-bold text-sm', !comingSoon && provider === p.id ? 'text-brand-blue' : 'text-ink')}>
+                        {p.name}
+                      </p>
+                      {comingSoon && (
+                        <span className="text-[10px] font-semibold uppercase tracking-wide bg-surface-2 border border-line text-ink-muted px-1.5 py-0.5 rounded-full">
+                          Coming soon
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-ink-muted text-xs mt-0.5">{p.tagline}</p>
                   </div>
-                )}
-              </button>
-            ))}
+                  {!comingSoon && (
+                    <div className={cn(
+                      'w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all',
+                      provider === p.id ? 'border-brand-blue bg-brand-blue' : 'border-line',
+                    )}>
+                      {provider === p.id && <div className="w-2 h-2 bg-white rounded-full" />}
+                    </div>
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
 

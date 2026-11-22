@@ -386,13 +386,28 @@ const updateProfile = async (userId, { firstName, lastName }) => {
 const namesRoughlyMatch = (a, b) =>
   (a || '').toLowerCase().replace(/[^a-z]/g, '') === (b || '').toLowerCase().replace(/[^a-z]/g, '');
 
-const submitKyc = async (userId, { nin, bvn }) => {
-  if (!nin && !bvn) throw Object.assign(new Error('Provide NIN or BVN'), { statusCode: 400 });
+const submitKyc = async (userId, { nin, bvn, number }) => {
+  if (!nin && !bvn && !number) throw Object.assign(new Error('Provide a NIN, BVN, or phone number'), { statusCode: 400 });
   if (nin && !/^\d{11}$/.test(nin)) throw Object.assign(new Error('NIN must be 11 digits'), { statusCode: 400 });
   if (bvn && !/^\d{11}$/.test(bvn)) throw Object.assign(new Error('BVN must be 11 digits'), { statusCode: 400 });
+  if (number && !/^\+?[0-9]{10,14}$/.test(number)) throw Object.assign(new Error('Enter a valid phone number'), { statusCode: 400 });
 
   const user = await User.findById(userId);
   if (!user) throw Object.assign(new Error('User not found'), { statusCode: 404 });
+
+  // Phone-number verification has no automated lookup provider — it always
+  // goes to the manual KYC review queue rather than through Dojah.
+  if (number) {
+    const updated = await User.findByIdAndUpdate(userId, {
+      'kyc.submittedAt': new Date(),
+      'kyc.phoneNumber': number,
+      status: 'pending_kyc',
+    }, { new: true });
+    return {
+      ...sanitize(updated),
+      message: 'Submitted for manual review — we\'ll verify your number within 24 hours.',
+    };
+  }
 
   let entity;
   try {

@@ -189,7 +189,10 @@ export const adminApi = {
     api.patch('/admin/settings/cashback', data),
   getFeatureFlags: () =>
     api.get('/admin/settings/features'),
-  updateFeatureFlags: (data: Partial<Record<'exam' | 'reseller' | 'savings', 'live' | 'coming_soon' | 'hidden'>>) =>
+  updateFeatureFlags: (data: Partial<Record<
+    'exam' | 'reseller' | 'savings' | 'paystack' | 'flutterwave' | 'monnify' | 'kyc_bvn' | 'kyc_nin' | 'kyc_number',
+    'live' | 'coming_soon' | 'hidden'
+  >>) =>
     api.patch('/admin/settings/features', data),
   stuckDeposits: () =>
     api.get('/admin/deposits/stuck'),

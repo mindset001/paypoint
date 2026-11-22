@@ -446,7 +446,7 @@ const getLedger = async ({ page = 1, limit = 30, userId = '', search = '' } = {}
 const getPendingKyc = async () => {
   const users = await User.find({ status: 'pending_kyc', 'kyc.submittedAt': { $ne: null } })
     .select('firstName lastName email phone kyc.submittedAt kyc.verifiedName kyc.rejectionReason')
-    .select('+kyc.nin +kyc.bvn')
+    .select('+kyc.nin +kyc.bvn +kyc.phoneNumber')
     .sort({ 'kyc.submittedAt': 1 });
 
   return users.map((u) => ({
@@ -457,8 +457,8 @@ const getPendingKyc = async () => {
     phone: u.phone?.number,
     submittedAt: u.kyc.submittedAt,
     verifiedName: u.kyc.verifiedName,
-    idType: u.kyc.nin ? 'NIN' : u.kyc.bvn ? 'BVN' : null,
-    idLast4: (u.kyc.nin || u.kyc.bvn || '').slice(-4),
+    idType: u.kyc.nin ? 'NIN' : u.kyc.bvn ? 'BVN' : u.kyc.phoneNumber ? 'Phone Number' : null,
+    idLast4: (u.kyc.nin || u.kyc.bvn || u.kyc.phoneNumber || '').slice(-4),
     priorRejectionReason: u.kyc.rejectionReason,
   }));
 };

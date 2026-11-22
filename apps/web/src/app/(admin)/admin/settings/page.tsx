@@ -163,13 +163,35 @@ function CashbackCard() {
 }
 
 type FeatureStatus = 'live' | 'coming_soon' | 'hidden';
-interface FeatureFlags { exam: FeatureStatus; reseller: FeatureStatus; savings: FeatureStatus }
+interface FeatureFlags {
+  exam: FeatureStatus; reseller: FeatureStatus; savings: FeatureStatus;
+  paystack: FeatureStatus; flutterwave: FeatureStatus; monnify: FeatureStatus;
+  kyc_bvn: FeatureStatus; kyc_nin: FeatureStatus; kyc_number: FeatureStatus;
+}
+
+const DEFAULT_FEATURE_FLAGS: FeatureFlags = {
+  exam: 'coming_soon', reseller: 'coming_soon', savings: 'live',
+  paystack: 'live', flutterwave: 'coming_soon', monnify: 'coming_soon',
+  kyc_bvn: 'live', kyc_nin: 'live', kyc_number: 'coming_soon',
+};
 
 const FEATURE_LABELS: Record<keyof FeatureFlags, { label: string; sub: string }> = {
-  exam:     { label: 'Exam Pins',       sub: 'WAEC, NECO, NABTEB, JAMB purchases' },
-  savings:  { label: 'Savings',         sub: 'Locking money away for a goal' },
-  reseller: { label: 'Reseller Program', sub: 'The "Become a Reseller" section on support' },
+  exam:        { label: 'Exam Pins',       sub: 'WAEC, NECO, NABTEB, JAMB purchases' },
+  savings:     { label: 'Savings',         sub: 'Locking money away for a goal' },
+  reseller:    { label: 'Reseller Program', sub: 'The "Become a Reseller" section on support' },
+  paystack:    { label: 'Paystack',        sub: 'Card, bank transfer, USSD funding' },
+  flutterwave: { label: 'Flutterwave',     sub: 'Card, bank transfer, USSD funding' },
+  monnify:     { label: 'Monnify',         sub: 'Bank transfer / virtual account funding' },
+  kyc_bvn:     { label: 'BVN Verification', sub: 'Identity check via Bank Verification Number' },
+  kyc_nin:     { label: 'NIN Verification', sub: 'Identity check via National ID Number' },
+  kyc_number:  { label: 'Phone Number Verification', sub: 'No automated lookup — goes to manual KYC review' },
 };
+
+const FEATURE_GROUPS: { key: keyof FeatureFlags }[][] = [
+  [{ key: 'exam' }, { key: 'savings' }, { key: 'reseller' }],
+  [{ key: 'paystack' }, { key: 'flutterwave' }, { key: 'monnify' }],
+  [{ key: 'kyc_bvn' }, { key: 'kyc_nin' }, { key: 'kyc_number' }],
+];
 
 const STATUS_OPTIONS: { value: FeatureStatus; label: string }[] = [
   { value: 'live', label: 'Live' },
@@ -183,8 +205,8 @@ const STATUS_PILL: Record<FeatureStatus, string> = {
   hidden: 'bg-slate-600/20 text-slate-400 border-slate-600/40',
 };
 
-function FeatureFlagsCard() {
-  const [flags, setFlags] = useState<FeatureFlags>({ exam: 'coming_soon', reseller: 'coming_soon', savings: 'live' });
+function FeatureFlagsCard({ title, sub, keys }: { title: string; sub: string; keys: (keyof FeatureFlags)[] }) {
+  const [flags, setFlags] = useState<FeatureFlags>(DEFAULT_FEATURE_FLAGS);
   const [loading, setLoading] = useState(true);
   const [busyKey, setBusyKey] = useState<keyof FeatureFlags | null>(null);
 
@@ -210,14 +232,14 @@ function FeatureFlagsCard() {
   };
 
   return (
-    <SettingsCard icon={Eye} title="Feature Visibility" sub="Live, Coming Soon (visible but disabled), or Hidden (not shown at all) — no deploy needed.">
+    <SettingsCard icon={Eye} title={title} sub={sub}>
       {loading ? (
         <div className="space-y-3 animate-pulse">
-          {[...Array(3)].map((_, i) => <div key={i} className="h-16 bg-slate-700/50 rounded-xl" />)}
+          {keys.map((k) => <div key={k} className="h-16 bg-slate-700/50 rounded-xl" />)}
         </div>
       ) : (
         <div className="flex flex-col gap-2">
-          {(Object.keys(FEATURE_LABELS) as (keyof FeatureFlags)[]).map((key) => (
+          {keys.map((key) => (
             <div key={key} className="flex flex-col gap-2.5 px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl">
               <div className="flex items-center justify-between gap-4">
                 <div className="min-w-0">
@@ -269,7 +291,21 @@ export default function AdminSettingsPage() {
       </div>
 
       <div key={refreshKey} className="flex flex-col gap-5">
-        <FeatureFlagsCard />
+        <FeatureFlagsCard
+          title="Feature Visibility"
+          sub="Live, Coming Soon (visible but disabled), or Hidden (not shown at all) — no deploy needed."
+          keys={FEATURE_GROUPS[0].map((g) => g.key)}
+        />
+        <FeatureFlagsCard
+          title="Payment Providers"
+          sub="Which funding providers customers can pick on the Fund Wallet page."
+          keys={FEATURE_GROUPS[1].map((g) => g.key)}
+        />
+        <FeatureFlagsCard
+          title="Identity Verification"
+          sub="Which KYC methods customers can submit on the Identity Verification page."
+          keys={FEATURE_GROUPS[2].map((g) => g.key)}
+        />
         <CashbackCard />
         <ReferralBonusCard />
       </div>

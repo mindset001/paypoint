@@ -33,6 +33,7 @@ const userSchema = new mongoose.Schema(
     kyc: {
       nin: { type: String, select: false },
       bvn: { type: String, select: false },
+      phoneNumber: { type: String, select: false }, // manual-review-only method, no automated lookup provider
       submittedAt: Date,
       verifiedAt: Date,
       verifiedName: String, // name on file at Dojah, for audit against a name mismatch
