@@ -10,6 +10,9 @@ router.get('/aidapay/overview',            ...isAdmin, ctrl.getAidapayOverview);
 router.get('/data-plans',                  ...isAdmin, ctrl.getDataPlansAdmin);
 router.patch('/data-plans/:planId',        ...isAdmin, ctrl.setDataPlanPrice);
 router.delete('/data-plans/:planId',       ...isAdmin, ctrl.removeDataPlanPrice);
+router.get('/exam-plans',                  ...isAdmin, ctrl.getExamPlansAdmin);
+router.patch('/exam-plans/:planId',        ...isAdmin, ctrl.setExamPlanPrice);
+router.delete('/exam-plans/:planId',       ...isAdmin, ctrl.removeExamPlanPrice);
 router.get('/users/export',                ...isAdmin, ctrl.exportUsersCsv); // before /users/:id — "export" would otherwise match as an id
 router.get('/users',                       ...isAdmin, ctrl.getUsers);
 router.get('/users/:id',                   ...isAdmin, ctrl.getUserById);

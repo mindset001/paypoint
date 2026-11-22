@@ -1,8 +1,8 @@
 const service = require('./exam.service');
 const { success } = require('../../../utils/response');
 
-const getTypes = async (req, res, next) => {
-  try { return success(res, await service.getTypes(req.user), 'Exam types fetched'); }
+const getPlans = async (req, res, next) => {
+  try { return success(res, await service.getPlans(req.user), 'Exam plans fetched'); }
   catch (err) { next(err); }
 };
 const buy = async (req, res, next) => {
@@ -10,4 +10,4 @@ const buy = async (req, res, next) => {
   catch (err) { next(err); }
 };
 
-module.exports = { getTypes, buy };
+module.exports = { getPlans, buy };

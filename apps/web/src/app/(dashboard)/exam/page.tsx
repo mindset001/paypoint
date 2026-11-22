@@ -10,30 +10,30 @@ import { getErrorMessage } from '@/lib/utils';
 import { cn } from '@/lib/cn';
 import { Skeleton } from '@/components/ui/Skeleton';
 
-interface ExamType { id: string; name: string; amount: number; description: string }
+interface ExamPlan { planId: string; name: string; providerName: string; amount: number }
 
 export default function ExamPage() {
   const router = useRouter();
-  const [types, setTypes] = useState<ExamType[]>([]);
-  const [loadingTypes, setLoadingTypes] = useState(true);
-  const [selected, setSelected] = useState<ExamType | null>(null);
+  const [plans, setPlans] = useState<ExamPlan[]>([]);
+  const [loadingPlans, setLoadingPlans] = useState(true);
+  const [selected, setSelected] = useState<ExamPlan | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [showPin, setShowPin] = useState(false);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{ pins: string[] } | null>(null);
 
   useEffect(() => {
-    examApi.types()
-      .then(({ data }) => setTypes(data.data || []))
+    examApi.plans()
+      .then(({ data }) => setPlans(data.data || []))
       .catch(() => {})
-      .finally(() => setLoadingTypes(false));
+      .finally(() => setLoadingPlans(false));
   }, []);
 
   const handlePinComplete = async (pin: string) => {
     if (!selected) return;
     setLoading(true);
     try {
-      const res = await examApi.buy(selected.id, quantity, selected.amount * quantity, pin);
+      const res = await examApi.buy(selected.planId, quantity, pin);
       setResult({ pins: res.data.data.pins || [res.data.data.pin] });
       toast.success('Exam PIN purchased!');
     } catch (err) {
@@ -65,7 +65,7 @@ export default function ExamPage() {
       <div className="bg-gradient-to-br from-green-600 to-green-800 px-6 pt-14 md:pt-8 pb-8">
         <button onClick={() => router.back()} className="text-white mb-4"><ArrowLeft size={22} /></button>
         <h1 className="text-white text-2xl font-black">Exam Pins</h1>
-        <p className="text-green-100 text-sm">WAEC, NECO, NABTEB, JAMB</p>
+        <p className="text-green-100 text-sm">WAEC result checker & registration PINs</p>
       </div>
 
       <div className="px-5 -mt-4 pb-8">
@@ -73,32 +73,22 @@ export default function ExamPage() {
           {!showPin ? (
             <>
               <div>
-                <label className="text-sm font-medium text-ink-muted mb-2 block">Select Exam Type</label>
-                {loadingTypes ? (
-                  <div className="grid grid-cols-2 gap-2">
-                    {Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-20" />)}
+                <label className="text-sm font-medium text-ink-muted mb-2 block">Select Exam PIN</label>
+                {loadingPlans ? (
+                  <div className="grid grid-cols-1 gap-2">
+                    {Array(2).fill(0).map((_, i) => <Skeleton key={i} className="h-20" />)}
                   </div>
-                ) : types.length === 0 ? (
-                  <div className="grid grid-cols-2 gap-2">
-                    {['WAEC', 'NECO', 'NABTEB', 'JAMB'].map((name) => (
-                      <button key={name} onClick={() => setSelected({ id: name.toLowerCase(), name, amount: 3500, description: `${name} result checker` })}
-                        className={cn('p-4 rounded-2xl border-2 text-left transition-all',
-                          selected?.id === name.toLowerCase() ? 'border-green-600 bg-green-50 dark:bg-green-500/10' : 'border-line')}>
-                        <p className="font-black text-ink">{name}</p>
-                        <p className="text-ink-muted text-xs mt-0.5">Result Checker</p>
-                        <p className="text-sm font-bold text-green-700 mt-1">₦3,500</p>
-                      </button>
-                    ))}
-                  </div>
+                ) : plans.length === 0 ? (
+                  <p className="text-sm text-ink-muted py-6 text-center">No exam PINs available right now — check back soon.</p>
                 ) : (
-                  <div className="grid grid-cols-2 gap-2">
-                    {types.map((t) => (
-                      <button key={t.id} onClick={() => setSelected(t)}
+                  <div className="grid grid-cols-1 gap-2">
+                    {plans.map((p) => (
+                      <button key={p.planId} onClick={() => setSelected(p)}
                         className={cn('p-4 rounded-2xl border-2 text-left transition-all',
-                          selected?.id === t.id ? 'border-green-600 bg-green-50 dark:bg-green-500/10' : 'border-line')}>
-                        <p className="font-black text-ink">{t.name}</p>
-                        <p className="text-ink-muted text-xs mt-0.5">{t.description}</p>
-                        <p className="text-sm font-bold text-green-700 mt-1">₦{t.amount.toLocaleString()}</p>
+                          selected?.planId === p.planId ? 'border-green-600 bg-green-50 dark:bg-green-500/10' : 'border-line')}>
+                        <p className="font-black text-ink">{p.providerName}</p>
+                        <p className="text-ink-muted text-xs mt-0.5">{p.name}</p>
+                        <p className="text-sm font-bold text-green-700 mt-1">₦{p.amount.toLocaleString()}</p>
                       </button>
                     ))}
                   </div>
@@ -113,21 +103,21 @@ export default function ExamPage() {
                     <span className="text-xl font-black w-8 text-center">{quantity}</span>
                     <button onClick={() => setQuantity(Math.min(5, quantity + 1))} className="w-10 h-10 rounded-full bg-surface-2 font-bold text-lg">+</button>
                   </div>
-                  <p className="text-sm text-ink-muted mt-2">Total: <strong>₦{((selected.amount || 3500) * quantity).toLocaleString()}</strong></p>
+                  <p className="text-sm text-ink-muted mt-2">Total: <strong>₦{(selected.amount * quantity).toLocaleString()}</strong></p>
                 </div>
               )}
 
               {selected && (
                 <Button fullWidth size="lg" onClick={() => setShowPin(true)}>
-                  Buy {quantity} {selected.name} PIN{quantity > 1 ? 's' : ''}
+                  Buy {quantity} {selected.providerName} PIN{quantity > 1 ? 's' : ''}
                 </Button>
               )}
             </>
           ) : (
             <div className="flex flex-col items-center gap-4">
               <div className="text-center">
-                <p className="text-ink-muted text-sm">{quantity}x {selected?.name} PIN</p>
-                <p className="font-bold text-ink">₦{((selected?.amount || 3500) * quantity).toLocaleString()}</p>
+                <p className="text-ink-muted text-sm">{quantity}x {selected?.providerName} PIN</p>
+                <p className="font-bold text-ink">₦{((selected?.amount || 0) * quantity).toLocaleString()}</p>
               </div>
               <PinInput length={4} onComplete={handlePinComplete} label="Enter Transaction PIN" />
               {loading && <div className="w-6 h-6 border-2 border-green-600 border-t-transparent rounded-full animate-spin" />}

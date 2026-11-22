@@ -15,6 +15,8 @@ const Notification = require('../../models/Notification');
 const Announcement = require('../../models/Announcement');
 const dataService = require('../vtu/data/data.service');
 const dataPlanPricing = require('../../services/dataPlanPricing.service');
+const examService = require('../vtu/exam/exam.service');
+const examPlanPricing = require('../../services/examPlanPricing.service');
 
 // A wallet_fund past this age that's still "pending" means the webhook
 // never arrived and nobody completed the browser-side verify call either —
@@ -310,6 +312,47 @@ const removeDataPlanPrice = async (planId, { adminId, ip } = {}) => {
   const before = (await dataPlanPricing.getAllPrices())[planId] ?? null;
   await dataPlanPricing.removePrice(planId);
   audit.record({ adminId, action: 'data_plan.price.remove', before, after: { planId }, ip });
+  return { planId };
+};
+
+// ── Exam plan pricing ─────────────────────────────────────────────────
+// Same hide-until-priced model as data plans — grouped by exam provider
+// (WAEC Result Checker, WAEC Registration, etc.) since exam has no
+// network/catalog split.
+
+const getExamPlansAdmin = async () => {
+  const raw = await examService.getRawPlans();
+  const allPrices = await examPlanPricing.getAllPrices();
+
+  const groups = new Map();
+  for (const p of raw) {
+    if (!groups.has(p.providerCode)) groups.set(p.providerCode, { providerCode: p.providerCode, providerName: p.providerName, plans: [] });
+    const entry = allPrices[p.planId];
+    groups.get(p.providerCode).plans.push({
+      planId: p.planId,
+      name: p.name,
+      rawAmount: p.rawAmount,
+      customerPrice: entry?.customer != null ? entry.customer / 100 : null,
+      agentPrice: entry?.agent != null ? entry.agent / 100 : null,
+    });
+  }
+  return Array.from(groups.values());
+};
+
+const setExamPlanPrice = async (planId, { customer, agent }, { adminId, ip } = {}) => {
+  if (customer == null || agent == null || Number(customer) < 0 || Number(agent) < 0) {
+    throw Object.assign(new Error('Both customer and reseller prices are required and must be non-negative'), { statusCode: 400 });
+  }
+  const before = (await examPlanPricing.getAllPrices())[planId] ?? null;
+  const after = await examPlanPricing.setPrice(planId, { customer: Number(customer) * 100, agent: Number(agent) * 100 });
+  audit.record({ adminId, action: 'exam_plan.price.update', before, after: { planId, ...after }, ip });
+  return { planId, customerPrice: after.customer / 100, agentPrice: after.agent / 100 };
+};
+
+const removeExamPlanPrice = async (planId, { adminId, ip } = {}) => {
+  const before = (await examPlanPricing.getAllPrices())[planId] ?? null;
+  await examPlanPricing.removePrice(planId);
+  audit.record({ adminId, action: 'exam_plan.price.remove', before, after: { planId }, ip });
   return { planId };
 };
 
@@ -708,4 +751,7 @@ module.exports = {
   getDataPlansAdmin,
   setDataPlanPrice,
   removeDataPlanPrice,
+  getExamPlansAdmin,
+  setExamPlanPrice,
+  removeExamPlanPrice,
 };

@@ -111,6 +111,20 @@ export interface AdminDataPlanGroup {
   plans: AdminDataPlanRow[];
 }
 
+export interface AdminExamPlanRow {
+  planId: string;
+  name: string;
+  rawAmount: number;
+  customerPrice: number | null;
+  agentPrice: number | null;
+}
+
+export interface AdminExamPlanGroup {
+  providerCode: string;
+  providerName: string;
+  plans: AdminExamPlanRow[];
+}
+
 export interface AdminTransactionRow extends Transaction {
   userId?: { _id: string; firstName: string; lastName: string; phone: { number: string } };
 }

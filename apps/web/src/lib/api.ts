@@ -229,6 +229,12 @@ export const adminApi = {
     api.patch(`/admin/data-plans/${encodeURIComponent(planId)}`, data),
   removeDataPlanPrice: (planId: string) =>
     api.delete(`/admin/data-plans/${encodeURIComponent(planId)}`),
+  examPlans: () =>
+    api.get('/admin/exam-plans'),
+  setExamPlanPrice: (planId: string, data: { customer: number; agent: number }) =>
+    api.patch(`/admin/exam-plans/${encodeURIComponent(planId)}`, data),
+  removeExamPlanPrice: (planId: string) =>
+    api.delete(`/admin/exam-plans/${encodeURIComponent(planId)}`),
   exportTransactionsCsv: (params?: { type?: string; status?: string; userId?: string; from?: string; to?: string }) =>
     api.get('/admin/transactions/export', { params, responseType: 'blob' }),
   exportUsersCsv: (params?: { search?: string; role?: string; status?: string }) =>
@@ -241,9 +247,9 @@ export const adminApi = {
 
 // ── Exam ─────────────────────────────────────────────────────────────
 export const examApi = {
-  types: () => api.get('/exam/types'),
-  buy: (examType: string, quantity: number, amount: number, pin: string) =>
-    api.post('/exam', { examType, quantity, amount, pin }),
+  plans: () => api.get('/exam/plans'),
+  buy: (planId: string, quantity: number, pin: string) =>
+    api.post('/exam', { planId, quantity, pin }),
 };
 
 // ── VTU shared ───────────────────────────────────────────────────────

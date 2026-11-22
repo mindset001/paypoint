@@ -202,6 +202,34 @@ const removeDataPlanPrice = async (req, res) => {
   }
 };
 
+const getExamPlansAdmin = async (req, res) => {
+  try {
+    const data = await adminService.getExamPlansAdmin();
+    return success(res, data, 'Exam plans fetched');
+  } catch (err) {
+    return error(res, err.message, err.statusCode || 500);
+  }
+};
+
+const setExamPlanPrice = async (req, res) => {
+  try {
+    const { customer, agent } = req.body;
+    const data = await adminService.setExamPlanPrice(req.params.planId, { customer, agent }, { adminId: req.user._id, ip: req.ip });
+    return success(res, data, 'Price updated');
+  } catch (err) {
+    return error(res, err.message, err.statusCode || 400);
+  }
+};
+
+const removeExamPlanPrice = async (req, res) => {
+  try {
+    const data = await adminService.removeExamPlanPrice(req.params.planId, { adminId: req.user._id, ip: req.ip });
+    return success(res, data, 'Price removed — plan hidden from users');
+  } catch (err) {
+    return error(res, err.message, 500);
+  }
+};
+
 const sendAnnouncement = async (req, res) => {
   try {
     const { title, body, displayType } = req.body;
@@ -403,4 +431,7 @@ module.exports = {
   getDataPlansAdmin,
   setDataPlanPrice,
   removeDataPlanPrice,
+  getExamPlansAdmin,
+  setExamPlanPrice,
+  removeExamPlanPrice,
 };
