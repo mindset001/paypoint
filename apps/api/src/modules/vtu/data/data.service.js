@@ -18,6 +18,7 @@ const dataPlanPricing = require('../../../services/dataPlanPricing.service');
 // response, not guessed. First entry per network is the default.
 const DATA_CATALOGS = {
   MTN: [
+    { key: 'sme',    label: 'SME',                      providerCode: 'mtn-sme' },
     { key: 'awuf',   label: 'Data Bundle',             providerCode: 'mtn-awuf-data' },
     { key: 'fibrex', label: 'FibreX (Home Broadband)',  providerCode: 'mtn-fibre-x' },
   ],
