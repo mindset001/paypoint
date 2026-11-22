@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { PinInput } from '@/components/ui/PinInput';
 import { Skeleton } from '@/components/ui/Skeleton';
-import { withdrawApi } from '@/lib/api';
+import { withdrawApi, servicesApi } from '@/lib/api';
 import { getErrorMessage, formatNGN } from '@/lib/utils';
 import { cn } from '@/lib/cn';
 import { PurchaseSuccess } from '@/components/receipt/PurchaseSuccess';
@@ -16,12 +16,6 @@ import { PurchaseSuccess } from '@/components/receipt/PurchaseSuccess';
 interface Bank { code: string; name: string }
 interface BankAccount { id: string; bankCode: string; bankName: string; accountNumber: string; accountName: string }
 type Step = 'accounts' | 'add-account' | 'amount' | 'pin';
-
-// Paystack blocks third-party payouts until the business completes its
-// compliance/verification tier upgrade — flip this back on once that's
-// done. Everything below is already built and tested; this is the only
-// gate.
-const WITHDRAW_ENABLED = false;
 
 function ComingSoon() {
   const router = useRouter();
@@ -305,5 +299,13 @@ function WithdrawPageInner() {
 }
 
 export default function WithdrawPage() {
-  return WITHDRAW_ENABLED ? <WithdrawPageInner /> : <ComingSoon />;
+  // Matches the API's own default (apps/api/src/services/featureFlags.service.js)
+  // so this doesn't flash "Coming Soon" before the real flag loads.
+  const [status, setStatus] = useState<'live' | 'coming_soon' | 'hidden'>('live');
+
+  useEffect(() => {
+    servicesApi.features().then((r) => setStatus(r.data.data.withdrawal)).catch(() => {});
+  }, []);
+
+  return status === 'live' ? <WithdrawPageInner /> : <ComingSoon />;
 }

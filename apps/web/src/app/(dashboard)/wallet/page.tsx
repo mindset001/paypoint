@@ -17,15 +17,21 @@ const item = { hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0, transiti
 
 export default function WalletPage() {
   const { wallet, transactions, loading, fetchWallet, fetchTransactions } = useWallet();
-  // Matches the API's own default (apps/api/src/services/featureFlags.service.js)
-  // so Save doesn't flash visible before the real flag loads.
+  // Matches the API's own defaults (apps/api/src/services/featureFlags.service.js)
+  // so these tiles don't flash the wrong state before the real flags load.
   const [savingsStatus, setSavingsStatus] = useState<FeatureStatus>('live');
+  const [withdrawalStatus, setWithdrawalStatus] = useState<FeatureStatus>('live');
 
   useEffect(() => {
     fetchWallet();
     fetchTransactions();
-    servicesApi.features().then((r) => setSavingsStatus(r.data.data.savings)).catch(() => {});
+    servicesApi.features().then((r) => {
+      setSavingsStatus(r.data.data.savings);
+      setWithdrawalStatus(r.data.data.withdrawal);
+    }).catch(() => {});
   }, []);
+
+  const visibleOptionalTiles = (savingsStatus !== 'hidden' ? 1 : 0) + (withdrawalStatus !== 'hidden' ? 1 : 0);
 
   return (
     <div>
@@ -46,7 +52,9 @@ export default function WalletPage() {
       <motion.div variants={stagger} initial="hidden" animate="show">
         {/* Quick Actions */}
         <motion.div variants={item} className="px-5 -mt-5">
-          <div className={`bg-surface rounded-2xl shadow-sm p-4 grid gap-2 ${savingsStatus === 'hidden' ? 'grid-cols-3' : 'grid-cols-4'}`}>
+          <div className={`bg-surface rounded-2xl shadow-sm p-4 grid gap-2 ${
+            visibleOptionalTiles === 0 ? 'grid-cols-2' : visibleOptionalTiles === 1 ? 'grid-cols-3' : 'grid-cols-4'
+          }`}>
             <Link href="/wallet/fund"
               className="flex flex-col items-center gap-2 p-3 bg-blue-50 dark:bg-blue-500/10 rounded-xl hover:bg-blue-100 dark:hover:bg-blue-500/20 transition-colors">
               <div className="w-10 h-10 bg-brand-blue rounded-full flex items-center justify-center">
@@ -61,15 +69,25 @@ export default function WalletPage() {
               </div>
               <span className="text-xs font-semibold text-ink">Transfer</span>
             </Link>
-            {/* Withdrawals are fully built (Paystack transfer + admin
-                reconciliation) — not actually "coming soon". */}
-            <Link href="/wallet/withdraw"
-              className="flex flex-col items-center gap-2 p-3 bg-teal-50 dark:bg-teal-500/10 rounded-xl hover:bg-teal-100 dark:hover:bg-teal-500/20 transition-colors">
-              <div className="w-10 h-10 bg-teal-600 rounded-full flex items-center justify-center">
-                <Building2 size={20} className="text-white" />
-              </div>
-              <span className="text-xs font-semibold text-ink">Withdraw</span>
-            </Link>
+            {withdrawalStatus !== 'hidden' && (
+              withdrawalStatus === 'coming_soon' ? (
+                <div className="relative flex flex-col items-center gap-2 p-3 bg-surface-2 rounded-xl opacity-60 cursor-not-allowed">
+                  <span className="absolute top-1 right-1 text-[9px] font-bold bg-amber-500 text-white px-1.5 py-0.5 rounded-full">Soon</span>
+                  <div className="w-10 h-10 bg-teal-600 rounded-full flex items-center justify-center">
+                    <Building2 size={20} className="text-white" />
+                  </div>
+                  <span className="text-xs font-semibold text-ink">Withdraw</span>
+                </div>
+              ) : (
+                <Link href="/wallet/withdraw"
+                  className="flex flex-col items-center gap-2 p-3 bg-teal-50 dark:bg-teal-500/10 rounded-xl hover:bg-teal-100 dark:hover:bg-teal-500/20 transition-colors">
+                  <div className="w-10 h-10 bg-teal-600 rounded-full flex items-center justify-center">
+                    <Building2 size={20} className="text-white" />
+                  </div>
+                  <span className="text-xs font-semibold text-ink">Withdraw</span>
+                </Link>
+              )
+            )}
             {savingsStatus !== 'hidden' && (
               savingsStatus === 'coming_soon' ? (
                 <div className="relative flex flex-col items-center gap-2 p-3 bg-surface-2 rounded-xl opacity-60 cursor-not-allowed">

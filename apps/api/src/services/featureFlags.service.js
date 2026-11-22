@@ -11,6 +11,10 @@ const DEFAULT_FLAGS = {
   exam: 'coming_soon',
   reseller: 'coming_soon',
   savings: 'live',
+  // Bank withdrawal — built and tested, previously hardcoded off while the
+  // business account was waiting on Paystack's compliance/payout-tier
+  // upgrade. Now admin-controlled like everything else here.
+  withdrawal: 'live',
   // Wallet funding providers — paystack is the only one actually wired up
   // and verified live; flutterwave/monnify have client code but no verified
   // live integration yet.
