@@ -4,6 +4,7 @@ const otp = require('../../utils/otp');
 const jwt = require('../../utils/jwt');
 const redis = require('../../config/redis');
 const crypto = require('crypto');
+const { phoneVariants } = require('../../utils/phone');
 const referralService = require('../referral/referral.service');
 const emailService = require('../../services/email.service');
 const Dojah = require('../../providers/dojah/dojah.client');
@@ -28,7 +29,7 @@ const sendOtpEmailSafely = async (to, code, opts) => {
 const register = async ({ firstName, lastName, email, phone, password, referralCode }) => {
   const normalizedEmail = email.toLowerCase();
   const existing = await User.findOne({
-    $or: [{ 'email.address': normalizedEmail }, { 'phone.number': phone }],
+    $or: [{ 'email.address': normalizedEmail }, { 'phone.number': { $in: phoneVariants(phone) } }],
   });
   if (existing) {
     const field = existing.email.address === normalizedEmail ? 'email' : 'phone number';
@@ -89,7 +90,7 @@ const verifyOtp = async ({ identifier, otpCode }) => {
     // so re-check right before creating instead of letting User.create()
     // throw a raw duplicate-key error after the OTP's already consumed.
     const conflict = await User.findOne({
-      $or: [{ 'email.address': payload.email }, { 'phone.number': payload.phone }],
+      $or: [{ 'email.address': payload.email }, { 'phone.number': { $in: phoneVariants(payload.phone) } }],
     });
     if (conflict) {
       const field = conflict.email.address === payload.email ? 'Email' : 'Phone number';
@@ -121,7 +122,7 @@ const verifyOtp = async ({ identifier, otpCode }) => {
   } else {
     // Existing, already-created account verifying phone/email after the fact.
     const query = isPhone
-      ? { 'phone.number': identifier }
+      ? { 'phone.number': { $in: phoneVariants(identifier) } }
       : { 'email.address': identifier.toLowerCase() };
 
     user = await User.findOne(query);
@@ -145,7 +146,7 @@ const verifyOtp = async ({ identifier, otpCode }) => {
 const login = async ({ identifier, password, ip }) => {
   const isPhone = /^\+?[0-9]{10,14}$/.test(identifier);
   const query = isPhone
-    ? { 'phone.number': identifier }
+    ? { 'phone.number': { $in: phoneVariants(identifier) } }
     : { 'email.address': identifier.toLowerCase() };
 
   const user = await User.findOne(query).select('+passwordHash');
@@ -249,7 +250,7 @@ const sanitize = (user) => ({
 
 const forgotPassword = async (identifier) => {
   const isPhone = /^\+?[0-9]{10,14}$/.test(identifier);
-  const query = isPhone ? { 'phone.number': identifier } : { 'email.address': identifier.toLowerCase() };
+  const query = isPhone ? { 'phone.number': { $in: phoneVariants(identifier) } } : { 'email.address': identifier.toLowerCase() };
   const user = await User.findOne(query);
   if (!user) throw Object.assign(new Error('No account found with that identifier'), { statusCode: 404 });
 
@@ -268,7 +269,7 @@ const resetPassword = async (identifier, otpCode, newPassword) => {
   if (!valid) throw Object.assign(new Error('Invalid or expired code'), { statusCode: 400 });
 
   const isPhone = /^\+?[0-9]{10,14}$/.test(identifier);
-  const query = isPhone ? { 'phone.number': identifier } : { 'email.address': identifier.toLowerCase() };
+  const query = isPhone ? { 'phone.number': { $in: phoneVariants(identifier) } } : { 'email.address': identifier.toLowerCase() };
   const user = await User.findOne(query);
   if (!user) throw Object.assign(new Error('User not found'), { statusCode: 404 });
 

@@ -5,6 +5,7 @@ const ledger = require('../../services/ledger.service');
 const otp = require('../../utils/otp');
 const notify = require('../notifications/notifications.service');
 const env = require('../../config/env');
+const { phoneVariants } = require('../../utils/phone');
 
 const getWallet = async (userId) => {
   const wallet = await Wallet.findOne({ userId });
@@ -519,7 +520,7 @@ const verifyRecipient = async (senderId, recipientIdentifier) => {
   const User = require('../../models/User');
   const isPhone = /^\+?[0-9]{10,14}$/.test(recipientIdentifier);
   const query = isPhone
-    ? { 'phone.number': recipientIdentifier }
+    ? { 'phone.number': { $in: phoneVariants(recipientIdentifier) } }
     : { 'email.address': recipientIdentifier.toLowerCase() };
 
   const recipient = await User.findOne(query).select('firstName lastName');
@@ -541,7 +542,7 @@ const transfer = async (senderId, recipientIdentifier, amountNGN, pin) => {
 
   const isPhone = /^\+?[0-9]{10,14}$/.test(recipientIdentifier);
   const query = isPhone
-    ? { 'phone.number': recipientIdentifier }
+    ? { 'phone.number': { $in: phoneVariants(recipientIdentifier) } }
     : { 'email.address': recipientIdentifier.toLowerCase() };
   const recipient = await User.findOne(query);
   if (!recipient) throw Object.assign(new Error('Recipient not found'), { statusCode: 404 });
