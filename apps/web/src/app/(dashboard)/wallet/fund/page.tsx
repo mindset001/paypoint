@@ -14,7 +14,7 @@ type Provider = 'paystack' | 'flutterwave' | 'monnify';
 
 const QUICK_AMOUNTS = [500, 1000, 2000, 5000, 10000, 20000];
 
-const PROVIDERS: { id: Provider; name: string; tagline: string; methods: string[]; logo: string }[] = [
+const PROVIDERS: { id: Provider; name: string; tagline: string; methods: string[]; logo: string; comingSoon?: boolean }[] = [
   {
     id: 'paystack',
     name: 'Paystack',
@@ -28,6 +28,7 @@ const PROVIDERS: { id: Provider; name: string; tagline: string; methods: string[
     tagline: 'Card, bank transfer, USSD',
     methods: ['Visa', 'Mastercard', 'Bank transfer', 'USSD'],
     logo: '🦋',
+    comingSoon: true,
   },
   {
     id: 'monnify',
@@ -35,6 +36,7 @@ const PROVIDERS: { id: Provider; name: string; tagline: string; methods: string[
     tagline: 'Bank transfer · instant',
     methods: ['Bank transfer', 'Card'],
     logo: '🏦',
+    comingSoon: true,
   },
 ];
 
@@ -139,29 +141,41 @@ export default function FundWalletPage() {
             {PROVIDERS.map((p) => (
               <button
                 key={p.id}
-                onClick={() => { setProvider(p.id); setVirtualAcct(null); }}
+                disabled={p.comingSoon}
+                onClick={() => { if (p.comingSoon) return; setProvider(p.id); setVirtualAcct(null); }}
                 className={cn(
                   'w-full flex items-center gap-4 p-4 rounded-2xl border-2 transition-all text-left',
-                  provider === p.id
-                    ? 'border-brand-blue bg-blue-50/50 dark:bg-blue-500/10'
-                    : 'border-line hover:border-brand-blue/30 bg-surface-2/50',
+                  p.comingSoon
+                    ? 'border-line bg-surface-2/50 opacity-60 cursor-not-allowed'
+                    : provider === p.id
+                      ? 'border-brand-blue bg-blue-50/50 dark:bg-blue-500/10'
+                      : 'border-line hover:border-brand-blue/30 bg-surface-2/50',
                 )}
               >
                 <div className="w-10 h-10 rounded-xl bg-surface shadow-sm flex items-center justify-center text-xl shrink-0">
                   {p.logo}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className={cn('font-bold text-sm', provider === p.id ? 'text-brand-blue' : 'text-ink')}>
-                    {p.name}
-                  </p>
+                  <div className="flex items-center gap-2">
+                    <p className={cn('font-bold text-sm', !p.comingSoon && provider === p.id ? 'text-brand-blue' : 'text-ink')}>
+                      {p.name}
+                    </p>
+                    {p.comingSoon && (
+                      <span className="text-[10px] font-semibold uppercase tracking-wide bg-surface-2 border border-line text-ink-muted px-1.5 py-0.5 rounded-full">
+                        Coming soon
+                      </span>
+                    )}
+                  </div>
                   <p className="text-ink-muted text-xs mt-0.5">{p.tagline}</p>
                 </div>
-                <div className={cn(
-                  'w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all',
-                  provider === p.id ? 'border-brand-blue bg-brand-blue' : 'border-line',
-                )}>
-                  {provider === p.id && <div className="w-2 h-2 bg-white rounded-full" />}
-                </div>
+                {!p.comingSoon && (
+                  <div className={cn(
+                    'w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all',
+                    provider === p.id ? 'border-brand-blue bg-brand-blue' : 'border-line',
+                  )}>
+                    {provider === p.id && <div className="w-2 h-2 bg-white rounded-full" />}
+                  </div>
+                )}
               </button>
             ))}
           </div>
