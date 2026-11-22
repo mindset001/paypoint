@@ -201,8 +201,8 @@ export const adminApi = {
     api.patch('/admin/settings/features', data),
   stuckDeposits: () =>
     api.get('/admin/deposits/stuck'),
-  reconcileDeposit: (id: string) =>
-    api.post(`/admin/deposits/${id}/reconcile`),
+  reconcileDeposit: (id: string, transactionId?: string) =>
+    api.post(`/admin/deposits/${id}/reconcile`, transactionId ? { transactionId } : {}),
   pendingWithdrawals: () =>
     api.get('/admin/withdrawals/pending'),
   reconcileWithdrawal: (id: string) =>

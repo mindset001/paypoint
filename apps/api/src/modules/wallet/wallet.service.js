@@ -465,7 +465,9 @@ const verifyPayment = async (provider, reference, transactionId) => {
 
   if (provider === 'paystack') {
     const Paystack = require('../../providers/paystack/paystack.client');
-    result = await Paystack.verifyTransaction(reference);
+    result = transactionId
+      ? await Paystack.fetchTransactionById(transactionId)
+      : await Paystack.verifyTransaction(reference);
     if (result.data?.status !== 'success') throw new Error('Payment not successful');
     const completion = await completeWalletFund({
       reference,

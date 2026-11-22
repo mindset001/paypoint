@@ -237,7 +237,7 @@ const getStuckDeposits = async (req, res) => {
 
 const reconcileDeposit = async (req, res) => {
   try {
-    const data = await adminService.reconcileDeposit(req.params.id, { adminId: req.user._id, ip: req.ip });
+    const data = await adminService.reconcileDeposit(req.params.id, { adminId: req.user._id, ip: req.ip }, req.body?.transactionId);
     return success(res, data, 'Deposit reconciled');
   } catch (err) {
     return error(res, err.message, err.statusCode || 400);

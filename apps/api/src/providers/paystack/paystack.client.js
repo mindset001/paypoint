@@ -31,6 +31,14 @@ const initializeTransaction = ({ email, amount, reference, callbackUrl, metadata
 const verifyTransaction = (reference) =>
   client.get(`/transaction/verify/${reference}`);
 
+// Fallback for the rare "Pay with Transfer" case where Paystack's dashboard
+// shows a transaction as successful under our reference, but
+// /transaction/verify/:reference still 404s on it (seen live — a confirmed
+// Paystack-side indexing quirk on dynamic-account bank transfers). Fetching
+// by Paystack's own numeric transaction ID instead reliably finds it.
+const fetchTransactionById = (id) =>
+  client.get(`/transaction/${id}`);
+
 const getBanks = () =>
   client.get('/bank?currency=NGN&type=nuban');
 
@@ -60,4 +68,4 @@ const initiateTransfer = ({ amountKobo, recipientCode, reference, reason }) =>
 const verifyTransfer = (transferCodeOrId) =>
   client.get(`/transfer/${transferCodeOrId}`);
 
-module.exports = { initializeTransaction, verifyTransaction, getBanks, resolveAccount, createTransferRecipient, initiateTransfer, verifyTransfer };
+module.exports = { initializeTransaction, verifyTransaction, fetchTransactionById, getBanks, resolveAccount, createTransferRecipient, initiateTransfer, verifyTransfer };

@@ -61,6 +61,7 @@ function StuckDeposits() {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
   const [reconcilingId, setReconcilingId] = useState<string | null>(null);
+  const [txnIds, setTxnIds] = useState<Record<string, string>>({});
 
   const load = useCallback(() => {
     setLoading(true);
@@ -76,7 +77,7 @@ function StuckDeposits() {
   const reconcile = async (id: string) => {
     setReconcilingId(id);
     try {
-      const { data } = await adminApi.reconcileDeposit(id);
+      const { data } = await adminApi.reconcileDeposit(id, txnIds[id]?.trim() || undefined);
       const outcome = data.data.outcome;
       if (outcome === 'credited') toast.success('Deposit verified and credited to wallet');
       else if (outcome === 'not_successful') toast.error(`Provider says: ${data.data.message}`);
@@ -101,14 +102,14 @@ function StuckDeposits() {
       count={rows.length}
       countLabel="stuck deposit"
     >
-      <div className="hidden lg:grid grid-cols-[110px_1fr_110px_90px_100px_110px] gap-4 px-5 py-3 border-b border-slate-700/50">
+      <div className="hidden lg:grid grid-cols-[110px_1fr_110px_90px_100px_1fr] gap-4 px-5 py-3 border-b border-slate-700/50">
         {['Age', 'User', 'Amount', 'Provider', 'Ref', ''].map((h) => (
           <p key={h} className="text-slate-500 text-xs font-semibold uppercase tracking-wide">{h}</p>
         ))}
       </div>
       {rows.map((tx) => (
         <div key={tx._id}
-          className="grid grid-cols-1 lg:grid-cols-[110px_1fr_110px_90px_100px_110px] gap-1 lg:gap-4 items-center px-5 py-3.5 border-b border-slate-700/30">
+          className="grid grid-cols-1 lg:grid-cols-[110px_1fr_110px_90px_100px_1fr] gap-1 lg:gap-4 items-center px-5 py-3.5 border-b border-slate-700/30">
           <p className="text-yellow-400 text-xs font-semibold">{ageLabel(tx.createdAt)}</p>
           <div className="min-w-0">
             {tx.userId ? (
@@ -121,11 +122,22 @@ function StuckDeposits() {
           <p className="text-white text-sm font-semibold">{formatNGN(tx.amount)}</p>
           <p className="text-slate-300 text-sm capitalize">{tx.meta?.provider ?? '—'}</p>
           <p className="text-slate-600 text-xs font-mono truncate">{tx.reference.slice(-10)}</p>
-          <button onClick={() => reconcile(tx._id)} disabled={reconcilingId === tx._id}
-            className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg bg-brand-blue text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors w-fit">
-            <RefreshCw size={13} className={reconcilingId === tx._id ? 'animate-spin' : ''} />
-            Verify now
-          </button>
+          <div className="flex items-center gap-2">
+            {tx.meta?.provider === 'paystack' && (
+              <input
+                type="text"
+                placeholder="Paystack txn ID (if ref lookup fails)"
+                value={txnIds[tx._id] ?? ''}
+                onChange={(e) => setTxnIds((m) => ({ ...m, [tx._id]: e.target.value }))}
+                className="min-w-0 flex-1 bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-brand-blue/60"
+              />
+            )}
+            <button onClick={() => reconcile(tx._id)} disabled={reconcilingId === tx._id}
+              className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg bg-brand-blue text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors w-fit flex-shrink-0">
+              <RefreshCw size={13} className={reconcilingId === tx._id ? 'animate-spin' : ''} />
+              Verify now
+            </button>
+          </div>
         </div>
       ))}
     </Panel>

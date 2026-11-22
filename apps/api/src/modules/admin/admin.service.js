@@ -371,14 +371,14 @@ const getStuckDeposits = async () => {
 // Re-runs the same provider-verify + completion logic the browser-side
 // /wallet/fund/verify call would have run — safe to call repeatedly
 // (completeWalletFund only ever claims a still-pending row once).
-const reconcileDeposit = async (txId, { adminId, ip } = {}) => {
+const reconcileDeposit = async (txId, { adminId, ip } = {}, transactionId) => {
   const tx = await Transaction.findById(txId);
   if (!tx) throw Object.assign(new Error('Transaction not found'), { statusCode: 404 });
   if (tx.type !== 'wallet_fund') throw Object.assign(new Error('Not a deposit transaction'), { statusCode: 400 });
   if (tx.status !== 'pending') return { outcome: 'already_processed', status: tx.status };
 
   try {
-    const result = await walletService.verifyPayment(tx.meta?.provider, tx.reference);
+    const result = await walletService.verifyPayment(tx.meta?.provider, tx.reference, transactionId);
     audit.record({
       adminId, action: 'deposit.reconcile', targetUserId: tx.userId, targetTransactionId: tx._id,
       before: { status: 'pending' }, after: { status: 'success' }, ip,
