@@ -66,12 +66,18 @@ const subscribe = async (userId, { provider, smartcardNumber, planCode, pin }) =
       console.error(`[aidapay] price mismatch on ${provider} cable ${tx.reference}: expected raw ₦${rawAmount}, AidaPay charged ₦${charged}`);
     }
 
-    await Transaction.findByIdAndUpdate(tx._id, { status: 'success', providerReference: txn?.transaction_hash, providerStatus: txn?.status, providerResponse: result.data });
-    referralService.creditReferralBonusIfQualifying(userId, tx._id)
-      .catch((err) => console.error('[referral]', err));
-    cashbackService.creditCashbackIfApplicable(userId, user.role, tx._id, amountKobo)
-      .catch((err) => console.error('[cashback]', err));
-    return { message: 'Cable subscription successful', reference: tx.reference };
+    // AidaPay can return "Processing" instead of "Completed" — leave the
+    // transaction 'pending' so a later Cancelled/Refund webhook can still
+    // reach it (see airtime.service.js for the full explanation).
+    const isCompleted = txn?.status === 'Completed';
+    await Transaction.findByIdAndUpdate(tx._id, { status: isCompleted ? 'success' : 'pending', providerReference: txn?.transaction_hash, providerStatus: txn?.status, providerResponse: result.data });
+    if (isCompleted) {
+      referralService.creditReferralBonusIfQualifying(userId, tx._id)
+        .catch((err) => console.error('[referral]', err));
+      cashbackService.creditCashbackIfApplicable(userId, user.role, tx._id, amountKobo)
+        .catch((err) => console.error('[cashback]', err));
+    }
+    return { message: isCompleted ? 'Cable subscription successful' : 'Your cable subscription is processing — we\'ll notify you once it completes', reference: tx.reference };
   } catch (providerErr) {
     const { balanceBefore: revBefore, balanceAfter: revAfter } = await walletService.credit(userId, amountKobo, null);
     await Transaction.findByIdAndUpdate(tx._id, { status: 'failed', failureReason: providerErr.message, balanceAfter: revAfter });

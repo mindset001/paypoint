@@ -121,16 +121,23 @@ const buy = async (userId, { planId, quantity = 1, pin }) => {
       }
     }
 
+    // Gate on the pin actually arriving (same principle as electricity's
+    // token-gated status) rather than AidaPay's raw status string — a unit
+    // that came back "Processing" with no pin yet must stay 'pending' so a
+    // later Cancelled/Refund webhook can still reach and refund it.
+    const isCompleted = pins.length === qty;
     await Transaction.findByIdAndUpdate(tx._id, {
-      status: 'success',
+      status: isCompleted ? 'success' : 'pending',
       providerReference: hashes[0],
       'meta.examPin': pins[0],
     });
-    referralService.creditReferralBonusIfQualifying(userId, tx._id)
-      .catch((err) => console.error('[referral]', err));
-    cashbackService.creditCashbackIfApplicable(userId, user.role, tx._id, amountKobo)
-      .catch((err) => console.error('[cashback]', err));
-    return { message: 'Exam PIN purchased', reference: tx.reference, pin: pins[0], pins };
+    if (isCompleted) {
+      referralService.creditReferralBonusIfQualifying(userId, tx._id)
+        .catch((err) => console.error('[referral]', err));
+      cashbackService.creditCashbackIfApplicable(userId, user.role, tx._id, amountKobo)
+        .catch((err) => console.error('[cashback]', err));
+    }
+    return { message: isCompleted ? 'Exam PIN purchased' : 'Your exam PIN purchase is processing — we\'ll notify you once it completes', reference: tx.reference, pin: pins[0], pins };
   } catch (providerErr) {
     const { balanceBefore: revBefore, balanceAfter: revAfter } = await walletService.credit(userId, amountKobo, null);
     await Transaction.findByIdAndUpdate(tx._id, { status: 'failed', failureReason: providerErr.message, balanceAfter: revAfter });

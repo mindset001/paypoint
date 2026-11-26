@@ -73,23 +73,35 @@ const buy = async (userId, { network, phone, amount: rawAmount, pin }) => {
       console.error(`[aidapay] price mismatch on ${network} airtime ${tx.reference}: expected raw ₦${rawAmount}, AidaPay charged ₦${charged}`);
     }
 
+    // AidaPay can return "Processing" here instead of "Completed" — the
+    // real outcome (success or Cancelled/Refund) arrives later via webhook.
+    // Marking this 'success' immediately would make handleAidaPayWebhook's
+    // `tx.status !== 'pending'` guard ignore that later refund, permanently
+    // stranding the debit if AidaPay ends up reversing it (same fix as
+    // electricity.service.js's token-gated status).
+    const isCompleted = txn?.status === 'Completed';
     await Transaction.findByIdAndUpdate(tx._id, {
-      status: 'success',
+      status: isCompleted ? 'success' : 'pending',
       providerReference: txn?.transaction_hash,
       providerStatus: txn?.status,
       providerResponse: result.data,
     });
-    notify.createNotification(userId, {
-      title: 'Airtime Sent ✓',
-      body: `₦${rawAmount.toLocaleString()} ${network} airtime sent to ${phone}.`,
-      type: 'transaction',
-      meta: { reference: tx.reference },
-    });
-    referralService.creditReferralBonusIfQualifying(userId, tx._id)
-      .catch((err) => console.error('[referral]', err));
-    cashbackService.creditCashbackIfApplicable(userId, user.role, tx._id, amountKobo)
-      .catch((err) => console.error('[cashback]', err));
-    return { message: 'Airtime purchased successfully', reference: tx.reference, network, phone, amount: rawAmount, charged: chargedAmount };
+    if (isCompleted) {
+      notify.createNotification(userId, {
+        title: 'Airtime Sent ✓',
+        body: `₦${rawAmount.toLocaleString()} ${network} airtime sent to ${phone}.`,
+        type: 'transaction',
+        meta: { reference: tx.reference },
+      });
+      referralService.creditReferralBonusIfQualifying(userId, tx._id)
+        .catch((err) => console.error('[referral]', err));
+      cashbackService.creditCashbackIfApplicable(userId, user.role, tx._id, amountKobo)
+        .catch((err) => console.error('[cashback]', err));
+    }
+    return {
+      message: isCompleted ? 'Airtime purchased successfully' : 'Your airtime purchase is processing — we\'ll notify you once it completes',
+      reference: tx.reference, network, phone, amount: rawAmount, charged: chargedAmount,
+    };
   } catch (providerErr) {
     // Reverse debit on provider failure — record it like any other money
     // movement (ledger entry + the transaction's own balance snapshot

@@ -417,6 +417,9 @@ const handleAidaPayWebhook = async (event) => {
   if (status === 'Completed') {
     // AidaPay's meter_token has come back with a stray leading ": " on at
     // least one real transaction — strip anything before the first digit.
+    // Only electricity transactions carry a token; everything else (airtime,
+    // data, cable, exam) left 'pending' purely because AidaPay's /buy
+    // response said "Processing", with no token/pin of its own to report.
     const cleanToken = meter_token ? meter_token.replace(/^\D+/, '') : tx.meta?.token;
     const units = meter_unit ?? tx.meta?.units;
 
@@ -429,14 +432,30 @@ const handleAidaPayWebhook = async (event) => {
       'meta.units': units,
       processedAt: new Date(),
     });
+
+    const User = require('../../models/User');
     const referralService = require('../referral/referral.service');
+    const cashbackService = require('../../services/cashback.service');
     referralService.creditReferralBonusIfQualifying(tx.userId, tx._id)
       .catch((err) => console.error('[referral]', err));
+    User.findById(tx.userId).select('role').then((user) => {
+      if (user) {
+        cashbackService.creditCashbackIfApplicable(tx.userId, user.role, tx._id, tx.amount)
+          .catch((err) => console.error('[cashback]', err));
+      }
+    }).catch((err) => console.error('[cashback] user lookup failed:', err));
 
     if (cleanToken) {
       notify.createNotification(tx.userId, {
         title: 'Electricity Token Ready ⚡',
         body: units ? `Your meter token: ${cleanToken} (${units} units)` : `Your meter token: ${cleanToken}`,
+        type: 'transaction', meta: { reference: tx.reference },
+      });
+    } else {
+      const TYPE_LABEL = { airtime: 'Airtime', data: 'Data', cable: 'Cable subscription', exam: 'Exam PIN' };
+      notify.createNotification(tx.userId, {
+        title: `${TYPE_LABEL[tx.type] ?? 'Purchase'} Completed ✓`,
+        body: `Your ${(TYPE_LABEL[tx.type] ?? tx.type).toLowerCase()} purchase has completed successfully.`,
         type: 'transaction', meta: { reference: tx.reference },
       });
     }
