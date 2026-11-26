@@ -78,6 +78,15 @@ const getTransactions = async (req, res) => {
   }
 };
 
+const getTransactionDetail = async (req, res) => {
+  try {
+    const data = await adminService.getTransactionDetail(req.params.id);
+    return success(res, data, 'Transaction fetched');
+  } catch (err) {
+    return error(res, err.message, err.statusCode || 500);
+  }
+};
+
 const getUserTransactions = async (req, res) => {
   try {
     const { page, limit } = req.query;
@@ -421,6 +430,7 @@ module.exports = {
   updateUserStatus,
   updateUserRole,
   getTransactions,
+  getTransactionDetail,
   getUserTransactions,
   getReferralBonusSettings,
   updateReferralBonusSettings,

@@ -132,6 +132,18 @@ export interface AdminTransactionRow extends Transaction {
   userId?: { _id: string; firstName: string; lastName: string; phone: { number: string } };
 }
 
+// Full record returned by GET /admin/transactions/:id — every field, not
+// the trimmed set the list view selects.
+export interface AdminTransactionDetail extends Omit<Transaction, 'meta'> {
+  meta: Record<string, unknown>;
+  userId?: { _id: string; firstName: string; lastName: string; phone?: { number: string }; email?: { address: string }; role: string };
+  walletId?: { _id: string; balance: number };
+  providerReference?: string;
+  providerStatus?: string;
+  providerResponse?: unknown;
+  retryCount?: number;
+}
+
 export interface AdminLedgerEntry {
   _id: string;
   transactionId?: { _id: string; reference: string; type: string; status: string };

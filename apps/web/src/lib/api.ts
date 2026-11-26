@@ -188,6 +188,8 @@ export const adminApi = {
     api.get(`/admin/users/${id}/transactions`, { params }),
   transactions: (params?: { page?: number; limit?: number; type?: string; status?: string; userId?: string; from?: string; to?: string }) =>
     api.get('/admin/transactions', { params }),
+  getTransaction: (id: string) =>
+    api.get(`/admin/transactions/${id}`),
   getReferralBonusSettings: () =>
     api.get('/admin/settings/referral-bonus'),
   updateReferralBonusSettings: (data: { basic: number; standard: number; premium: number }) =>

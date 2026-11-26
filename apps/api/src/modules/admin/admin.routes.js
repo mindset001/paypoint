@@ -20,6 +20,7 @@ router.patch('/users/:id/status',          ...isAdmin, ctrl.updateUserStatus);
 router.patch('/users/:id/role',            ...isAdmin, ctrl.updateUserRole);
 router.get('/users/:id/transactions',      ...isAdmin, ctrl.getUserTransactions);
 router.get('/transactions/export',         ...isAdmin, ctrl.exportTransactionsCsv);
+router.get('/transactions/:id',            ...isAdmin, ctrl.getTransactionDetail);
 router.get('/transactions',                ...isAdmin, ctrl.getTransactions);
 router.get('/settings/referral-bonus',     ...isAdmin, ctrl.getReferralBonusSettings);
 router.patch('/settings/referral-bonus',   ...isAdmin, ctrl.updateReferralBonusSettings);

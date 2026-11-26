@@ -1,11 +1,12 @@
 'use client';
 import { useEffect, useState, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { ArrowLeftRight, AlertTriangle, RefreshCw, ChevronLeft, ChevronRight, Filter, Download } from 'lucide-react';
+import Link from 'next/link';
+import { ArrowLeftRight, AlertTriangle, RefreshCw, ChevronLeft, ChevronRight, Filter, Download, X, Copy, Check, ExternalLink } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { adminApi } from '@/lib/api';
-import { formatNGN, downloadBlob } from '@/lib/utils';
-import type { AdminTransactionRow } from '@/types';
+import { formatNGN, downloadBlob, getErrorMessage } from '@/lib/utils';
+import type { AdminTransactionRow, AdminTransactionDetail } from '@/types';
 
 const STATUS_BADGE: Record<string, string> = {
   success:  'bg-green-500/10 text-green-400 border-green-500/20',
@@ -45,6 +46,7 @@ function TransactionsInner() {
   const [loading, setLoading] = useState(true);
   const [err, setErr]       = useState('');
   const [exporting, setExporting] = useState(false);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const exportCsv = async () => {
     setExporting(true);
@@ -178,8 +180,8 @@ function TransactionsInner() {
         )}
 
         {!loading && txns.map((tx) => (
-          <div key={tx._id}
-            className="grid grid-cols-1 lg:grid-cols-[140px_1fr_110px_80px_90px_100px_90px] gap-1 lg:gap-4 items-center px-5 py-3.5 border-b border-slate-700/30 hover:bg-slate-700/20 transition-colors">
+          <div key={tx._id} onClick={() => setSelectedId(tx._id)}
+            className="grid grid-cols-1 lg:grid-cols-[140px_1fr_110px_80px_90px_100px_90px] gap-1 lg:gap-4 items-center px-5 py-3.5 border-b border-slate-700/30 hover:bg-slate-700/20 transition-colors cursor-pointer">
 
             {/* Date */}
             <p className="text-slate-500 text-xs">
@@ -258,6 +260,187 @@ function TransactionsInner() {
           </div>
         </div>
       )}
+
+      {selectedId && (
+        <TransactionDetailModal id={selectedId} onClose={() => setSelectedId(null)} />
+      )}
+    </div>
+  );
+}
+
+const META_LABELS: Record<string, string> = {
+  network: 'Network', phone: 'Phone Number', dataBundle: 'Bundle', cableProvider: 'Cable Provider',
+  smartcardNumber: 'Smartcard No.', disco: 'Disco', meterNumber: 'Meter Number', meterType: 'Meter Type',
+  token: 'Token', units: 'Units', examType: 'Exam', examPlan: 'Exam Plan', examPin: 'Exam Pin',
+  quantity: 'Quantity', marginAmount: 'Margin (kobo)', provider: 'Provider', channel: 'Channel',
+  counterpartyName: 'Counterparty', narration: 'Narration', bankName: 'Bank', accountNumber: 'Account Number',
+  refereeId: 'Referee ID', cashbackRate: 'Cashback Rate (%)', ajoPlanId: 'Ajo Plan ID', ajoCycle: 'Ajo Cycle',
+  esimOrderId: 'eSIM Order ID', iccid: 'ICCID',
+};
+
+const formatMetaValue = (value: unknown): string => {
+  if (value == null) return '—';
+  if (Array.isArray(value)) return value.length === 0 ? '—' : JSON.stringify(value, null, 2);
+  if (typeof value === 'object') return JSON.stringify(value, null, 2);
+  return String(value);
+};
+
+function CopyableRef({ value }: { value: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <button
+      onClick={() => { navigator.clipboard.writeText(value); setCopied(true); setTimeout(() => setCopied(false), 1500); }}
+      className="flex items-center gap-1.5 text-slate-300 hover:text-white text-xs font-mono"
+    >
+      {value}
+      {copied ? <Check size={12} className="text-green-400" /> : <Copy size={12} />}
+    </button>
+  );
+}
+
+function TransactionDetailModal({ id, onClose }: { id: string; onClose: () => void }) {
+  const [detail, setDetail] = useState<AdminTransactionDetail | null>(null);
+  const [ledger, setLedger] = useState<{ _id: string; entry: string; amount: number; balanceBefore: number; balanceAfter: number; description: string; createdAt: string }[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState('');
+
+  useEffect(() => {
+    setLoading(true);
+    setErr('');
+    adminApi.getTransaction(id)
+      .then((r) => {
+        setDetail(r.data.data.transaction);
+        setLedger(r.data.data.ledgerEntries || []);
+      })
+      .catch((e) => setErr(getErrorMessage(e)))
+      .finally(() => setLoading(false));
+  }, [id]);
+
+  const metaEntries = detail ? Object.entries(detail.meta || {}).filter(([, v]) => v != null && v !== '') : [];
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-start lg:items-center justify-center bg-black/70 p-4 overflow-y-auto" onClick={onClose}>
+      <div onClick={(e) => e.stopPropagation()} className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-xl my-8">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-700/60">
+          <h2 className="text-white font-bold">Transaction Detail</h2>
+          <button onClick={onClose} className="text-slate-400 hover:text-white"><X size={20} /></button>
+        </div>
+
+        <div className="p-5 max-h-[75vh] overflow-y-auto">
+          {loading ? (
+            <div className="space-y-3 animate-pulse">
+              {[...Array(6)].map((_, i) => <div key={i} className="h-5 bg-slate-700/60 rounded" />)}
+            </div>
+          ) : err ? (
+            <div className="flex items-center gap-2 text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 text-sm">
+              <AlertTriangle size={15} /> {err}
+            </div>
+          ) : detail && (
+            <div className="flex flex-col gap-5">
+              {/* Header row */}
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-slate-500 text-xs">{TYPE_LABEL[detail.type] ?? detail.type}</p>
+                  <p className={`text-2xl font-black ${detail.direction === 'credit' ? 'text-green-400' : 'text-white'}`}>
+                    {detail.direction === 'credit' ? '+' : '−'}{formatNGN(detail.amount)}
+                  </p>
+                </div>
+                <span className={`text-xs px-2.5 py-1 rounded-full border font-medium ${STATUS_BADGE[detail.status] ?? ''}`}>
+                  {detail.status}
+                </span>
+              </div>
+
+              <CopyableRef value={detail.reference} />
+
+              {/* User */}
+              {detail.userId && (
+                <div className="flex items-center justify-between bg-slate-800/60 border border-slate-700/50 rounded-xl px-4 py-3">
+                  <div>
+                    <p className="text-slate-200 text-sm font-medium">{detail.userId.firstName} {detail.userId.lastName}</p>
+                    <p className="text-slate-500 text-xs">{detail.userId.phone?.number} {detail.userId.email?.address ? `· ${detail.userId.email.address}` : ''}</p>
+                  </div>
+                  <Link href={`/admin/users/${detail.userId._id}`} className="flex items-center gap-1 text-brand-blue text-xs font-semibold hover:underline">
+                    View user <ExternalLink size={12} />
+                  </Link>
+                </div>
+              )}
+
+              {/* Balances / timestamps */}
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div><p className="text-slate-500 text-xs">Balance Before</p><p className="text-slate-200">{formatNGN(detail.balanceBefore)}</p></div>
+                <div><p className="text-slate-500 text-xs">Balance After</p><p className="text-slate-200">{formatNGN(detail.balanceAfter)}</p></div>
+                <div><p className="text-slate-500 text-xs">Created</p><p className="text-slate-200">{new Date(detail.createdAt).toLocaleString('en-NG')}</p></div>
+                {detail.processedAt && (
+                  <div><p className="text-slate-500 text-xs">Processed</p><p className="text-slate-200">{new Date(detail.processedAt).toLocaleString('en-NG')}</p></div>
+                )}
+                {detail.walletId && (
+                  <div><p className="text-slate-500 text-xs">Current Wallet Balance</p><p className="text-slate-200">{formatNGN(detail.walletId.balance)}</p></div>
+                )}
+                {detail.retryCount != null && detail.retryCount > 0 && (
+                  <div><p className="text-slate-500 text-xs">Retry Count</p><p className="text-slate-200">{detail.retryCount}</p></div>
+                )}
+              </div>
+
+
+              {/* Ledger trail */}
+              {ledger.length > 0 && (
+                <div>
+                  <p className="text-slate-500 text-xs font-semibold uppercase tracking-wide mb-2">Ledger Trail</p>
+                  <div className="bg-slate-800/60 border border-slate-700/50 rounded-xl divide-y divide-slate-700/40">
+                    {ledger.map((l) => (
+                      <div key={l._id} className="flex items-center justify-between gap-4 px-4 py-2.5 text-sm">
+                        <div>
+                          <p className="text-slate-300">{l.description}</p>
+                          <p className="text-slate-500 text-xs">{new Date(l.createdAt).toLocaleString('en-NG')}</p>
+                        </div>
+                        <p className={`font-semibold ${l.entry === 'credit' ? 'text-green-400' : 'text-slate-300'}`}>
+                          {l.entry === 'credit' ? '+' : '−'}{formatNGN(l.amount)}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {detail.failureReason && (
+                <div className="bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
+                  <p className="text-red-400 text-xs font-semibold uppercase tracking-wide mb-1">Failure Reason</p>
+                  <p className="text-slate-300 text-sm">{detail.failureReason}</p>
+                </div>
+              )}
+
+              {metaEntries.length > 0 && (
+                <div>
+                  <p className="text-slate-500 text-xs font-semibold uppercase tracking-wide mb-2">Details</p>
+                  <div className="bg-slate-800/60 border border-slate-700/50 rounded-xl divide-y divide-slate-700/40">
+                    {metaEntries.map(([key, value]) => (
+                      <div key={key} className="flex items-start justify-between gap-4 px-4 py-2.5">
+                        <p className="text-slate-500 text-xs flex-shrink-0">{META_LABELS[key] ?? key}</p>
+                        <pre className="text-slate-200 text-xs text-right whitespace-pre-wrap break-all">{formatMetaValue(value)}</pre>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {(detail.providerReference || detail.providerStatus || detail.providerResponse != null) && (
+                <div>
+                  <p className="text-slate-500 text-xs font-semibold uppercase tracking-wide mb-2">Provider</p>
+                  <div className="bg-slate-800/60 border border-slate-700/50 rounded-xl px-4 py-3 flex flex-col gap-2 text-sm">
+                    {detail.providerReference && <p className="text-slate-300">Ref: <span className="font-mono text-xs">{detail.providerReference}</span></p>}
+                    {detail.providerStatus && <p className="text-slate-300">Status: {detail.providerStatus}</p>}
+                    {detail.providerResponse != null && (
+                      <pre className="text-slate-400 text-[11px] bg-slate-900 rounded-lg p-3 overflow-x-auto max-h-48 whitespace-pre-wrap break-all">
+                        {JSON.stringify(detail.providerResponse, null, 2)}
+                      </pre>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

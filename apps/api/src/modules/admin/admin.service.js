@@ -191,6 +191,21 @@ const getTransactions = async ({ page = 1, limit = 30, type = '', status = '', u
   return { transactions, total, page, limit, pages: Math.ceil(total / limit) };
 };
 
+// Full record (every field, not the trimmed .select() the list view uses)
+// plus its ledger trail — the list is a scan surface, this is where an
+// admin actually debugs one transaction (provider response, retry count,
+// the exact balance movement it caused).
+const getTransactionDetail = async (id) => {
+  const transaction = await Transaction.findById(id)
+    .populate('userId', 'firstName lastName phone email role')
+    .populate('walletId', 'balance');
+  if (!transaction) throw Object.assign(new Error('Transaction not found'), { statusCode: 404 });
+
+  const ledgerEntries = await Ledger.find({ transactionId: transaction._id }).sort({ createdAt: 1 });
+
+  return { transaction, ledgerEntries };
+};
+
 const getUserTransactions = async (userId, { page = 1, limit = 20 } = {}) => {
   const skip = (page - 1) * limit;
   const [transactions, total] = await Promise.all([
@@ -784,6 +799,7 @@ module.exports = {
   updateUserStatus,
   updateUserRole,
   getTransactions,
+  getTransactionDetail,
   getUserTransactions,
   getReferralBonusSettings,
   updateReferralBonusSettings,
