@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { motion } from 'framer-motion';
@@ -33,6 +33,14 @@ const STATUS_STYLE: Record<string, string> = {
   pending: 'bg-amber-400/90 text-amber-950',
 };
 
+const STATUS_ORDER = ['active', 'pending', 'failed'];
+const FILTER_PILL: Record<string, string> = {
+  All: 'border-cyan-500 bg-cyan-50 dark:bg-cyan-500/10 text-cyan-600',
+  active: 'border-green-500 bg-green-50 dark:bg-green-500/10 text-green-600',
+  pending: 'border-amber-500 bg-amber-50 dark:bg-amber-500/10 text-amber-600',
+  failed: 'border-red-500 bg-red-50 dark:bg-red-500/10 text-red-600',
+};
+
 const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.08 } } };
 const item = { hidden: { opacity: 0, y: 14 }, show: { opacity: 1, y: 0, transition: { duration: 0.3, ease: 'easeOut' as const } } };
 
@@ -41,6 +49,7 @@ export default function MyEsimsPage() {
   const [esims, setEsims] = useState<EsimOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshingId, setRefreshingId] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState('All');
 
   const load = () => {
     setLoading(true);
@@ -51,6 +60,12 @@ export default function MyEsimsPage() {
   };
 
   useEffect(() => { load(); }, []);
+
+  const availableFilters = useMemo(
+    () => ['All', ...STATUS_ORDER.filter((s) => esims.some((e) => e.status === s))],
+    [esims]
+  );
+  const filteredEsims = statusFilter === 'All' ? esims : esims.filter((e) => e.status === statusFilter);
 
   const handleRefresh = async (id: string) => {
     setRefreshingId(id);
@@ -84,55 +99,78 @@ export default function MyEsimsPage() {
             <Button size="sm" onClick={() => router.push('/esim')}>Get an eSIM</Button>
           </div>
         ) : (
-          <motion.div variants={stagger} initial="hidden" animate="show" className="flex flex-col gap-4">
-            {esims.map((e) => (
-              <motion.div key={e._id} variants={item}
-                className="rounded-3xl overflow-hidden shadow-lg shadow-black/10 bg-gradient-to-br from-cyan-500 via-sky-600 to-blue-700 relative">
-                <div className="px-5 pt-5 pb-7 flex items-start justify-between relative">
-                  <div className="flex items-center gap-3">
-                    <div className="w-11 h-11 rounded-xl bg-white/15 flex items-center justify-center text-2xl flex-shrink-0">
-                      {esimFlagFor(e.countryCode)}
-                    </div>
-                    <div>
-                      <p className="font-black text-white leading-tight">{e.packageName}</p>
-                      <p className="text-white/70 text-xs">{(e.dataAllowanceMB / 1024).toFixed(1)}GB · {e.validityDays} days</p>
-                    </div>
-                  </div>
-                  <span className={cn('text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded-full flex-shrink-0', STATUS_STYLE[e.status])}>
-                    {e.status}
-                  </span>
-                </div>
+          <div className="flex flex-col gap-4">
+            {availableFilters.length > 2 && (
+              <div className="flex gap-1.5 overflow-x-auto hide-scrollbar">
+                {availableFilters.map((f) => (
+                  <button key={f} type="button" onClick={() => setStatusFilter(f)}
+                    className={cn('px-3 py-1.5 rounded-full text-xs font-bold border-2 capitalize transition-all flex-shrink-0',
+                      statusFilter === f ? FILTER_PILL[f] : 'border-line text-ink-muted')}>
+                    {f}
+                  </button>
+                ))}
+              </div>
+            )}
 
-                <div className="bg-surface px-5 pt-6 pb-5 flex flex-col gap-4 rounded-t-[28px] -mt-2">
-                  {e.activationCode ? (
-                    <div className="flex flex-col items-center gap-2 bg-surface-2 rounded-2xl p-4">
-                      <QRCodeSVG value={e.activationCode} size={150} />
-                      <p className="text-[10px] text-ink-muted text-center">Scan with your phone&apos;s camera to install, or add manually via Settings &gt; Cellular</p>
+            {filteredEsims.length === 0 ? (
+              <p className="text-ink-muted text-sm text-center py-8">No {statusFilter.toLowerCase()} eSIMs</p>
+            ) : (
+              <motion.div variants={stagger} initial="hidden" animate="show" key={statusFilter} className="flex flex-col gap-4">
+                {filteredEsims.map((e) => (
+                  <motion.div key={e._id} variants={item}
+                    className="rounded-3xl overflow-hidden shadow-lg shadow-black/10 bg-gradient-to-br from-cyan-500 via-sky-600 to-blue-700 relative">
+                    <div className="px-5 pt-5 pb-7 flex items-start justify-between relative">
+                      <div className="flex items-center gap-3">
+                        <div className="w-11 h-11 rounded-xl bg-white/15 flex items-center justify-center text-2xl flex-shrink-0">
+                          {esimFlagFor(e.countryCode)}
+                        </div>
+                        <div>
+                          <p className="font-black text-white leading-tight">{e.packageName}</p>
+                          <p className="text-white/70 text-xs">{(e.dataAllowanceMB / 1024).toFixed(1)}GB · {e.validityDays} days</p>
+                        </div>
+                      </div>
+                      <span className={cn('text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded-full flex-shrink-0', STATUS_STYLE[e.status])}>
+                        {e.status}
+                      </span>
                     </div>
-                  ) : (
-                    <div className="flex items-center gap-2 bg-surface-2 rounded-2xl p-4 text-ink-muted text-xs">
-                      <Signal size={16} /> Still provisioning — check back shortly.
-                    </div>
-                  )}
 
-                  <div className="flex items-center justify-between text-xs">
-                    {e.iccid ? (
-                      <span className="text-ink-muted font-mono">ICCID: {e.iccid}</span>
-                    ) : <span />}
-                    {e.status === 'active' && (
-                      <button onClick={() => handleRefresh(e._id)} disabled={refreshingId === e._id}
-                        className="flex items-center gap-1.5 text-cyan-600 font-semibold disabled:opacity-50">
-                        <RefreshCw size={13} className={refreshingId === e._id ? 'animate-spin' : ''} /> Refresh
-                      </button>
-                    )}
-                  </div>
-                </div>
+                    <div className="bg-surface px-5 pt-6 pb-5 flex flex-col gap-4 rounded-t-[28px] -mt-2">
+                      {e.activationCode ? (
+                        <div className="flex flex-col items-center gap-2 bg-surface-2 rounded-2xl p-4">
+                          <QRCodeSVG value={e.activationCode} size={150} />
+                          <p className="text-[10px] text-ink-muted text-center">Scan with your phone&apos;s camera to install, or add manually via Settings &gt; Cellular</p>
+                        </div>
+                      ) : e.status === 'failed' ? (
+                        <div className="flex items-center gap-2 bg-surface-2 rounded-2xl p-4 text-ink-muted text-xs">
+                          <Signal size={16} /> This eSIM could not be issued — you were refunded.
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 bg-surface-2 rounded-2xl p-4 text-ink-muted text-xs">
+                          <Signal size={16} /> Still provisioning — check back shortly.
+                        </div>
+                      )}
+
+                      <div className="flex items-center justify-between text-xs">
+                        {e.iccid ? (
+                          <span className="text-ink-muted font-mono">ICCID: {e.iccid}</span>
+                        ) : <span />}
+                        {e.status === 'active' && (
+                          <button onClick={() => handleRefresh(e._id)} disabled={refreshingId === e._id}
+                            className="flex items-center gap-1.5 text-cyan-600 font-semibold disabled:opacity-50">
+                            <RefreshCw size={13} className={refreshingId === e._id ? 'animate-spin' : ''} /> Refresh
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
               </motion.div>
-            ))}
+            )}
+
             <Button variant="secondary" fullWidth onClick={() => router.push('/esim')}>
               <span className="flex items-center gap-2"><Wifi size={16} /> Get another eSIM</span>
             </Button>
-          </motion.div>
+          </div>
         )}
       </div>
     </div>
