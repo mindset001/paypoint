@@ -2,28 +2,15 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
-import { ArrowLeft, Globe, Wifi } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { ArrowLeft, Globe, Wifi, Check, CalendarClock } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { PinInput } from '@/components/ui/PinInput';
 import { esimApi } from '@/lib/api';
 import { formatNGN, getErrorMessage } from '@/lib/utils';
+import { ESIM_COUNTRIES } from '@/lib/esimCountries';
 import { cn } from '@/lib/cn';
-
-const COUNTRIES = [
-  { code: 'US', name: 'United States', flag: '🇺🇸' },
-  { code: 'GB', name: 'United Kingdom', flag: '🇬🇧' },
-  { code: 'CA', name: 'Canada', flag: '🇨🇦' },
-  { code: 'AE', name: 'UAE', flag: '🇦🇪' },
-  { code: 'ZA', name: 'South Africa', flag: '🇿🇦' },
-  { code: 'GH', name: 'Ghana', flag: '🇬🇭' },
-  { code: 'FR', name: 'France', flag: '🇫🇷' },
-  { code: 'DE', name: 'Germany', flag: '🇩🇪' },
-  { code: 'TR', name: 'Turkey', flag: '🇹🇷' },
-  { code: 'IN', name: 'India', flag: '🇮🇳' },
-  { code: 'CN', name: 'China', flag: '🇨🇳' },
-  { code: 'MY', name: 'Malaysia', flag: '🇲🇾' },
-];
 
 interface EsimPackage {
   packageCode: string;
@@ -34,6 +21,9 @@ interface EsimPackage {
   priceNGNKobo: number;
 }
 
+const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.03 } } };
+const item = { hidden: { opacity: 0, y: 10, scale: 0.95 }, show: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.2, ease: 'easeOut' as const } } };
+
 export default function EsimPage() {
   const router = useRouter();
   const [country, setCountry] = useState<string | null>(null);
@@ -43,6 +33,8 @@ export default function EsimPage() {
   const [selected, setSelected] = useState<EsimPackage | null>(null);
   const [showPin, setShowPin] = useState(false);
   const [buying, setBuying] = useState(false);
+
+  const selectedCountryInfo = ESIM_COUNTRIES.find((c) => c.code === country);
 
   const selectCountry = async (code: string) => {
     setCountry(code);
@@ -78,19 +70,31 @@ export default function EsimPage() {
 
   return (
     <div>
-      <div className="bg-gradient-to-br from-cyan-500 to-blue-700 px-6 pt-14 md:pt-8 pb-8">
-        <button onClick={() => router.back()} className="text-white mb-4"><ArrowLeft size={22} /></button>
-        <h1 className="text-white text-2xl font-black">eSIM</h1>
-        <p className="text-cyan-100 text-sm">Stay connected anywhere you travel</p>
+      <div className="bg-gradient-to-br from-cyan-500 via-sky-600 to-blue-700 px-6 pt-14 md:pt-8 pb-10 relative overflow-hidden">
+        <div className="absolute -right-10 -top-10 w-44 h-44 rounded-full bg-white/10 blur-2xl" />
+        <div className="absolute right-16 bottom-0 w-28 h-28 rounded-full bg-white/10 blur-xl" />
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 30, repeat: Infinity, ease: 'linear' }}
+          className="absolute right-6 top-6 text-white/10"
+        >
+          <Globe size={90} strokeWidth={1} />
+        </motion.div>
+        <button onClick={() => router.back()} className="text-white mb-4 relative"><ArrowLeft size={22} /></button>
+        <h1 className="text-white text-2xl font-black relative">eSIM</h1>
+        <p className="text-cyan-50/90 text-sm relative">Stay connected anywhere you travel</p>
       </div>
 
-      <div className="px-5 -mt-4 pb-8">
-        <div className="bg-surface rounded-3xl p-5 shadow-sm flex flex-col gap-4">
+      <div className="px-5 -mt-5 pb-8">
+        <div className="bg-surface rounded-3xl p-5 shadow-lg shadow-black/5 flex flex-col gap-4">
           {showPin && selected ? (
             <div className="flex flex-col items-center gap-4 py-2">
-              <div className="text-center mb-2">
-                <p className="text-ink-muted text-sm">Buying <strong>{selected.name}</strong></p>
-                <p className="font-bold text-ink">{formatNGN(selected.priceNGNKobo)}</p>
+              <div className="w-16 h-16 rounded-2xl bg-cyan-50 dark:bg-cyan-500/10 flex items-center justify-center text-3xl">
+                {selectedCountryInfo?.flag ?? '🌍'}
+              </div>
+              <div className="text-center mb-1">
+                <p className="text-ink-muted text-sm">Buying <strong className="text-ink">{selected.name}</strong></p>
+                <p className="font-black text-lg text-cyan-600">{formatNGN(selected.priceNGNKobo)}</p>
               </div>
               <PinInput length={4} onComplete={handlePinComplete} label="Enter Transaction PIN" />
               {buying && <div className="w-6 h-6 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />}
@@ -100,16 +104,25 @@ export default function EsimPage() {
             <>
               <div>
                 <label className="text-sm font-medium text-ink-muted mb-2 block">Choose a destination</label>
-                <div className="grid grid-cols-3 gap-2">
-                  {COUNTRIES.map((c) => (
-                    <button key={c.code} type="button" onClick={() => selectCountry(c.code)}
-                      className={cn('flex flex-col items-center gap-1 py-3 rounded-xl border-2 transition-all',
-                        country === c.code ? 'border-cyan-500 bg-cyan-50 dark:bg-cyan-500/10' : 'border-line')}>
-                      <span className="text-xl">{c.flag}</span>
-                      <span className="text-[10px] font-semibold text-ink-muted text-center leading-tight">{c.name}</span>
-                    </button>
-                  ))}
-                </div>
+                <motion.div variants={stagger} initial="hidden" animate="show" className="grid grid-cols-3 gap-2">
+                  {ESIM_COUNTRIES.map((c) => {
+                    const sel = country === c.code;
+                    return (
+                      <motion.button key={c.code} variants={item} whileTap={{ scale: 0.95 }} type="button" onClick={() => selectCountry(c.code)}
+                        className={cn('relative flex flex-col items-center gap-1.5 py-3 rounded-2xl border-2 transition-all',
+                          sel ? 'border-cyan-500 bg-cyan-50 dark:bg-cyan-500/10 shadow-sm' : 'border-line hover:border-cyan-500/30')}>
+                        {sel && (
+                          <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}
+                            className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-cyan-500 text-white flex items-center justify-center">
+                            <Check size={10} strokeWidth={3} />
+                          </motion.div>
+                        )}
+                        <span className="text-2xl leading-none">{c.flag}</span>
+                        <span className="text-[10px] font-semibold text-ink-muted text-center leading-tight px-1">{c.name}</span>
+                      </motion.button>
+                    );
+                  })}
+                </motion.div>
               </div>
 
               {country && (
@@ -126,23 +139,26 @@ export default function EsimPage() {
                 ) : packages.length === 0 ? (
                   <p className="text-ink-muted text-sm text-center py-8">No plans available for this destination yet.</p>
                 ) : (
-                  <div className="flex flex-col gap-3">
+                  <motion.div variants={stagger} initial="hidden" animate="show" key={country} className="flex flex-col gap-2.5">
                     {packages.map((pkg) => (
-                      <button key={pkg.packageCode} type="button" onClick={() => { setSelected(pkg); setShowPin(true); }}
-                        className="border border-line rounded-2xl p-4 flex items-center justify-between text-left hover:shadow-sm transition-shadow">
+                      <motion.button variants={item} whileTap={{ scale: 0.98 }} key={pkg.packageCode} type="button"
+                        onClick={() => { setSelected(pkg); setShowPin(true); }}
+                        className="border border-line rounded-2xl p-4 flex items-center justify-between text-left transition-all hover:border-cyan-500/40 hover:shadow-md hover:shadow-cyan-500/5">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-xl bg-cyan-50 dark:bg-cyan-500/10 flex items-center justify-center text-cyan-600">
-                            <Wifi size={18} />
+                          <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center text-white flex-shrink-0">
+                            <Wifi size={20} />
                           </div>
                           <div>
                             <p className="font-bold text-ink">{pkg.name}</p>
-                            <p className="text-xs text-ink-muted">{(pkg.dataAllowanceMB / 1024).toFixed(1)}GB · {pkg.validityDays} days</p>
+                            <span className="inline-flex items-center gap-1 text-xs text-ink-muted mt-0.5">
+                              <CalendarClock size={12} /> {pkg.validityDays} days
+                            </span>
                           </div>
                         </div>
                         <p className="font-black text-cyan-600">{formatNGN(pkg.priceNGNKobo)}</p>
-                      </button>
+                      </motion.button>
                     ))}
-                  </div>
+                  </motion.div>
                 )
               )}
 
