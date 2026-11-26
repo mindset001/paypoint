@@ -1,0 +1,9 @@
+node_modules
+ios/DerivedData
+ios/App/Pods
+ios/App/build
+ios/App/App/public
+android/build
+android/app/build
+android/.gradle
+.DS_Store

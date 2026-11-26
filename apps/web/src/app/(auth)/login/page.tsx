@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
@@ -8,6 +8,7 @@ import { Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useAuth } from '@/hooks/useAuth';
+import { useAuthStore } from '@/store/auth.store';
 import { getErrorMessage } from '@/lib/utils';
 
 interface LoginForm {
@@ -18,8 +19,16 @@ interface LoginForm {
 export default function LoginPage() {
   const { login } = useAuth();
   const router = useRouter();
+  const { isAuthenticated, _hasHydrated } = useAuthStore();
   const [showPw, setShowPw] = useState(false);
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<LoginForm>();
+
+  // A session persists across app restarts (localStorage) — someone who's
+  // already signed in shouldn't see the login form again just for opening
+  // the native app or revisiting this URL on web.
+  useEffect(() => {
+    if (_hasHydrated && isAuthenticated) router.replace('/home');
+  }, [_hasHydrated, isAuthenticated, router]);
 
   const onSubmit = async (data: LoginForm) => {
     try {
