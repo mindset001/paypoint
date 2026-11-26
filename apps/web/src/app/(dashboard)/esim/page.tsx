@@ -2,8 +2,8 @@
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
-import { motion } from 'framer-motion';
-import { ArrowLeft, Globe, Wifi, Check, CalendarClock } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ArrowLeft, Globe, Wifi, Check, CalendarClock, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { PinInput } from '@/components/ui/PinInput';
@@ -39,6 +39,7 @@ export default function EsimPage() {
   const [showPin, setShowPin] = useState(false);
   const [buying, setBuying] = useState(false);
   const [validityFilter, setValidityFilter] = useState('All');
+  const [countryOpen, setCountryOpen] = useState(false);
 
   const selectedCountryInfo = ESIM_COUNTRIES.find((c) => c.code === country);
 
@@ -50,6 +51,7 @@ export default function EsimPage() {
 
   const selectCountry = async (code: string) => {
     setCountry(code);
+    setCountryOpen(false);
     setLoading(true);
     setUnavailable(false);
     setPackages([]);
@@ -115,27 +117,44 @@ export default function EsimPage() {
             </div>
           ) : (
             <>
-              <div>
+              <div className="relative">
                 <label className="text-sm font-medium text-ink-muted mb-2 block">Choose a destination</label>
-                <motion.div variants={stagger} initial="hidden" animate="show" className="grid grid-cols-3 gap-2">
-                  {ESIM_COUNTRIES.map((c) => {
-                    const sel = country === c.code;
-                    return (
-                      <motion.button key={c.code} variants={item} whileTap={{ scale: 0.95 }} type="button" onClick={() => selectCountry(c.code)}
-                        className={cn('relative flex flex-col items-center gap-1.5 py-3 rounded-2xl border-2 transition-all',
-                          sel ? 'border-cyan-500 bg-cyan-50 dark:bg-cyan-500/10 shadow-sm' : 'border-line hover:border-cyan-500/30')}>
-                        {sel && (
-                          <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}
-                            className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-cyan-500 text-white flex items-center justify-center">
-                            <Check size={10} strokeWidth={3} />
-                          </motion.div>
-                        )}
-                        <span className="text-2xl leading-none">{c.flag}</span>
-                        <span className="text-[10px] font-semibold text-ink-muted text-center leading-tight px-1">{c.name}</span>
-                      </motion.button>
-                    );
-                  })}
-                </motion.div>
+                <button type="button" onClick={() => setCountryOpen((o) => !o)}
+                  className={cn('w-full flex items-center justify-between gap-2 px-4 py-3 rounded-2xl border-2 transition-all',
+                    countryOpen ? 'border-cyan-500' : 'border-line')}>
+                  <span className="flex items-center gap-2.5 min-w-0">
+                    <span className="text-xl leading-none flex-shrink-0">{selectedCountryInfo?.flag ?? '🌍'}</span>
+                    <span className={cn('font-semibold truncate', selectedCountryInfo ? 'text-ink' : 'text-ink-muted')}>
+                      {selectedCountryInfo?.name ?? 'Select a destination'}
+                    </span>
+                  </span>
+                  <ChevronDown size={18} className={cn('text-ink-muted flex-shrink-0 transition-transform', countryOpen && 'rotate-180')} />
+                </button>
+
+                <AnimatePresence>
+                  {countryOpen && (
+                    <>
+                      <div className="fixed inset-0 z-10" onClick={() => setCountryOpen(false)} />
+                      <motion.div
+                        initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.15 }}
+                        className="absolute left-0 right-0 top-full mt-2 z-20 bg-surface border border-line rounded-2xl shadow-xl max-h-72 overflow-y-auto p-1.5"
+                      >
+                        {ESIM_COUNTRIES.map((c) => {
+                          const sel = country === c.code;
+                          return (
+                            <button key={c.code} type="button" onClick={() => selectCountry(c.code)}
+                              className={cn('w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-colors',
+                                sel ? 'bg-cyan-50 dark:bg-cyan-500/10' : 'hover:bg-surface-2')}>
+                              <span className="text-xl leading-none">{c.flag}</span>
+                              <span className="flex-1 font-medium text-sm text-ink">{c.name}</span>
+                              {sel && <Check size={16} className="text-cyan-600 flex-shrink-0" />}
+                            </button>
+                          );
+                        })}
+                      </motion.div>
+                    </>
+                  )}
+                </AnimatePresence>
               </div>
 
               {country && (
