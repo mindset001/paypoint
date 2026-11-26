@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { motion } from 'framer-motion';
@@ -18,8 +18,13 @@ interface EsimPackage {
   countryCode: string;
   dataAllowanceMB: number;
   validityDays: number;
+  validity: string;
   priceNGNKobo: number;
 }
+
+// Display order for the validity filter tabs — only shown when at least
+// one package in the current list actually falls into that bucket.
+const VALIDITY_ORDER = ['Daily', 'Weekly', 'Monthly', 'Yearly'];
 
 const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.03 } } };
 const item = { hidden: { opacity: 0, y: 10, scale: 0.95 }, show: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.2, ease: 'easeOut' as const } } };
@@ -33,14 +38,22 @@ export default function EsimPage() {
   const [selected, setSelected] = useState<EsimPackage | null>(null);
   const [showPin, setShowPin] = useState(false);
   const [buying, setBuying] = useState(false);
+  const [validityFilter, setValidityFilter] = useState('All');
 
   const selectedCountryInfo = ESIM_COUNTRIES.find((c) => c.code === country);
+
+  const availableFilters = useMemo(
+    () => ['All', ...VALIDITY_ORDER.filter((v) => packages.some((p) => p.validity === v))],
+    [packages]
+  );
+  const filteredPackages = validityFilter === 'All' ? packages : packages.filter((p) => p.validity === validityFilter);
 
   const selectCountry = async (code: string) => {
     setCountry(code);
     setLoading(true);
     setUnavailable(false);
     setPackages([]);
+    setValidityFilter('All');
     try {
       const { data } = await esimApi.packages(code);
       setPackages(data.data || []);
@@ -139,26 +152,44 @@ export default function EsimPage() {
                 ) : packages.length === 0 ? (
                   <p className="text-ink-muted text-sm text-center py-8">No plans available for this destination yet.</p>
                 ) : (
-                  <motion.div variants={stagger} initial="hidden" animate="show" key={country} className="flex flex-col gap-2.5">
-                    {packages.map((pkg) => (
-                      <motion.button variants={item} whileTap={{ scale: 0.98 }} key={pkg.packageCode} type="button"
-                        onClick={() => { setSelected(pkg); setShowPin(true); }}
-                        className="border border-line rounded-2xl p-4 flex items-center justify-between text-left transition-all hover:border-cyan-500/40 hover:shadow-md hover:shadow-cyan-500/5">
-                        <div className="flex items-center gap-3">
-                          <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center text-white flex-shrink-0">
-                            <Wifi size={20} />
-                          </div>
-                          <div>
-                            <p className="font-bold text-ink">{pkg.name}</p>
-                            <span className="inline-flex items-center gap-1 text-xs text-ink-muted mt-0.5">
-                              <CalendarClock size={12} /> {pkg.validityDays} days
-                            </span>
-                          </div>
-                        </div>
-                        <p className="font-black text-cyan-600">{formatNGN(pkg.priceNGNKobo)}</p>
-                      </motion.button>
-                    ))}
-                  </motion.div>
+                  <div className="flex flex-col gap-3">
+                    {availableFilters.length > 1 && (
+                      <div className="flex gap-1.5 overflow-x-auto hide-scrollbar">
+                        {availableFilters.map((f) => (
+                          <button type="button" key={f} onClick={() => setValidityFilter(f)}
+                            className={cn('px-3 py-1.5 rounded-full text-xs font-bold border-2 transition-all flex-shrink-0',
+                              validityFilter === f ? 'border-cyan-500 bg-cyan-50 dark:bg-cyan-500/10 text-cyan-600' : 'border-line text-ink-muted')}>
+                            {f}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {filteredPackages.length === 0 ? (
+                      <p className="text-ink-muted text-sm text-center py-4">No {validityFilter.toLowerCase()} plans for this destination</p>
+                    ) : (
+                      <motion.div variants={stagger} initial="hidden" animate="show" key={`${country}-${validityFilter}`} className="flex flex-col gap-2.5">
+                        {filteredPackages.map((pkg) => (
+                          <motion.button variants={item} whileTap={{ scale: 0.98 }} key={pkg.packageCode} type="button"
+                            onClick={() => { setSelected(pkg); setShowPin(true); }}
+                            className="border border-line rounded-2xl p-4 flex items-center justify-between text-left transition-all hover:border-cyan-500/40 hover:shadow-md hover:shadow-cyan-500/5">
+                            <div className="flex items-center gap-3">
+                              <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center text-white flex-shrink-0">
+                                <Wifi size={20} />
+                              </div>
+                              <div>
+                                <p className="font-bold text-ink">{pkg.name}</p>
+                                <span className="inline-flex items-center gap-1 text-xs text-ink-muted mt-0.5">
+                                  <CalendarClock size={12} /> {pkg.validityDays} days
+                                </span>
+                              </div>
+                            </div>
+                            <p className="font-black text-cyan-600">{formatNGN(pkg.priceNGNKobo)}</p>
+                          </motion.button>
+                        ))}
+                      </motion.div>
+                    )}
+                  </div>
                 )
               )}
 

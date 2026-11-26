@@ -25,6 +25,16 @@ const getPricingInputs = async () => {
 const priceToNGNKobo = (priceUSD, rate, markupPercent) =>
   Math.round(priceUSD * rate * (1 + markupPercent / 100) * 100);
 
+// Every package observed live from eSIM Access used durationUnit "DAY", so
+// `days` here is `duration` taken at face value — same assumption the
+// existing `validityDays: raw.duration` field already makes.
+const categorizeValidity = (days) => {
+  if (days <= 1) return 'Daily';
+  if (days <= 13) return 'Weekly';
+  if (days <= 45) return 'Monthly';
+  return 'Yearly';
+};
+
 // Normalizes eSIM Access's real /package/list response (confirmed live:
 // `volume` is bytes — 3221225472 on a package literally named "3GB" — and
 // `price` is USD in units of 1/10,000, e.g. 16000 -> $1.60; that divisor is
@@ -38,6 +48,7 @@ const normalizePackage = (raw, rate, markupPercent) => {
     countryCode: raw.locationCode,
     dataAllowanceMB: Math.round(raw.volume / (1024 * 1024)),
     validityDays: raw.duration,
+    validity: categorizeValidity(raw.duration),
     priceUSD,
     priceNGNKobo: priceToNGNKobo(priceUSD, rate, markupPercent),
   };
