@@ -8,6 +8,8 @@ import { Eye, EyeOff, Gift } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { authApi, referralApi } from '@/lib/api';
+import { GoogleSignInButton } from '@/components/ui/GoogleSignInButton';
+import { useAuth } from '@/hooks/useAuth';
 import { getErrorMessage } from '@/lib/utils';
 
 interface RegisterForm {
@@ -23,7 +25,9 @@ function RegisterContent() {
   const router = useRouter();
   const params = useSearchParams();
   const refCode = params.get('ref') || '';
+  const { loginWithGoogle } = useAuth();
   const [showPw, setShowPw] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [signupBonus, setSignupBonus] = useState(100);
   const { register, handleSubmit, setValue, formState: { errors, isSubmitting } } = useForm<RegisterForm>({
     defaultValues: { referralCode: refCode },
@@ -44,6 +48,19 @@ function RegisterContent() {
     }
   };
 
+  const onGoogleCredential = async (idToken: string) => {
+    setGoogleLoading(true);
+    try {
+      const u = await loginWithGoogle(idToken);
+      toast.success(`Welcome, ${u.firstName}!`);
+      router.push(u.needsPhone ? '/add-phone' : '/home');
+    } catch (err) {
+      toast.error(getErrorMessage(err));
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
+
   return (
     <div>
       <h1 className="text-2xl font-black text-gray-900 mb-1">Create account</h1>
@@ -57,6 +74,16 @@ function RegisterContent() {
           </p>
         </div>
       )}
+
+      <div className={googleLoading ? 'opacity-50 pointer-events-none mb-4' : 'mb-4'}>
+        <GoogleSignInButton onCredential={onGoogleCredential} />
+      </div>
+
+      <div className="flex items-center gap-3 mb-5">
+        <div className="flex-1 h-px bg-gray-200" />
+        <span className="text-xs text-gray-400 font-medium">OR</span>
+        <div className="flex-1 h-px bg-gray-200" />
+      </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
         <div className="grid grid-cols-2 gap-3">

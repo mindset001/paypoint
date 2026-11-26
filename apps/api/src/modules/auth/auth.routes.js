@@ -33,6 +33,8 @@ router.post('/register', authLimiter, registerValidator, validate, ctrl.register
 router.post('/verify-otp', otpLimiter, verifyOtpValidator, validate, ctrl.verifyOtp);
 router.post('/resend-otp', otpLimiter, ctrl.resendOtp);
 router.post('/login', authLimiter, loginValidator, validate, ctrl.login);
+router.post('/google', authLimiter, ctrl.googleAuth);
+router.post('/add-phone', authenticate, ctrl.addPhone);
 router.post('/refresh', refreshValidator, validate, ctrl.refresh);
 router.post('/set-pin', authenticate, setPinValidator, validate, ctrl.setPin);
 router.post('/logout', authenticate, ctrl.logout);

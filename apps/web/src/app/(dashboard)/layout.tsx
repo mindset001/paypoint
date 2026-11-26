@@ -8,15 +8,20 @@ import { Sidebar } from '@/components/ui/Sidebar';
 import { AnnouncementPopup } from '@/components/ui/AnnouncementPopup';
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
-  const { isAuthenticated, _hasHydrated } = useAuthStore();
+  const { isAuthenticated, user, _hasHydrated } = useAuthStore();
   const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
-    if (_hasHydrated && !isAuthenticated) {
+    if (!_hasHydrated) return;
+    if (!isAuthenticated) {
       router.replace('/login');
+    } else if (user?.needsPhone) {
+      // Google sign-up with no phone yet — direct navigation here (not just
+      // the post-login redirect in login/page.tsx) still needs to gate on it.
+      router.replace('/add-phone');
     }
-  }, [isAuthenticated, _hasHydrated, router]);
+  }, [isAuthenticated, user?.needsPhone, _hasHydrated, router]);
 
   if (!_hasHydrated) {
     return (
@@ -26,7 +31,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     );
   }
 
-  if (!isAuthenticated) return null;
+  if (!isAuthenticated || user?.needsPhone) return null;
 
   return (
     <div className="min-h-screen bg-canvas flex">

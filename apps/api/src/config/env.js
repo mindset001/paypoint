@@ -53,6 +53,10 @@ const env = {
   EMAIL_FROM: process.env.EMAIL_FROM || 'noreply@paycen.ng',
 
   SENTRY_DSN: process.env.SENTRY_DSN,
+
+  // Web OAuth client ID from Google Cloud Console — verifies the ID token
+  // "Sign in with Google" hands us client-side (see auth.service.js#googleAuth).
+  GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
 };
 
 const required = ['JWT_ACCESS_SECRET', 'JWT_REFRESH_SECRET'];

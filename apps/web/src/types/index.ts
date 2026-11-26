@@ -3,11 +3,14 @@ export interface User {
   firstName: string;
   lastName: string;
   email: { address: string; verified: boolean };
-  phone: { number: string; verified: boolean };
+  // A Google sign-up has no phone number yet — see needsPhone below, which
+  // gates the dashboard until one's added (apps/web/src/app/add-phone).
+  phone: { number?: string; verified: boolean };
   role: 'customer' | 'agent' | 'sub_agent' | 'admin' | 'developer';
   status: 'active' | 'suspended' | 'pending_kyc';
   referralCode: string;
   kycSubmittedAt: string | null;
+  needsPhone: boolean;
 }
 
 export interface Wallet {

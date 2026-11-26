@@ -8,6 +8,10 @@ const { phoneVariants } = require('../../utils/phone');
 const referralService = require('../referral/referral.service');
 const emailService = require('../../services/email.service');
 const Dojah = require('../../providers/dojah/dojah.client');
+const env = require('../../config/env');
+const { OAuth2Client } = require('google-auth-library');
+
+const googleClient = new OAuth2Client(env.GOOGLE_CLIENT_ID);
 
 const generateReferralCode = () => crypto.randomBytes(4).toString('hex').toUpperCase();
 
@@ -159,6 +163,9 @@ const login = async ({ identifier, password, ip }) => {
   const user = await User.findOne(query).select('+passwordHash');
   if (!user) throw Object.assign(new Error('Invalid credentials'), { statusCode: 401 });
 
+  if (!user.passwordHash) {
+    throw Object.assign(new Error('This account uses Google Sign-In — continue with Google instead'), { statusCode: 401 });
+  }
   const match = await user.comparePassword(password);
   if (!match) throw Object.assign(new Error('Invalid credentials'), { statusCode: 401 });
 
@@ -183,6 +190,82 @@ const login = async ({ identifier, password, ip }) => {
   try { await redis.set(`refresh:${user._id}`, tokens.refreshToken, 'EX', 7 * 24 * 3600); } catch {}
 
   return { user: sanitize(user), ...tokens };
+};
+
+// "Sign in with Google" — the frontend hands us the ID token Google's
+// Identity Services button already verified client-side; this re-verifies
+// it server-side (never trust a client-asserted identity) and finds or
+// creates the account. Google has already proven the email is real, so
+// this skips the OTP flow entirely — but Google never gives us a phone
+// number, so a brand-new account here has none yet (User.phone is sparse
+// for exactly this) until the user adds one post-login via addPhone below.
+const googleAuth = async ({ idToken, ip }) => {
+  let payload;
+  try {
+    const ticket = await googleClient.verifyIdToken({ idToken, audience: env.GOOGLE_CLIENT_ID });
+    payload = ticket.getPayload();
+  } catch (err) {
+    throw Object.assign(new Error('Invalid Google sign-in'), { statusCode: 401 });
+  }
+  if (!payload?.email) {
+    throw Object.assign(new Error('Google account has no email'), { statusCode: 400 });
+  }
+
+  const normalizedEmail = payload.email.toLowerCase();
+  let user = await User.findOne({ $or: [{ googleId: payload.sub }, { 'email.address': normalizedEmail }] });
+
+  if (user) {
+    if (user.status === 'suspended') {
+      throw Object.assign(new Error('Account suspended. Contact support.'), { statusCode: 403 });
+    }
+    if (!user.googleId) {
+      // Pre-existing email/password account signing in with the same Gmail
+      // address for the first time — link it rather than create a duplicate.
+      user.googleId = payload.sub;
+    }
+    if (!user.email.verified) {
+      user.email.verified = true;
+      user.email.verifiedAt = new Date();
+    }
+  } else {
+    let code;
+    do {
+      code = generateReferralCode();
+    } while (await User.findOne({ referralCode: code }));
+
+    user = await User.create({
+      firstName: payload.given_name || 'Paycen',
+      lastName: payload.family_name || 'User',
+      email: { address: normalizedEmail, verified: true, verifiedAt: new Date() },
+      googleId: payload.sub,
+      referralCode: code,
+    });
+    await Wallet.create({ userId: user._id });
+  }
+
+  user.lastLoginAt = new Date();
+  user.lastLoginIp = ip;
+  await user.save();
+
+  const tokens = issueTokens(user);
+  try { await redis.set(`refresh:${user._id}`, tokens.refreshToken, 'EX', 7 * 24 * 3600); } catch {}
+
+  return { user: sanitize(user), ...tokens };
+};
+
+// Post-login gate for Google sign-ups, which never collect a phone number
+// at signup — not OTP-verified immediately (no SMS provider wired up in
+// this app), just recorded so the account has one on file.
+const addPhone = async (userId, phone) => {
+  if (!/^\+?[0-9]{10,14}$/.test(phone)) {
+    throw Object.assign(new Error('Enter a valid phone number'), { statusCode: 400 });
+  }
+  const existing = await User.findOne({ 'phone.number': { $in: phoneVariants(phone) } });
+  if (existing) throw Object.assign(new Error('That phone number is already registered'), { statusCode: 409 });
+
+  const user = await User.findByIdAndUpdate(userId, { 'phone.number': phone }, { new: true });
+  if (!user) throw Object.assign(new Error('User not found'), { statusCode: 404 });
+  return sanitize(user);
 };
 
 const refreshTokens = async (refreshToken) => {
@@ -253,6 +336,7 @@ const sanitize = (user) => ({
   status: user.status,
   referralCode: user.referralCode,
   kycSubmittedAt: user.kyc?.submittedAt ?? null,
+  needsPhone: !user.phone?.number,
 });
 
 const forgotPassword = async (identifier) => {
@@ -449,4 +533,4 @@ const submitKyc = async (userId, { nin, bvn, number }) => {
   };
 };
 
-module.exports = { register, verifyOtp, login, refreshTokens, setPin, logout, resendOtp, forgotPassword, resetPassword, changePassword, confirmChangePassword, changePin, confirmChangePin, forgotPin, resetPin, updateProfile, submitKyc };
+module.exports = { register, verifyOtp, login, googleAuth, addPhone, refreshTokens, setPin, logout, resendOtp, forgotPassword, resetPassword, changePassword, confirmChangePassword, changePin, confirmChangePin, forgotPin, resetPin, updateProfile, submitKyc };

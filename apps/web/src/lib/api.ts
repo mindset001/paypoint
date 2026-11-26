@@ -50,6 +50,10 @@ export const authApi = {
     api.post('/auth/resend-otp', { identifier }),
   login: (identifier: string, password: string) =>
     api.post('/auth/login', { identifier, password }),
+  google: (idToken: string) =>
+    api.post('/auth/google', { idToken }),
+  addPhone: (phone: string) =>
+    api.post('/auth/add-phone', { phone }),
   setPin: (pin: string, confirmPin: string) =>
     api.post('/auth/set-pin', { pin, confirmPin }),
   logout: () => api.post('/auth/logout'),

@@ -35,6 +35,24 @@ const login = async (req, res, next) => {
   }
 };
 
+const googleAuth = async (req, res, next) => {
+  try {
+    const data = await authService.googleAuth({ idToken: req.body.idToken, ip: req.ip });
+    return success(res, data, 'Google sign-in successful');
+  } catch (err) {
+    next(err);
+  }
+};
+
+const addPhone = async (req, res, next) => {
+  try {
+    const data = await authService.addPhone(req.user._id, req.body.phone);
+    return success(res, data, 'Phone number added');
+  } catch (err) {
+    next(err);
+  }
+};
+
 const refresh = async (req, res, next) => {
   try {
     const tokens = await authService.refreshTokens(req.body.refreshToken);
@@ -72,7 +90,12 @@ const resendOtp = async (req, res, next) => {
 };
 
 const me = async (req, res) => {
-  return success(res, { user: req.user }, 'Profile fetched');
+  // req.user is the raw Mongoose doc (see auth.middleware#authenticate), so
+  // needsPhone isn't on it automatically the way it is on authService's own
+  // sanitize() output — computed here too so a session restore (not just
+  // the login/google response) still carries it for the dashboard guard.
+  const user = { ...req.user.toObject(), needsPhone: !req.user.phone?.number };
+  return success(res, { user }, 'Profile fetched');
 };
 
 const forgotPassword = async (req, res, next) => {
@@ -145,4 +168,4 @@ const submitKyc = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-module.exports = { register, verifyOtp, login, refresh, setPin, logout, resendOtp, me, forgotPassword, resetPassword, changePassword, confirmChangePassword, changePin, confirmChangePin, forgotPin, resetPin, updateProfile, submitKyc };
+module.exports = { register, verifyOtp, login, googleAuth, addPhone, refresh, setPin, logout, resendOtp, me, forgotPassword, resetPassword, changePassword, confirmChangePassword, changePin, confirmChangePin, forgotPin, resetPin, updateProfile, submitKyc };

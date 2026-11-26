@@ -18,6 +18,15 @@ export const useAuth = () => {
     return u;
   }, [setAuth]);
 
+  const loginWithGoogle = useCallback(async (idToken: string) => {
+    const { data } = await authApi.google(idToken);
+    const { user: u, accessToken, refreshToken } = data.data;
+    setAuth(u, accessToken, refreshToken);
+    localStorage.setItem('accessToken', accessToken);
+    localStorage.setItem('refreshToken', refreshToken);
+    return u;
+  }, [setAuth]);
+
   const logout = useCallback(async () => {
     try { await authApi.logout(); } catch {}
     clearAuth();
@@ -31,5 +40,5 @@ export const useAuth = () => {
     return data.data.user;
   }, [setUser]);
 
-  return { user, isAuthenticated, login, logout, fetchMe };
+  return { user, isAuthenticated, login, loginWithGoogle, logout, fetchMe };
 };

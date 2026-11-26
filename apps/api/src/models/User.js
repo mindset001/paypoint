@@ -11,10 +11,18 @@ const userSchema = new mongoose.Schema(
       verifiedAt: Date,
     },
     phone: {
-      number: { type: String, unique: true, trim: true },
+      // sparse: a Google sign-up has no phone yet (see auth.service.js#googleAuth)
+      // and must be able to coexist with other phone-less accounts — a plain
+      // unique index treats every missing value as the same "null", so the
+      // second such account would otherwise collide with the first.
+      number: { type: String, unique: true, sparse: true, trim: true },
       verified: { type: Boolean, default: false },
       verifiedAt: Date,
     },
+    // Google's stable "sub" claim — set once on a Google sign-up or when an
+    // existing email/password account later signs in with the same Gmail
+    // address (see auth.service.js#googleAuth).
+    googleId: { type: String, unique: true, sparse: true },
     passwordHash: { type: String, select: false },
     pinHash: { type: String, select: false },
     role: {
