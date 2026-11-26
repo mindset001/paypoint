@@ -279,6 +279,14 @@ export const savingsApi = {
     api.post(`/savings/${id}/topup`, { amount, pin }),
 };
 
+export const esimApi = {
+  packages: (country: string) => api.get('/esim/packages', { params: { country } }),
+  buy: (packageCode: string, pin: string) => api.post('/esim/buy', { packageCode, pin }),
+  my: () => api.get('/esim/my'),
+  get: (id: string) => api.get(`/esim/${id}`),
+  refresh: (id: string) => api.post(`/esim/${id}/refresh`),
+};
+
 export const ajoApi = {
   list: () => api.get('/ajo'),
   get: (id: string) => api.get(`/ajo/${id}`),

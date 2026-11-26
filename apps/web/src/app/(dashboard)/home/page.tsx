@@ -23,11 +23,12 @@ const SERVICES = [
   { id: 'exam', name: 'Exam Pins', icon: 'book' },
   { id: 'savings', name: 'Savings', icon: 'piggyBank' },
   { id: 'ajo', name: 'Ajo', icon: 'repeat' },
+  { id: 'esim', name: 'eSIM', icon: 'globe' },
 ];
 
 // Services whose visibility is admin-controlled — maps a tile's id to its
 // feature-flag key (mirrors services/page.tsx's FEATURE_KEY_BY_SERVICE).
-const FEATURE_KEY_BY_SERVICE: Record<string, string> = { exam: 'exam', savings: 'savings' };
+const FEATURE_KEY_BY_SERVICE: Record<string, string> = { exam: 'exam', savings: 'savings', esim: 'esim' };
 
 const gridVariants = {
   hidden: {},
@@ -43,7 +44,7 @@ export default function HomePage() {
   const { wallet, transactions, loading, fetchWallet, fetchTransactions } = useWallet();
   const [unread, setUnread] = useState(0);
   // Mirrors the API's own defaults so there's no flash before the real flags load.
-  const [featureFlags, setFeatureFlags] = useState<Record<string, string>>({ exam: 'coming_soon', reseller: 'coming_soon', savings: 'live' });
+  const [featureFlags, setFeatureFlags] = useState<Record<string, string>>({ exam: 'coming_soon', reseller: 'coming_soon', savings: 'live', esim: 'coming_soon' });
 
   useEffect(() => {
     fetchWallet();

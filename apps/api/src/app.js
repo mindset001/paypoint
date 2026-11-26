@@ -22,6 +22,7 @@ const referralRoutes = require('./modules/referral/referral.routes');
 const savingsRoutes = require('./modules/savings/savings.routes');
 const withdrawRoutes = require('./modules/withdraw/withdraw.routes');
 const ajoRoutes = require('./modules/ajo/ajo.routes');
+const esimRoutes = require('./modules/esim/esim.routes');
 
 const app = express();
 
@@ -81,6 +82,7 @@ app.use('/api/v1/referral', referralRoutes);
 app.use('/api/v1/savings', savingsRoutes);
 app.use('/api/v1/withdraw', withdrawRoutes);
 app.use('/api/v1/ajo', ajoRoutes);
+app.use('/api/v1/esim', esimRoutes);
 
 app.use(notFound);
 Sentry.setupExpressErrorHandler(app);

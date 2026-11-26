@@ -11,7 +11,7 @@ const transactionSchema = new mongoose.Schema(
         'airtime', 'data', 'bulk_airtime', 'bulk_data', 'cable', 'electricity', 'exam',
         'wallet_fund', 'wallet_transfer_debit', 'wallet_transfer_credit',
         'commission', 'cashback', 'referral_bonus', 'signup_bonus', 'refund', 'savings', 'withdrawal',
-        'ajo_contribution', 'ajo_payout',
+        'ajo_contribution', 'ajo_payout', 'esim',
       ],
       required: true,
     },
@@ -65,6 +65,9 @@ const transactionSchema = new mongoose.Schema(
       // Ajo/contribution — ties a debit/credit back to its plan+cycle
       ajoPlanId: mongoose.Schema.Types.ObjectId,
       ajoCycle: Number,
+      // eSIM — ties a debit back to its order
+      esimOrderId: mongoose.Schema.Types.ObjectId,
+      iccid: String,
       // Referral
       refereeId: mongoose.Schema.Types.ObjectId,
       // Cashback

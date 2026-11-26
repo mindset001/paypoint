@@ -11,6 +11,11 @@ const DEFAULT_FLAGS = {
   exam: 'coming_soon',
   reseller: 'coming_soon',
   savings: 'live',
+  // Scaffolded end-to-end but no live eSIM provider is configured yet — see
+  // providers/esim/esimAccess.client.js. Flip to 'live' once
+  // ESIM_ACCESS_API_KEY is set and that client's placeholder wire format is
+  // confirmed against the real docs.
+  esim: 'coming_soon',
   // Bank withdrawal — built and tested, previously hardcoded off while the
   // business account was waiting on Paystack's compliance/payout-tier
   // upgrade. Now admin-controlled like everything else here.

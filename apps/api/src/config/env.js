@@ -23,6 +23,11 @@ const env = {
   // POST /buy — unrelated to a Paycen user's wallet PIN.
   AIDAPAY_ACCOUNT_PIN: process.env.AIDAPAY_ACCOUNT_PIN,
 
+  // eSIM Access (esimaccess.com) — unset until a real account is created;
+  // see providers/esim/esimAccess.client.js for the "not configured" no-op.
+  ESIM_ACCESS_API_KEY: process.env.ESIM_ACCESS_API_KEY,
+  ESIM_ACCESS_BASE_URL: process.env.ESIM_ACCESS_BASE_URL,
+
   PAYSTACK_SECRET_KEY: process.env.PAYSTACK_SECRET_KEY,
   PAYSTACK_PUBLIC_KEY: process.env.PAYSTACK_PUBLIC_KEY,
 
