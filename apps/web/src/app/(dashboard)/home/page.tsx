@@ -11,13 +11,22 @@ import { EmptyStateIllustration } from '@/components/illustrations/EmptyState';
 import { notificationsApi, servicesApi } from '@/lib/api';
 import Link from 'next/link';
 
+// Mirrors the tile set on /services — kept in sync manually since the two
+// pages use different grid densities (Home shows a quick-access subset).
 const SERVICES = [
   { id: 'airtime', name: 'Airtime', icon: 'phone' },
   { id: 'data', name: 'Data', icon: 'wifi' },
+  { id: 'bulk-airtime', name: 'Bulk Airtime', icon: 'phoneForwarded' },
+  { id: 'bulk-data', name: 'Bulk Data', icon: 'layers' },
   { id: 'cable', name: 'Cable TV', icon: 'tv' },
   { id: 'electricity', name: 'Electricity', icon: 'zap' },
   { id: 'exam', name: 'Exam Pins', icon: 'book' },
+  { id: 'savings', name: 'Savings', icon: 'piggyBank' },
 ];
+
+// Services whose visibility is admin-controlled — maps a tile's id to its
+// feature-flag key (mirrors services/page.tsx's FEATURE_KEY_BY_SERVICE).
+const FEATURE_KEY_BY_SERVICE: Record<string, string> = { exam: 'exam', savings: 'savings' };
 
 const gridVariants = {
   hidden: {},
@@ -72,18 +81,28 @@ export default function HomePage() {
       <div className="px-4 -mt-2 flex flex-col gap-6 py-6">
         {/* Services Grid */}
         <section>
-          <h2 className="text-sm font-bold text-ink-muted uppercase tracking-wide mb-3">Services</h2>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-bold text-ink-muted uppercase tracking-wide">Services</h2>
+            <Link href="/services" className="text-xs text-brand-blue font-semibold">See all</Link>
+          </div>
           <motion.div
             variants={gridVariants}
             initial="hidden"
             animate="show"
-            className="grid grid-cols-3 gap-3"
+            className="grid grid-cols-4 gap-3"
           >
-            {SERVICES.filter((s) => s.id !== 'exam' || featureFlags.exam !== 'hidden').map((s) => (
-              <motion.div key={s.id} variants={itemVariants}>
-                <ServiceCard {...s} comingSoon={s.id === 'exam' && featureFlags.exam === 'coming_soon'} />
-              </motion.div>
-            ))}
+            {SERVICES.filter((s) => {
+              const flagKey = FEATURE_KEY_BY_SERVICE[s.id];
+              return !flagKey || featureFlags[flagKey] !== 'hidden';
+            }).map((s) => {
+              const flagKey = FEATURE_KEY_BY_SERVICE[s.id];
+              const comingSoon = flagKey ? featureFlags[flagKey] === 'coming_soon' : false;
+              return (
+                <motion.div key={s.id} variants={itemVariants}>
+                  <ServiceCard {...s} comingSoon={comingSoon} />
+                </motion.div>
+              );
+            })}
           </motion.div>
         </section>
 

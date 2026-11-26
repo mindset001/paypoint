@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Phone, Wifi, Tv, Zap, BookOpen, LucideIcon } from 'lucide-react';
+import { Phone, Wifi, Tv, Zap, BookOpen, PiggyBank, PhoneForwarded, Layers, LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/cn';
 
 const icons: Record<string, LucideIcon> = {
@@ -10,14 +10,20 @@ const icons: Record<string, LucideIcon> = {
   tv: Tv,
   zap: Zap,
   book: BookOpen,
+  piggyBank: PiggyBank,
+  phoneForwarded: PhoneForwarded,
+  layers: Layers,
 };
 
 const colors: Record<string, string> = {
   airtime: 'bg-yellow-50 text-yellow-600 dark:bg-yellow-500/10',
   data: 'bg-blue-50 text-blue-600 dark:bg-blue-500/10',
+  'bulk-airtime': 'bg-amber-50 text-amber-600 dark:bg-amber-500/10',
+  'bulk-data': 'bg-cyan-50 text-cyan-600 dark:bg-cyan-500/10',
   cable: 'bg-purple-50 text-purple-600 dark:bg-purple-500/10',
   electricity: 'bg-orange-50 text-orange-600 dark:bg-orange-500/10',
   exam: 'bg-green-50 text-green-600 dark:bg-green-500/10',
+  savings: 'bg-pink-50 text-pink-600 dark:bg-pink-500/10',
 };
 
 interface ServiceCardProps {
