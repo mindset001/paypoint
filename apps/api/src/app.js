@@ -21,6 +21,7 @@ const notificationRoutes = require('./modules/notifications/notifications.routes
 const referralRoutes = require('./modules/referral/referral.routes');
 const savingsRoutes = require('./modules/savings/savings.routes');
 const withdrawRoutes = require('./modules/withdraw/withdraw.routes');
+const ajoRoutes = require('./modules/ajo/ajo.routes');
 
 const app = express();
 
@@ -79,6 +80,7 @@ app.use('/api/v1/notifications', notificationRoutes);
 app.use('/api/v1/referral', referralRoutes);
 app.use('/api/v1/savings', savingsRoutes);
 app.use('/api/v1/withdraw', withdrawRoutes);
+app.use('/api/v1/ajo', ajoRoutes);
 
 app.use(notFound);
 Sentry.setupExpressErrorHandler(app);

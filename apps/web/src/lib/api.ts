@@ -279,6 +279,19 @@ export const savingsApi = {
     api.post(`/savings/${id}/topup`, { amount, pin }),
 };
 
+export const ajoApi = {
+  list: () => api.get('/ajo'),
+  get: (id: string) => api.get(`/ajo/${id}`),
+  create: (payload: {
+    name: string; mode: 'solo' | 'group'; frequency: 'daily' | 'weekly' | 'monthly' | 'custom';
+    intervalDays?: number; amount: number; totalSlots?: number; totalCycles?: number;
+  }) => api.post('/ajo', payload),
+  join: (inviteCode: string) => api.post('/ajo/join', { inviteCode }),
+  start: (id: string) => api.post(`/ajo/${id}/start`),
+  cancel: (id: string) => api.post(`/ajo/${id}/cancel`),
+  forceSettle: (id: string, contributionId: string) => api.post(`/ajo/${id}/contributions/${contributionId}/force`),
+};
+
 // ── Bank Withdrawal ──────────────────────────────────────────────────
 export const withdrawApi = {
   banks: () => api.get('/withdraw/banks'),

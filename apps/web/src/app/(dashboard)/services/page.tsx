@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Phone, Wifi, Tv, Zap, BookOpen, PiggyBank, PhoneForwarded, Layers } from 'lucide-react';
+import { Phone, Wifi, Tv, Zap, BookOpen, PiggyBank, PhoneForwarded, Layers, Repeat } from 'lucide-react';
 import { servicesApi } from '@/lib/api';
 
 // Services whose visibility is admin-controlled (Admin > Settings > Feature
@@ -21,6 +21,7 @@ const SERVICES = [
   { id: 'electricity', name: 'Electricity', icon: Zap, color: 'bg-orange-50 dark:bg-orange-500/10 text-orange-600' },
   { id: 'exam', name: 'Exam Pins', icon: BookOpen, color: 'bg-green-50 dark:bg-green-500/10 text-green-600' },
   { id: 'savings', name: 'Savings', icon: PiggyBank, color: 'bg-pink-50 dark:bg-pink-500/10 text-pink-600' },
+  { id: 'ajo', name: 'Ajo', icon: Repeat, color: 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600' },
 ];
 
 const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.04 } } };

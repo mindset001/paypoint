@@ -11,8 +11,10 @@ const app = require('./app');
 const { connect: connectDB } = require('./config/database');
 const redis = require('./config/redis');
 const aidapayMonitor = require('./services/aidapayMonitor.service');
+const ajoScheduler = require('./services/ajoScheduler.service');
 
 const AIDAPAY_CHECK_INTERVAL_MS = 30 * 60 * 1000; // 30 minutes
+const AJO_CHECK_INTERVAL_MS = 60 * 60 * 1000; // 1 hour — due dates are date-granularity, not time-sensitive
 
 const start = async () => {
   await connectDB();
@@ -29,6 +31,11 @@ const start = async () => {
   setInterval(() => {
     aidapayMonitor.checkBalance().catch((err) => console.error('[aidapay-monitor] check failed:', err.message));
   }, AIDAPAY_CHECK_INTERVAL_MS);
+
+  ajoScheduler.tick().catch((err) => console.error('[ajo-scheduler] startup tick failed:', err.message));
+  setInterval(() => {
+    ajoScheduler.tick().catch((err) => console.error('[ajo-scheduler] tick failed:', err.message));
+  }, AJO_CHECK_INTERVAL_MS);
 };
 
 start().catch((err) => {

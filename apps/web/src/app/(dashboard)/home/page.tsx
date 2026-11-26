@@ -22,6 +22,7 @@ const SERVICES = [
   { id: 'electricity', name: 'Electricity', icon: 'zap' },
   { id: 'exam', name: 'Exam Pins', icon: 'book' },
   { id: 'savings', name: 'Savings', icon: 'piggyBank' },
+  { id: 'ajo', name: 'Ajo', icon: 'repeat' },
 ];
 
 // Services whose visibility is admin-controlled — maps a tile's id to its
