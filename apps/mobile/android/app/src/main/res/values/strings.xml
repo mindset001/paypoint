@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Paycen</string>
+    <string name="title_activity_main">Paycen</string>
+    <string name="package_name">ng.paycen.app</string>
+    <string name="custom_url_scheme">ng.paycen.app</string>
+</resources>
