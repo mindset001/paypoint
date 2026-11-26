@@ -5,6 +5,7 @@ const { authenticate } = require('../../../middlewares/auth.middleware');
 const { body } = require('express-validator');
 const { validate } = require('../../../middlewares/validate.middleware');
 
+router.get('/networks', authenticate, ctrl.getAvailableNetworks);
 router.get('/catalogs/:network', authenticate, ctrl.getCatalogs);
 router.get('/plans/:network', authenticate, ctrl.getPlans);
 router.post('/', authenticate, [

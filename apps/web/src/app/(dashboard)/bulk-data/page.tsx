@@ -23,7 +23,20 @@ interface RecipientResult { phone: string; amount: number; status: 'success' | '
 export default function BulkDataPage() {
   const router = useRouter();
   const [network, setNetwork] = useState<Network>('MTN');
+  const [availableNetworks, setAvailableNetworks] = useState<Network[]>(NETWORKS);
   const [catalogs, setCatalogs] = useState<Catalog[]>([]);
+
+  useEffect(() => {
+    dataApi.networks()
+      .then((r) => {
+        const live: Network[] = r.data.data || [];
+        if (live.length > 0) {
+          setAvailableNetworks(live);
+          setNetwork((cur) => (live.includes(cur) ? cur : live[0]));
+        }
+      })
+      .catch(() => {});
+  }, []);
   const [catalog, setCatalog] = useState<string | undefined>(undefined);
   const [plans, setPlans] = useState<Plan[]>([]);
   const [validityFilter, setValidityFilter] = useState('All');
@@ -123,7 +136,7 @@ export default function BulkDataPage() {
           <div>
             <label className="text-sm font-medium text-ink-muted mb-2 block">Network</label>
             <div className="grid grid-cols-3 gap-2">
-              {NETWORKS.map((n) => (
+              {availableNetworks.map((n) => (
                 <button key={n} onClick={() => setNetwork(n)}
                   className={cn('py-2 rounded-xl text-xs font-bold border-2 transition-all',
                     network === n ? 'border-brand-blue bg-blue-50 dark:bg-blue-500/10 text-brand-blue' : 'border-line text-ink-muted')}>

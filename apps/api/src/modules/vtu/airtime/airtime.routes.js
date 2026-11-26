@@ -5,6 +5,8 @@ const { authenticate } = require('../../../middlewares/auth.middleware');
 const { body } = require('express-validator');
 const { validate } = require('../../../middlewares/validate.middleware');
 
+router.get('/networks', authenticate, ctrl.getAvailableNetworks);
+
 router.post('/', authenticate, [
   body('network').isIn(['MTN', 'Airtel', 'Glo', '9mobile']).withMessage('Invalid network'),
   body('phone').matches(/^\+?[0-9]{10,14}$/).withMessage('Invalid phone number'),

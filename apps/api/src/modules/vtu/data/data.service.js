@@ -9,6 +9,7 @@ const referralService = require('../../referral/referral.service');
 const cashbackService = require('../../../services/cashback.service');
 const pricing = require('../../../services/pricing.service');
 const dataPlanPricing = require('../../../services/dataPlanPricing.service');
+const availability = require('../../../services/aidapayAvailability.service');
 
 // AidaPay's data-bundle-sme catalog doesn't map one network to one
 // provider_code — several networks offer more than one catalog under this
@@ -31,10 +32,36 @@ const DATA_CATALOGS = {
   ],
 };
 
-const getCatalogs = (network) => {
+// Live-filtered against AidaPay's current data-bundle-sme provider list —
+// a catalog (e.g. MTN FibreX) can disappear from their platform without
+// warning, and showing it as selectable just sets a user up for a
+// debit-then-refund round trip. Falls back to the full static list if the
+// availability check itself fails, so a flaky lookup never blocks the page.
+const getCatalogs = async (network) => {
   const catalogs = DATA_CATALOGS[network];
   if (!catalogs) throw Object.assign(new Error(`${network} is not available on AidaPay for this service`), { statusCode: 400 });
-  return catalogs.map(({ key, label }) => ({ key, label }));
+
+  let pool = catalogs;
+  try {
+    const providers = await availability.getProviders(AidaPay.SLUGS.data);
+    const live = new Set(providers.map((p) => p.provider_code));
+    pool = catalogs.filter((c) => live.has(c.providerCode));
+  } catch (err) {
+    console.error('[data] availability check failed, showing unfiltered catalogs:', err.message);
+    // pool stays the full static list — a flaky lookup shouldn't block the page.
+  }
+  return pool.map(({ key, label }) => ({ key, label }));
+};
+
+// Networks with at least one currently-available catalog.
+const getAvailableNetworks = async () => {
+  const results = await Promise.all(
+    Object.keys(DATA_CATALOGS).map(async (network) => {
+      const catalogs = await getCatalogs(network);
+      return catalogs.length > 0 ? network : null;
+    })
+  );
+  return results.filter(Boolean);
 };
 
 const resolveDataProviderCode = (network, catalogKey) => {
@@ -310,4 +337,4 @@ const bulkBuy = async (userId, { network, catalog, planId, phones, pin }) => {
   return { message: `${successCount}/${phones.length} sent successfully`, reference: tx.reference, results };
 };
 
-module.exports = { getCatalogs, getPlans, getRawPlans, getAllNetworkCatalogs, buy, bulkBuy };
+module.exports = { getCatalogs, getAvailableNetworks, getPlans, getRawPlans, getAllNetworkCatalogs, buy, bulkBuy };

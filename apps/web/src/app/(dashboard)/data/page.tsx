@@ -31,6 +31,7 @@ interface DataForm { phone: string }
 export default function DataPage() {
   const router = useRouter();
   const [network, setNetwork] = useState<Network>('MTN');
+  const [availableNetworks, setAvailableNetworks] = useState<Network[]>(NETWORKS);
   const [catalogs, setCatalogs] = useState<Catalog[]>([]);
   const [catalog, setCatalog] = useState<string | undefined>(undefined);
   const [plans, setPlans] = useState<Plan[]>([]);
@@ -42,6 +43,19 @@ export default function DataPage() {
   const [loading, setLoading] = useState(false);
   const [reference, setReference] = useState<string | null>(null);
   const { register, handleSubmit, setValue, formState: { errors } } = useForm<DataForm>();
+
+  useEffect(() => {
+    dataApi.networks()
+      .then((r) => {
+        const live: Network[] = r.data.data || [];
+        if (live.length > 0) {
+          setAvailableNetworks(live);
+          if (!live.includes(network)) setNetwork(live[0]);
+        }
+      })
+      .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Networks with more than one catalog (e.g. MTN's regular bundles vs
   // FibreX home broadband) need the bundle-type picked before plans make
@@ -142,7 +156,7 @@ export default function DataPage() {
           <div>
             <label className="text-sm font-medium text-ink-muted mb-2 block">Network</label>
             <div className="grid grid-cols-3 gap-2">
-              {NETWORKS.map((n) => (
+              {availableNetworks.map((n) => (
                 <button key={n} onClick={() => setNetwork(n)}
                   className={cn('py-2 rounded-xl text-xs font-bold border-2 transition-all',
                     network === n ? 'border-brand-blue bg-blue-50 dark:bg-blue-500/10 text-brand-blue' : 'border-line text-ink-muted')}>
@@ -176,7 +190,7 @@ export default function DataPage() {
             <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
               <RecentNumbers onSelect={(phone, net) => {
                 setValue('phone', phone, { shouldValidate: true, shouldDirty: true });
-                if (net && NETWORKS.includes(net as Network)) setNetwork(net as Network);
+                if (net && availableNetworks.includes(net as Network)) setNetwork(net as Network);
               }} />
               <Input
                 label={catalog === 'fibrex' ? 'Registered Phone Number' : 'Phone Number'} placeholder="0812 345 6789" type="tel"

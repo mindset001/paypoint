@@ -9,8 +9,19 @@ const notify = require('../../notifications/notifications.service');
 const referralService = require('../../referral/referral.service');
 const cashbackService = require('../../../services/cashback.service');
 const pricing = require('../../../services/pricing.service');
+const availability = require('../../../services/aidapayAvailability.service');
 
 const NETWORKS = ['MTN', 'Airtel', 'Glo', '9mobile'];
+
+// Networks we support in principle, filtered down to whichever AidaPay
+// actually lists right now — a provider can disappear from their platform
+// with no warning (e.g. MTN airtime during an upstream outage), and showing
+// it as selectable just sets a user up for a debit-then-refund round trip.
+const getAvailableNetworks = async () => {
+  const providers = await availability.getProviders(AidaPay.SLUGS.airtime);
+  const live = new Set(providers.map((p) => p.provider_name?.toLowerCase()));
+  return NETWORKS.filter((n) => live.has(n.toLowerCase()));
+};
 
 // `amount` is what the recipient actually receives (sent to AidaPay
 // as-is); the wallet is charged that plus the markup. Never trust a
@@ -237,4 +248,4 @@ const bulkBuy = async (userId, { network, recipients, pin }) => {
   return { message: `${successCount}/${recipients.length} sent successfully`, reference: tx.reference, results };
 };
 
-module.exports = { buy, bulkBuy };
+module.exports = { buy, bulkBuy, getAvailableNetworks };

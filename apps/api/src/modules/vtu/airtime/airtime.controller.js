@@ -1,6 +1,13 @@
 const service = require('./airtime.service');
 const { success } = require('../../../utils/response');
 
+const getAvailableNetworks = async (req, res, next) => {
+  try {
+    const data = await service.getAvailableNetworks();
+    return success(res, data, 'Available networks fetched');
+  } catch (err) { next(err); }
+};
+
 const buy = async (req, res, next) => {
   try {
     const data = await service.buy(req.user._id, req.body);
@@ -15,4 +22,4 @@ const bulkBuy = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-module.exports = { buy, bulkBuy };
+module.exports = { buy, bulkBuy, getAvailableNetworks };

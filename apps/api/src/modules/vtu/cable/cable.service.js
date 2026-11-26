@@ -8,6 +8,17 @@ const otp = require('../../../utils/otp');
 const referralService = require('../../referral/referral.service');
 const cashbackService = require('../../../services/cashback.service');
 const pricing = require('../../../services/pricing.service');
+const availability = require('../../../services/aidapayAvailability.service');
+
+const PROVIDERS = ['DSTV', 'GOTV', 'STARTIMES'];
+
+// Live-filtered against AidaPay's current cable-tv-subscription provider
+// list — same reasoning as airtime's getAvailableNetworks.
+const getAvailableProviders = async () => {
+  const providers = await availability.getProviders(AidaPay.SLUGS.cable);
+  const live = new Set(providers.map((p) => p.provider_name?.toLowerCase()));
+  return PROVIDERS.filter((p) => live.has(p.toLowerCase()));
+};
 
 const getPlans = async (provider, user) => {
   const providerCode = await AidaPay.resolveProviderCode(AidaPay.SLUGS.cable, provider);
@@ -90,4 +101,4 @@ const subscribe = async (userId, { provider, smartcardNumber, planCode, pin }) =
   }
 };
 
-module.exports = { getPlans, verifySmartcard, subscribe };
+module.exports = { getPlans, getAvailableProviders, verifySmartcard, subscribe };

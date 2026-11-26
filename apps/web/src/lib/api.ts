@@ -89,6 +89,7 @@ export const servicesApi = {
 
 // ── Airtime ──────────────────────────────────────────────────────────
 export const airtimeApi = {
+  networks: () => api.get('/airtime/networks'),
   buy: (network: string, phone: string, amount: number, pin: string) =>
     api.post('/airtime', { network, phone, amount, pin }),
   bulkBuy: (network: string, recipients: { phone: string; amount: number }[], pin: string) =>
@@ -97,6 +98,7 @@ export const airtimeApi = {
 
 // ── Data ─────────────────────────────────────────────────────────────
 export const dataApi = {
+  networks: () => api.get('/data/networks'),
   catalogs: (network: string) => api.get(`/data/catalogs/${network}`),
   plans: (network: string, catalog?: string) =>
     api.get(`/data/plans/${network}`, { params: catalog ? { catalog } : undefined }),
@@ -108,6 +110,7 @@ export const dataApi = {
 
 // ── Cable ────────────────────────────────────────────────────────────
 export const cableApi = {
+  providers: () => api.get('/cable/providers'),
   plans: (provider: string) => api.get(`/cable/plans/${provider}`),
   verify: (provider: string, smartcardNumber: string) =>
     api.post('/cable/verify', { provider, smartcardNumber }),

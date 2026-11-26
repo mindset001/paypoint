@@ -26,6 +26,7 @@ interface CableForm { smartcardNumber: string }
 export default function CablePage() {
   const router = useRouter();
   const [provider, setProvider] = useState('DSTV');
+  const [availableProviders, setAvailableProviders] = useState(PROVIDERS);
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loadingPlans, setLoadingPlans] = useState(true);
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
@@ -36,6 +37,20 @@ export default function CablePage() {
   const [loading, setLoading] = useState(false);
   const [reference, setReference] = useState<string | null>(null);
   const { register, handleSubmit, formState: { errors }, watch } = useForm<CableForm>();
+
+  useEffect(() => {
+    cableApi.providers()
+      .then((r) => {
+        const live: string[] = r.data.data || [];
+        if (live.length > 0) {
+          const filtered = PROVIDERS.filter((p) => live.includes(p.id));
+          setAvailableProviders(filtered);
+          if (!filtered.some((p) => p.id === provider)) setProvider(filtered[0].id);
+        }
+      })
+      .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     setLoadingPlans(true);
@@ -92,7 +107,7 @@ export default function CablePage() {
       <div className="px-5 -mt-4 pb-8">
         <div className="bg-surface rounded-3xl p-5 shadow-sm flex flex-col gap-5">
           <div className="grid grid-cols-3 gap-2">
-            {PROVIDERS.map((p) => (
+            {availableProviders.map((p) => (
               <button key={p.id} onClick={() => setProvider(p.id)}
                 className={cn('py-3 rounded-xl text-sm font-bold border-2 transition-all',
                   provider === p.id ? 'border-purple-600 bg-purple-50 dark:bg-purple-500/10 text-purple-700 dark:text-purple-400' : 'border-line text-ink-muted')}>

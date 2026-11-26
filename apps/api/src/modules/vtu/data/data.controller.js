@@ -3,8 +3,15 @@ const { success } = require('../../../utils/response');
 
 const getCatalogs = async (req, res, next) => {
   try {
-    const data = service.getCatalogs(req.params.network);
+    const data = await service.getCatalogs(req.params.network);
     return success(res, data, 'Catalogs fetched');
+  } catch (err) { next(err); }
+};
+
+const getAvailableNetworks = async (req, res, next) => {
+  try {
+    const data = await service.getAvailableNetworks();
+    return success(res, data, 'Available networks fetched');
   } catch (err) { next(err); }
 };
 
@@ -29,4 +36,4 @@ const bulkBuy = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-module.exports = { getCatalogs, getPlans, buy, bulkBuy };
+module.exports = { getCatalogs, getAvailableNetworks, getPlans, buy, bulkBuy };

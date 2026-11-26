@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
@@ -25,11 +25,28 @@ interface AirtimeForm {
 export default function AirtimePage() {
   const router = useRouter();
   const [network, setNetwork] = useState<Network>('MTN');
+  const [availableNetworks, setAvailableNetworks] = useState<Network[]>(NETWORKS);
   const [showPin, setShowPin] = useState(false);
   const [formData, setFormData] = useState<AirtimeForm | null>(null);
   const [loading, setLoading] = useState(false);
   const [reference, setReference] = useState<string | null>(null);
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<AirtimeForm>();
+
+  useEffect(() => {
+    airtimeApi.networks()
+      .then((r) => {
+        const live: Network[] = r.data.data || [];
+        // A provider can vanish from AidaPay with no warning (e.g. MTN
+        // airtime during an upstream outage) — hide it rather than let a
+        // user pay into a purchase that's guaranteed to fail and refund.
+        if (live.length > 0) {
+          setAvailableNetworks(live);
+          if (!live.includes(network)) setNetwork(live[0]);
+        }
+      })
+      .catch(() => {}); // keep the full static list if the check itself fails
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const onSubmit = (data: AirtimeForm) => {
     setFormData(data);
@@ -79,7 +96,7 @@ export default function AirtimePage() {
           <div>
             <label className="text-sm font-medium text-ink-muted mb-2 block">Network</label>
             <div className="grid grid-cols-4 gap-2">
-              {NETWORKS.map((n) => (
+              {availableNetworks.map((n) => (
                 <button
                   key={n}
                   onClick={() => setNetwork(n)}
@@ -99,7 +116,7 @@ export default function AirtimePage() {
             <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
               <RecentNumbers onSelect={(phone, net) => {
                 setValue('phone', phone, { shouldValidate: true, shouldDirty: true });
-                if (net && NETWORKS.includes(net as Network)) setNetwork(net as Network);
+                if (net && availableNetworks.includes(net as Network)) setNetwork(net as Network);
               }} />
               <Input
                 label="Phone Number"

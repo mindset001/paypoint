@@ -5,6 +5,10 @@ const getPlans = async (req, res, next) => {
   try { return success(res, await service.getPlans(req.params.provider, req.user), 'Plans fetched'); }
   catch (err) { next(err); }
 };
+const getAvailableProviders = async (req, res, next) => {
+  try { return success(res, await service.getAvailableProviders(), 'Available providers fetched'); }
+  catch (err) { next(err); }
+};
 const verifySmartcard = async (req, res, next) => {
   try { return success(res, await service.verifySmartcard(req.body.provider, req.body.smartcardNumber), 'Smartcard verified'); }
   catch (err) { next(err); }
@@ -14,4 +18,4 @@ const subscribe = async (req, res, next) => {
   catch (err) { next(err); }
 };
 
-module.exports = { getPlans, verifySmartcard, subscribe };
+module.exports = { getPlans, getAvailableProviders, verifySmartcard, subscribe };

@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { ArrowLeft, Plus, Trash2, CheckCircle2, XCircle } from 'lucide-react';
@@ -20,7 +20,20 @@ interface RecipientResult { phone: string; amount: number; status: 'success' | '
 export default function BulkAirtimePage() {
   const router = useRouter();
   const [network, setNetwork] = useState<Network>('MTN');
+  const [availableNetworks, setAvailableNetworks] = useState<Network[]>(NETWORKS);
   const [rows, setRows] = useState<Row[]>([{ phone: '', amount: '' }, { phone: '', amount: '' }]);
+
+  useEffect(() => {
+    airtimeApi.networks()
+      .then((r) => {
+        const live: Network[] = r.data.data || [];
+        if (live.length > 0) {
+          setAvailableNetworks(live);
+          setNetwork((cur) => (live.includes(cur) ? cur : live[0]));
+        }
+      })
+      .catch(() => {});
+  }, []);
   const [applyAmount, setApplyAmount] = useState('');
   const [showPin, setShowPin] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -103,7 +116,7 @@ export default function BulkAirtimePage() {
           <div>
             <label className="text-sm font-medium text-ink-muted mb-2 block">Network</label>
             <div className="grid grid-cols-4 gap-2">
-              {NETWORKS.map((n) => (
+              {availableNetworks.map((n) => (
                 <button key={n} onClick={() => setNetwork(n)}
                   className={cn('py-2 rounded-xl text-xs font-bold border-2 transition-all',
                     network === n ? 'border-brand-blue bg-blue-50 dark:bg-blue-500/10 text-brand-blue' : 'border-line text-ink-muted',
