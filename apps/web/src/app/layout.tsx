@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { type ReactNode } from 'react';
 import './globals.css';
 import { Providers } from './providers';
+import { AppSplash } from '@/components/AppSplash';
 
 export const metadata: Metadata = {
   title: 'Paycen — Pay Bills & Buy Airtime',
@@ -58,6 +59,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <script dangerouslySetInnerHTML={{ __html: PWA_ENTRY_SCRIPT }} />
       </head>
       <body>
+        <AppSplash />
         <Providers>
           {children}
         </Providers>
