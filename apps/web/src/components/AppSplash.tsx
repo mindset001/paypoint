@@ -4,10 +4,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 
 // Only runs inside the native Capacitor shell — a plain web visit never
-// shows this and loads instantly as before. Capacitor's native splash
-// (apps/mobile/capacitor.config.ts) is configured with launchAutoHide:
-// false specifically so it stays up, gap-free, until the call below
-// crossfades it straight into this animated one.
+// shows this and loads instantly as before. There's no native splash
+// plugin layer to hand off from (removed — just the instant, unavoidable
+// OS launch screen beforehand), so this is the only splash the app shows.
 const MIN_DISPLAY_MS = 1100;
 
 export function AppSplash() {
@@ -20,14 +19,8 @@ export function AppSplash() {
 
     import('@capacitor/core').then(({ Capacitor }) => {
       if (cancelled) return;
-      const native = Capacitor.isNativePlatform();
-      setIsNative(native);
+      setIsNative(Capacitor.isNativePlatform());
       setCheckedPlatform(true);
-      if (native) {
-        import('@capacitor/splash-screen').then(({ SplashScreen }) => {
-          SplashScreen.hide({ fadeOutDuration: 300 }).catch(() => {});
-        });
-      }
     }).catch(() => setCheckedPlatform(true));
 
     const timer = setTimeout(() => setMinTimeElapsed(true), MIN_DISPLAY_MS);

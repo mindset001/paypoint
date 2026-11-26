@@ -20,19 +20,11 @@ const config: CapacitorConfig = {
     url: 'https://paypoint-web.vercel.app/login',
     cleartext: false,
   },
-  // Kept visible (no auto-hide, no fixed timer) until the web app itself
-  // calls SplashScreen.hide() — see components/AppSplash.tsx — so there's
-  // no blank/white gap while the remote page loads, and the handoff from
-  // this static native image into the animated web splash is a clean
-  // crossfade instead of two separate loading moments.
-  plugins: {
-    SplashScreen: {
-      launchAutoHide: false,
-      backgroundColor: '#0f172a',
-      androidScaleType: 'CENTER_CROP',
-      showSpinner: false,
-    },
-  },
+  // No splash-screen plugin — just the OS-level launch screen every iOS/
+  // Android app briefly shows (instant, unavoidable, uses the same dark
+  // background so it doesn't clash), then straight into the remote page,
+  // which shows its own animated splash (see components/AppSplash.tsx)
+  // while it loads.
 };
 
 export default config;
