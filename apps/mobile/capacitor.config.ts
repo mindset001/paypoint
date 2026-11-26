@@ -25,6 +25,22 @@ const config: CapacitorConfig = {
   // background so it doesn't clash), then straight into the remote page,
   // which shows its own animated splash (see components/AppSplash.tsx)
   // while it loads.
+  //
+  // Google's own Identity Services button (used on plain web) is blocked
+  // inside an embedded WebView like this one — SocialLogin uses the real
+  // native Google Sign-In SDK instead (see components/GoogleSignInButton.tsx),
+  // which needs the real iOS/Android client IDs filled in below once they
+  // exist (Google Cloud Console — OAuth client, type "iOS", bundle ID
+  // ng.paycen.app) and the matching reversed-client-id URL scheme in
+  // Info.plist (see ios/App/App/Info.plist).
+  plugins: {
+    SocialLogin: {
+      // Explicit false on every other provider — leaving a key out
+      // defaults it to enabled, which would link Facebook/Apple/Twitter
+      // SDKs we haven't configured (and don't want) for no reason.
+      providers: { google: true, facebook: false, apple: false, twitter: false },
+    },
+  },
 };
 
 export default config;

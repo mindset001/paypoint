@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@capacitor/core": "^8.6.3",
+    "@capgo/capacitor-social-login": "^8.7.13",
     "@sentry/nextjs": "^10.58.0",
     "@tanstack/react-query": "^5.32.1",
     "axios": "^1.6.8",

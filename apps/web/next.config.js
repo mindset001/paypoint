@@ -14,6 +14,10 @@ const nextConfig = {
     // Google OAuth Web client ID — not a secret, it's the public audience
     // value Google Identity Services expects in the browser.
     NEXT_PUBLIC_GOOGLE_CLIENT_ID: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '',
+    // Separate iOS-type OAuth client ID — used only inside the native
+    // Capacitor shell (see GoogleSignInButton.tsx), where Google's own web
+    // button is blocked. Also not a secret.
+    NEXT_PUBLIC_GOOGLE_IOS_CLIENT_ID: process.env.NEXT_PUBLIC_GOOGLE_IOS_CLIENT_ID || '',
   },
 };
 
