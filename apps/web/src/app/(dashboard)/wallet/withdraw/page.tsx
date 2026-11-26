@@ -273,9 +273,9 @@ function WithdrawPageInner() {
                 </div>
               </div>
               <Input
-                label="Amount (₦)" placeholder="Enter amount" type="number" min={500}
+                label="Amount (₦)" placeholder="Enter amount" type="number" min={200}
                 error={errors.amount?.message}
-                {...register('amount', { required: 'Amount is required', min: { value: 500, message: 'Minimum ₦500' } })}
+                {...register('amount', { required: 'Amount is required', min: { value: 200, message: 'Minimum ₦200' } })}
               />
               <Button type="submit" fullWidth size="lg">Continue</Button>
             </form>

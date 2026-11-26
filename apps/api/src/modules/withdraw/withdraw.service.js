@@ -10,7 +10,7 @@ const fraud = require('../../services/fraud.service');
 const emailService = require('../../services/email.service');
 const otp = require('../../utils/otp');
 
-const MIN_AMOUNT_KOBO = 50000; // ₦500
+const MIN_AMOUNT_KOBO = 20000; // ₦200
 
 let banksCache = null;
 let banksCacheAt = 0;
