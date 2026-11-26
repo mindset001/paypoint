@@ -10,12 +10,12 @@ import { Input } from '@/components/ui/Input';
 import { PinInput } from '@/components/ui/PinInput';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { dataApi } from '@/lib/api';
-import { getErrorMessage, networkColors } from '@/lib/utils';
+import { getErrorMessage } from '@/lib/utils';
 import type { Network } from '@/types';
 import { cn } from '@/lib/cn';
 import { PurchaseSuccess } from '@/components/receipt/PurchaseSuccess';
 import { RecentNumbers } from '@/components/vtu/RecentNumbers';
-import { NetworkSelector } from '@/components/vtu/NetworkSelector';
+import { NetworkSelector, NetworkBadge, type NetworkOption } from '@/components/vtu/NetworkSelector';
 
 const VALIDITY_BADGE: Record<string, string> = {
   Daily: 'bg-amber-50 text-amber-600 dark:bg-amber-500/10',
@@ -32,6 +32,7 @@ const item = { hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0, transiti
 // their live provider list) — omitted here so it's never offered as a dead
 // end. Airtime still supports all four networks; this is data-only.
 const NETWORKS: Network[] = ['MTN', 'Airtel', 'Glo'];
+const DEFAULT_NETWORK_OPTIONS: NetworkOption<Network>[] = NETWORKS.map((name) => ({ name, logoUrl: null }));
 
 // Display order for the validity filter tabs — only shown when at least
 // one plan in the current list actually falls into that bucket.
@@ -44,7 +45,7 @@ interface DataForm { phone: string }
 export default function DataPage() {
   const router = useRouter();
   const [network, setNetwork] = useState<Network>('MTN');
-  const [availableNetworks, setAvailableNetworks] = useState<Network[]>(NETWORKS);
+  const [availableNetworks, setAvailableNetworks] = useState<NetworkOption<Network>[]>(DEFAULT_NETWORK_OPTIONS);
   const [catalogs, setCatalogs] = useState<Catalog[]>([]);
   const [catalog, setCatalog] = useState<string | undefined>(undefined);
   const [plans, setPlans] = useState<Plan[]>([]);
@@ -60,10 +61,10 @@ export default function DataPage() {
   useEffect(() => {
     dataApi.networks()
       .then((r) => {
-        const live: Network[] = r.data.data || [];
+        const live: NetworkOption<Network>[] = r.data.data || [];
         if (live.length > 0) {
           setAvailableNetworks(live);
-          if (!live.includes(network)) setNetwork(live[0]);
+          if (!live.some((n) => n.name === network)) setNetwork(live[0].name);
         }
       })
       .catch(() => {});
@@ -161,9 +162,8 @@ export default function DataPage() {
             initial={{ scale: 0.7, opacity: 0.5 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ duration: 0.25 }}
-            className={cn('w-12 h-12 rounded-2xl flex items-center justify-center font-black text-base flex-shrink-0 ring-2 ring-white/40', networkColors[network])}
           >
-            {network.charAt(0)}
+            <NetworkBadge name={network} logoUrl={availableNetworks.find((n) => n.name === network)?.logoUrl} className="flex-shrink-0 ring-2 ring-white/40" />
           </motion.div>
           <div>
             <h1 className="text-white text-xl font-black">Buy Data Bundle</h1>
@@ -200,7 +200,7 @@ export default function DataPage() {
             <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
               <RecentNumbers onSelect={(phone, net) => {
                 setValue('phone', phone, { shouldValidate: true, shouldDirty: true });
-                if (net && availableNetworks.includes(net as Network)) setNetwork(net as Network);
+                if (net && availableNetworks.some((n) => n.name === net)) setNetwork(net as Network);
               }} />
               <Input
                 label={catalog === 'fibrex' ? 'Registered Phone Number' : 'Phone Number'} placeholder="0812 345 6789" type="tel"
@@ -271,9 +271,7 @@ export default function DataPage() {
             </form>
           ) : (
             <div className="flex flex-col items-center gap-4 py-2">
-              <div className={cn('w-16 h-16 rounded-2xl flex items-center justify-center font-black text-xl', networkColors[network])}>
-                {network.charAt(0)}
-              </div>
+              <NetworkBadge name={network} logoUrl={availableNetworks.find((n) => n.name === network)?.logoUrl} size="lg" />
               <div className="text-center mb-1">
                 <p className="text-ink-muted text-sm">Sending <strong className="text-ink">{selectedPlan?.name}</strong> to</p>
                 <p className="font-bold text-ink">{phone} · {network}</p>

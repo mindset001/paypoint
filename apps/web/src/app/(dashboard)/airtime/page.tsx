@@ -9,14 +9,15 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { PinInput } from '@/components/ui/PinInput';
 import { airtimeApi } from '@/lib/api';
-import { getErrorMessage, networkColors, networkGradients } from '@/lib/utils';
+import { getErrorMessage, networkGradients } from '@/lib/utils';
 import type { Network } from '@/types';
 import { cn } from '@/lib/cn';
 import { PurchaseSuccess } from '@/components/receipt/PurchaseSuccess';
 import { RecentNumbers } from '@/components/vtu/RecentNumbers';
-import { NetworkSelector } from '@/components/vtu/NetworkSelector';
+import { NetworkSelector, NetworkBadge, type NetworkOption } from '@/components/vtu/NetworkSelector';
 
 const NETWORKS: Network[] = ['MTN', 'Airtel', 'Glo', '9mobile'];
+const DEFAULT_NETWORK_OPTIONS: NetworkOption<Network>[] = NETWORKS.map((name) => ({ name, logoUrl: null }));
 const QUICK_AMOUNTS = [50, 100, 200, 500, 1000, 2000];
 
 const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.04 } } };
@@ -30,7 +31,7 @@ interface AirtimeForm {
 export default function AirtimePage() {
   const router = useRouter();
   const [network, setNetwork] = useState<Network>('MTN');
-  const [availableNetworks, setAvailableNetworks] = useState<Network[]>(NETWORKS);
+  const [availableNetworks, setAvailableNetworks] = useState<NetworkOption<Network>[]>(DEFAULT_NETWORK_OPTIONS);
   const [showPin, setShowPin] = useState(false);
   const [formData, setFormData] = useState<AirtimeForm | null>(null);
   const [loading, setLoading] = useState(false);
@@ -40,13 +41,13 @@ export default function AirtimePage() {
   useEffect(() => {
     airtimeApi.networks()
       .then((r) => {
-        const live: Network[] = r.data.data || [];
+        const live: NetworkOption<Network>[] = r.data.data || [];
         // A provider can vanish from AidaPay with no warning (e.g. MTN
         // airtime during an upstream outage) — hide it rather than let a
         // user pay into a purchase that's guaranteed to fail and refund.
         if (live.length > 0) {
           setAvailableNetworks(live);
-          if (!live.includes(network)) setNetwork(live[0]);
+          if (!live.some((n) => n.name === network)) setNetwork(live[0].name);
         }
       })
       .catch(() => {}); // keep the full static list if the check itself fails
@@ -116,7 +117,7 @@ export default function AirtimePage() {
             <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
               <RecentNumbers onSelect={(phone, net) => {
                 setValue('phone', phone, { shouldValidate: true, shouldDirty: true });
-                if (net && availableNetworks.includes(net as Network)) setNetwork(net as Network);
+                if (net && availableNetworks.some((n) => n.name === net)) setNetwork(net as Network);
               }} />
               <Input
                 label="Phone Number"
@@ -168,9 +169,7 @@ export default function AirtimePage() {
             </form>
           ) : (
             <div className="flex flex-col items-center gap-4 py-2">
-              <div className={cn('w-16 h-16 rounded-2xl flex items-center justify-center font-black text-xl', networkColors[network])}>
-                {network.charAt(0)}
-              </div>
+              <NetworkBadge name={network} logoUrl={availableNetworks.find((n) => n.name === network)?.logoUrl} size="lg" />
               <div className="text-center mb-1">
                 <p className="text-ink-muted text-sm">Sending <strong className="text-ink">₦{formData?.amount}</strong> airtime to</p>
                 <p className="font-bold text-ink">{formData?.phone} · {network}</p>

@@ -17,10 +17,14 @@ const NETWORKS = ['MTN', 'Airtel', 'Glo', '9mobile'];
 // actually lists right now — a provider can disappear from their platform
 // with no warning (e.g. MTN airtime during an upstream outage), and showing
 // it as selectable just sets a user up for a debit-then-refund round trip.
+// logoUrl comes straight from AidaPay's own provider_image_url — no local
+// asset management, and it's whatever they're actively using for that brand.
 const getAvailableNetworks = async () => {
   const providers = await availability.getProviders(AidaPay.SLUGS.airtime);
-  const live = new Set(providers.map((p) => p.provider_name?.toLowerCase()));
-  return NETWORKS.filter((n) => live.has(n.toLowerCase()));
+  const byName = new Map(providers.map((p) => [p.provider_name?.toLowerCase(), p]));
+  return NETWORKS
+    .filter((n) => byName.has(n.toLowerCase()))
+    .map((n) => ({ name: n, logoUrl: byName.get(n.toLowerCase())?.provider_image_url || null }));
 };
 
 // `amount` is what the recipient actually receives (sent to AidaPay

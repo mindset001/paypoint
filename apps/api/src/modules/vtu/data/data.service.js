@@ -53,12 +53,23 @@ const getCatalogs = async (network) => {
   return pool.map(({ key, label }) => ({ key, label }));
 };
 
-// Networks with at least one currently-available catalog.
+// Networks with at least one currently-available catalog. logoUrl is taken
+// from the network's default (first) catalog's AidaPay provider_image_url —
+// no local asset management, always whatever they're actively using.
 const getAvailableNetworks = async () => {
+  let codeToImage = new Map();
+  try {
+    const providers = await availability.getProviders(AidaPay.SLUGS.data);
+    codeToImage = new Map(providers.map((p) => [p.provider_code, p.provider_image_url]));
+  } catch (err) {
+    console.error('[data] availability check failed, logos omitted:', err.message);
+  }
+
   const results = await Promise.all(
-    Object.keys(DATA_CATALOGS).map(async (network) => {
-      const catalogs = await getCatalogs(network);
-      return catalogs.length > 0 ? network : null;
+    Object.entries(DATA_CATALOGS).map(async ([network, catalogs]) => {
+      const availableCatalogs = await getCatalogs(network);
+      if (availableCatalogs.length === 0) return null;
+      return { name: network, logoUrl: codeToImage.get(catalogs[0].providerCode) || null };
     })
   );
   return results.filter(Boolean);

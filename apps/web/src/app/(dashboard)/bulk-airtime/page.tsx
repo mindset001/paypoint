@@ -26,7 +26,7 @@ export default function BulkAirtimePage() {
   useEffect(() => {
     airtimeApi.networks()
       .then((r) => {
-        const live: Network[] = r.data.data || [];
+        const live: Network[] = (r.data.data || []).map((n: { name: Network }) => n.name);
         if (live.length > 0) {
           setAvailableNetworks(live);
           setNetwork((cur) => (live.includes(cur) ? cur : live[0]));
