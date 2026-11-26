@@ -285,6 +285,7 @@ export const savingsApi = {
 };
 
 export const esimApi = {
+  countries: () => api.get('/esim/countries'),
   packages: (country: string) => api.get('/esim/packages', { params: { country } }),
   buy: (packageCode: string, pin: string) => api.post('/esim/buy', { packageCode, pin }),
   my: () => api.get('/esim/my'),

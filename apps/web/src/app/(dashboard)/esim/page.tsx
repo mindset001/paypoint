@@ -1,15 +1,15 @@
 'use client';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Globe, Wifi, Check, CalendarClock, ChevronDown } from 'lucide-react';
+import { ArrowLeft, Globe, Wifi, Check, CalendarClock, ChevronDown, Search } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { PinInput } from '@/components/ui/PinInput';
 import { esimApi } from '@/lib/api';
 import { formatNGN, getErrorMessage } from '@/lib/utils';
-import { ESIM_COUNTRIES } from '@/lib/esimCountries';
+import { ESIM_COUNTRIES_FALLBACK, esimFlagFor, type EsimCountry } from '@/lib/esimCountries';
 import { cn } from '@/lib/cn';
 
 interface EsimPackage {
@@ -40,8 +40,19 @@ export default function EsimPage() {
   const [buying, setBuying] = useState(false);
   const [validityFilter, setValidityFilter] = useState('All');
   const [countryOpen, setCountryOpen] = useState(false);
+  const [countries, setCountries] = useState<EsimCountry[]>(ESIM_COUNTRIES_FALLBACK);
+  const [countrySearch, setCountrySearch] = useState('');
 
-  const selectedCountryInfo = ESIM_COUNTRIES.find((c) => c.code === country);
+  useEffect(() => {
+    esimApi.countries()
+      .then((r) => { if (r.data.data?.length > 0) setCountries(r.data.data); })
+      .catch(() => {}); // keep the fallback list if the live fetch fails
+  }, []);
+
+  const selectedCountryInfo = countries.find((c) => c.code === country);
+  const visibleCountries = countrySearch.trim()
+    ? countries.filter((c) => c.name.toLowerCase().includes(countrySearch.trim().toLowerCase()))
+    : countries;
 
   const availableFilters = useMemo(
     () => ['All', ...VALIDITY_ORDER.filter((v) => packages.some((p) => p.validity === v))],
@@ -52,6 +63,7 @@ export default function EsimPage() {
   const selectCountry = async (code: string) => {
     setCountry(code);
     setCountryOpen(false);
+    setCountrySearch('');
     setLoading(true);
     setUnavailable(false);
     setPackages([]);
@@ -105,7 +117,7 @@ export default function EsimPage() {
           {showPin && selected ? (
             <div className="flex flex-col items-center gap-4 py-2">
               <div className="w-16 h-16 rounded-2xl bg-cyan-50 dark:bg-cyan-500/10 flex items-center justify-center text-3xl">
-                {selectedCountryInfo?.flag ?? '🌍'}
+                {country ? esimFlagFor(country) : '🌍'}
               </div>
               <div className="text-center mb-1">
                 <p className="text-ink-muted text-sm">Buying <strong className="text-ink">{selected.name}</strong></p>
@@ -123,7 +135,7 @@ export default function EsimPage() {
                   className={cn('w-full flex items-center justify-between gap-2 px-4 py-3 rounded-2xl border-2 transition-all',
                     countryOpen ? 'border-cyan-500' : 'border-line')}>
                   <span className="flex items-center gap-2.5 min-w-0">
-                    <span className="text-xl leading-none flex-shrink-0">{selectedCountryInfo?.flag ?? '🌍'}</span>
+                    <span className="text-xl leading-none flex-shrink-0">{country ? esimFlagFor(country) : '🌍'}</span>
                     <span className={cn('font-semibold truncate', selectedCountryInfo ? 'text-ink' : 'text-ink-muted')}>
                       {selectedCountryInfo?.name ?? 'Select a destination'}
                     </span>
@@ -134,23 +146,41 @@ export default function EsimPage() {
                 <AnimatePresence>
                   {countryOpen && (
                     <>
-                      <div className="fixed inset-0 z-10" onClick={() => setCountryOpen(false)} />
+                      <div className="fixed inset-0 z-10" onClick={() => { setCountryOpen(false); setCountrySearch(''); }} />
                       <motion.div
                         initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.15 }}
-                        className="absolute left-0 right-0 top-full mt-2 z-20 bg-surface border border-line rounded-2xl shadow-xl max-h-72 overflow-y-auto p-1.5"
+                        className="absolute left-0 right-0 top-full mt-2 z-20 bg-surface border border-line rounded-2xl shadow-xl flex flex-col"
                       >
-                        {ESIM_COUNTRIES.map((c) => {
-                          const sel = country === c.code;
-                          return (
-                            <button key={c.code} type="button" onClick={() => selectCountry(c.code)}
-                              className={cn('w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-colors',
-                                sel ? 'bg-cyan-50 dark:bg-cyan-500/10' : 'hover:bg-surface-2')}>
-                              <span className="text-xl leading-none">{c.flag}</span>
-                              <span className="flex-1 font-medium text-sm text-ink">{c.name}</span>
-                              {sel && <Check size={16} className="text-cyan-600 flex-shrink-0" />}
-                            </button>
-                          );
-                        })}
+                        <div className="p-2 border-b border-line flex-shrink-0">
+                          <div className="flex items-center gap-2 bg-surface-2 rounded-xl px-3 py-2">
+                            <Search size={15} className="text-ink-muted flex-shrink-0" />
+                            <input
+                              autoFocus
+                              value={countrySearch}
+                              onChange={(e) => setCountrySearch(e.target.value)}
+                              placeholder={`Search ${countries.length} countries`}
+                              className="bg-transparent outline-none text-sm text-ink placeholder:text-ink-muted w-full"
+                            />
+                          </div>
+                        </div>
+                        <div className="max-h-64 overflow-y-auto p-1.5">
+                          {visibleCountries.length === 0 ? (
+                            <p className="text-ink-muted text-sm text-center py-4">No matches</p>
+                          ) : (
+                            visibleCountries.map((c) => {
+                              const sel = country === c.code;
+                              return (
+                                <button key={c.code} type="button" onClick={() => selectCountry(c.code)}
+                                  className={cn('w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-colors',
+                                    sel ? 'bg-cyan-50 dark:bg-cyan-500/10' : 'hover:bg-surface-2')}>
+                                  <span className="text-xl leading-none">{esimFlagFor(c.code)}</span>
+                                  <span className="flex-1 font-medium text-sm text-ink">{c.name}</span>
+                                  {sel && <Check size={16} className="text-cyan-600 flex-shrink-0" />}
+                                </button>
+                              );
+                            })
+                          )}
+                        </div>
                       </motion.div>
                     </>
                   )}

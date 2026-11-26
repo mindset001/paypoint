@@ -1,6 +1,13 @@
 const esimService = require('./esim.service');
 const { success, error } = require('../../utils/response');
 
+const getCountries = async (req, res, next) => {
+  try {
+    const data = await esimService.getCountries();
+    return success(res, data, 'eSIM countries fetched');
+  } catch (err) { next(err); }
+};
+
 const getPackages = async (req, res, next) => {
   try {
     const data = await esimService.getPackages(req.query.country);
@@ -38,4 +45,4 @@ const refreshStatus = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-module.exports = { getPackages, buy, getMyEsims, getEsim, refreshStatus };
+module.exports = { getCountries, getPackages, buy, getMyEsims, getEsim, refreshStatus };

@@ -54,6 +54,39 @@ const normalizePackage = (raw, rate, markupPercent) => {
   };
 };
 
+// eSIM Access's package list (no countryCode filter) returns every package
+// across every destination in one call — ~3300 packages, confirmed live.
+// Most locationCodes are plain ISO alpha-2 (202 of them); the rest are
+// multi-country regional bundles (e.g. "EU-42") with no single clean name,
+// so this surfaces single-country destinations only. Cached for 30 minutes
+// since the country list itself barely ever changes, unlike pricing.
+let countriesCache = null;
+let countriesCacheExpiresAt = 0;
+const COUNTRIES_CACHE_TTL_MS = 30 * 60 * 1000;
+
+const getCountries = async () => {
+  if (!EsimAccess.isConfigured()) {
+    throw Object.assign(new Error('eSIM is not available yet — check back soon'), { statusCode: 503 });
+  }
+  if (countriesCache && countriesCacheExpiresAt > Date.now()) return countriesCache;
+
+  const result = await EsimAccess.listPackages({});
+  const packages = result?.obj?.packageList ?? [];
+  const seen = new Map();
+  for (const p of packages) {
+    if (/^[A-Z]{2}$/.test(p.locationCode) && !seen.has(p.locationCode)) {
+      seen.set(p.locationCode, p.locationNetworkList?.[0]?.locationName || p.location);
+    }
+  }
+  const countries = [...seen.entries()]
+    .map(([code, name]) => ({ code, name }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  countriesCache = countries;
+  countriesCacheExpiresAt = Date.now() + COUNTRIES_CACHE_TTL_MS;
+  return countries;
+};
+
 const getPackages = async (countryCode) => {
   if (!EsimAccess.isConfigured()) {
     throw Object.assign(new Error('eSIM is not available yet — check back soon'), { statusCode: 503 });
@@ -204,4 +237,4 @@ const refreshStatus = async (userId, id) => {
   return order;
 };
 
-module.exports = { getPackages, buy, getMyEsims, getEsim, refreshStatus };
+module.exports = { getCountries, getPackages, buy, getMyEsims, getEsim, refreshStatus };

@@ -1,24 +1,28 @@
-export interface EsimCountry { code: string; name: string; flag: string }
+export interface EsimCountry { code: string; name: string }
 
-// Small curated list — there's no confirmed "list countries" endpoint on
-// the provider, so this is a static set the user can expand later.
-export const ESIM_COUNTRIES: EsimCountry[] = [
-  { code: 'US', name: 'United States', flag: '🇺🇸' },
-  { code: 'GB', name: 'United Kingdom', flag: '🇬🇧' },
-  { code: 'CA', name: 'Canada', flag: '🇨🇦' },
-  { code: 'AE', name: 'UAE', flag: '🇦🇪' },
-  { code: 'ZA', name: 'South Africa', flag: '🇿🇦' },
-  { code: 'GH', name: 'Ghana', flag: '🇬🇭' },
-  { code: 'FR', name: 'France', flag: '🇫🇷' },
-  { code: 'DE', name: 'Germany', flag: '🇩🇪' },
-  { code: 'TR', name: 'Turkey', flag: '🇹🇷' },
-  { code: 'IN', name: 'India', flag: '🇮🇳' },
-  { code: 'CN', name: 'China', flag: '🇨🇳' },
-  { code: 'MY', name: 'Malaysia', flag: '🇲🇾' },
+// Fallback only, used if the live /esim/countries fetch fails — the real
+// list (currently 202 countries) comes from the backend, derived from
+// eSIM Access's own package catalog.
+export const ESIM_COUNTRIES_FALLBACK: EsimCountry[] = [
+  { code: 'US', name: 'United States' },
+  { code: 'GB', name: 'United Kingdom' },
+  { code: 'CA', name: 'Canada' },
+  { code: 'AE', name: 'UAE' },
+  { code: 'ZA', name: 'South Africa' },
+  { code: 'GH', name: 'Ghana' },
+  { code: 'FR', name: 'France' },
+  { code: 'DE', name: 'Germany' },
+  { code: 'TR', name: 'Turkey' },
+  { code: 'IN', name: 'India' },
+  { code: 'CN', name: 'China' },
+  { code: 'MY', name: 'Malaysia' },
 ];
 
-export const esimFlagFor = (countryCode: string): string =>
-  ESIM_COUNTRIES.find((c) => c.code === countryCode)?.flag ?? '🌍';
-
-export const esimCountryNameFor = (countryCode: string): string =>
-  ESIM_COUNTRIES.find((c) => c.code === countryCode)?.name ?? countryCode;
+// Computes the flag emoji for any ISO 3166-1 alpha-2 code from Unicode
+// Regional Indicator Symbols — works for all 202 real countries with no
+// per-country data needed.
+export const esimFlagFor = (countryCode: string): string => {
+  if (!/^[A-Za-z]{2}$/.test(countryCode)) return '🌍';
+  const codePoints = Array.from(countryCode.toUpperCase()).map((c) => 0x1f1e6 + (c.charCodeAt(0) - 65));
+  return String.fromCodePoint(...codePoints);
+};
