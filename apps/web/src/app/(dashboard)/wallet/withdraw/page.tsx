@@ -140,7 +140,7 @@ function WithdrawPageInner() {
     setWithdrawing(true);
     try {
       const res = await withdrawApi.withdraw(selectedAccount.id, parseFloat(amount), pin);
-      toast.success(res.data.data.status === 'success' ? 'Withdrawal successful!' : 'Withdrawal is processing');
+      toast.success(res.data.data.message || 'Withdrawal request submitted');
       setReference(res.data.data.reference);
     } catch (err) {
       toast.error(getErrorMessage(err));
@@ -155,7 +155,7 @@ function WithdrawPageInner() {
       <PurchaseSuccess
         reference={reference}
         title="Withdrawal Submitted"
-        subtitle={`₦${amount} to ${selectedAccount?.bankName} ${selectedAccount?.accountNumber}`}
+        subtitle={`₦${amount} to ${selectedAccount?.bankName} ${selectedAccount?.accountNumber} — you'll receive it within 24 hours`}
         onDone={() => router.push('/wallet')}
       />
     );

@@ -17,6 +17,7 @@ const dataService = require('../vtu/data/data.service');
 const dataPlanPricing = require('../../services/dataPlanPricing.service');
 const examService = require('../vtu/exam/exam.service');
 const examPlanPricing = require('../../services/examPlanPricing.service');
+const ledgerService = require('../../services/ledger.service');
 
 // A wallet_fund past this age that's still "pending" means the webhook
 // never arrived and nobody completed the browser-side verify call either —
@@ -474,6 +475,66 @@ const reconcileWithdrawal = async (txId, { adminId, ip } = {}) => {
   return { outcome: 'still_pending', status };
 };
 
+// Manual withdrawal flow (see withdraw.service.js#withdraw) — there's no
+// automated payout provider, so an admin sends the money by hand to the
+// bank details already on the transaction, then finalizes it here. The
+// wallet was already debited when the user requested it, so approving
+// just flips the status; rejecting refunds it back.
+const approveWithdrawal = async (txId, { adminId, ip } = {}) => {
+  const tx = await Transaction.findById(txId);
+  if (!tx) throw Object.assign(new Error('Transaction not found'), { statusCode: 404 });
+  if (tx.type !== 'withdrawal') throw Object.assign(new Error('Not a withdrawal transaction'), { statusCode: 400 });
+  if (tx.status !== 'pending') return { outcome: 'already_processed', status: tx.status };
+
+  await Transaction.findByIdAndUpdate(tx._id, { status: 'success', processedAt: new Date() });
+  audit.record({
+    adminId, action: 'withdrawal.approve', targetUserId: tx.userId, targetTransactionId: tx._id,
+    before: { status: 'pending' }, after: { status: 'success' }, ip,
+  });
+
+  Notification.create({
+    userId: tx.userId,
+    title: 'Withdrawal Successful ✓',
+    body: `₦${(tx.amount / 100).toLocaleString()} has been sent to ${tx.meta?.bankName} ${tx.meta?.accountNumber}.`,
+    type: 'wallet',
+    meta: { reference: tx.reference },
+  }).catch(() => {});
+
+  return { outcome: 'approved' };
+};
+
+const rejectWithdrawal = async (txId, reason, { adminId, ip } = {}) => {
+  const tx = await Transaction.findById(txId);
+  if (!tx) throw Object.assign(new Error('Transaction not found'), { statusCode: 404 });
+  if (tx.type !== 'withdrawal') throw Object.assign(new Error('Not a withdrawal transaction'), { statusCode: 400 });
+  if (tx.status !== 'pending') return { outcome: 'already_processed', status: tx.status };
+
+  const { balanceBefore, balanceAfter } = await walletService.credit(tx.userId, tx.amount, null);
+  await Transaction.findByIdAndUpdate(tx._id, {
+    status: 'failed', failureReason: reason || 'Rejected by admin', balanceAfter,
+  });
+  await ledgerService.record({
+    transactionId: tx._id, userId: tx.userId, walletId: tx.walletId, entry: 'credit',
+    amount: tx.amount, balanceBefore, balanceAfter,
+    description: `Refund: withdrawal rejected — ${reason || 'see admin notes'}`,
+  });
+
+  audit.record({
+    adminId, action: 'withdrawal.reject', targetUserId: tx.userId, targetTransactionId: tx._id,
+    before: { status: 'pending' }, after: { status: 'failed', refunded: true, reason }, ip,
+  });
+
+  Notification.create({
+    userId: tx.userId,
+    title: 'Withdrawal Declined',
+    body: `Your withdrawal of ₦${(tx.amount / 100).toLocaleString()} was declined${reason ? `: ${reason}` : '.'} The amount has been refunded to your wallet.`,
+    type: 'wallet',
+    meta: { reference: tx.reference },
+  }).catch(() => {});
+
+  return { outcome: 'refunded' };
+};
+
 const getLedger = async ({ page = 1, limit = 30, userId = '', search = '' } = {}) => {
   const skip = (page - 1) * limit;
   const filter = {};
@@ -736,6 +797,8 @@ module.exports = {
   reconcileDeposit,
   getPendingWithdrawals,
   reconcileWithdrawal,
+  approveWithdrawal,
+  rejectWithdrawal,
   getLedger,
   getPendingKyc,
   approveKyc,

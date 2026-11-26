@@ -34,6 +34,8 @@ router.get('/deposits/stuck',              ...isAdmin, ctrl.getStuckDeposits);
 router.post('/deposits/:id/reconcile',     ...isAdmin, ctrl.reconcileDeposit);
 router.get('/withdrawals/pending',         ...isAdmin, ctrl.getPendingWithdrawals);
 router.post('/withdrawals/:id/reconcile',  ...isAdmin, ctrl.reconcileWithdrawal);
+router.post('/withdrawals/:id/approve',    ...isAdmin, ctrl.approveWithdrawal);
+router.post('/withdrawals/:id/reject',     ...isAdmin, ctrl.rejectWithdrawal);
 router.get('/ledger',                      ...isAdmin, ctrl.getLedger);
 
 router.get('/kyc/pending',                 ...isAdmin, ctrl.getPendingKyc);

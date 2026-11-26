@@ -290,6 +290,24 @@ const reconcileWithdrawal = async (req, res) => {
   }
 };
 
+const approveWithdrawal = async (req, res) => {
+  try {
+    const data = await adminService.approveWithdrawal(req.params.id, { adminId: req.user._id, ip: req.ip });
+    return success(res, data, 'Withdrawal approved');
+  } catch (err) {
+    return error(res, err.message, err.statusCode || 400);
+  }
+};
+
+const rejectWithdrawal = async (req, res) => {
+  try {
+    const data = await adminService.rejectWithdrawal(req.params.id, req.body.reason, { adminId: req.user._id, ip: req.ip });
+    return success(res, data, 'Withdrawal rejected');
+  } catch (err) {
+    return error(res, err.message, err.statusCode || 400);
+  }
+};
+
 const getLedger = async (req, res) => {
   try {
     const { page, limit, userId, search } = req.query;
@@ -416,6 +434,8 @@ module.exports = {
   reconcileDeposit,
   getPendingWithdrawals,
   reconcileWithdrawal,
+  approveWithdrawal,
+  rejectWithdrawal,
   getLedger,
   getPendingKyc,
   approveKyc,

@@ -3,10 +3,11 @@ const Paystack = require('../../providers/paystack/paystack.client');
 const BankAccount = require('../../models/BankAccount');
 const Transaction = require('../../models/Transaction');
 const User = require('../../models/User');
+const Notification = require('../../models/Notification');
 const walletService = require('../wallet/wallet.service');
 const ledger = require('../../services/ledger.service');
 const fraud = require('../../services/fraud.service');
-const notify = require('../notifications/notifications.service');
+const emailService = require('../../services/email.service');
 const otp = require('../../utils/otp');
 
 const MIN_AMOUNT_KOBO = 50000; // ₦500
@@ -60,6 +61,36 @@ const sanitizeAccount = (a) => ({
   accountNumber: a.accountNumber, accountName: a.accountName,
 });
 
+// Fans out a bell notification + best-effort email to every admin —
+// mirrors aidapayMonitor.service.js#alertAdmins' delivery pattern. There's
+// no automated payout provider wired up (see withdraw() below), so an
+// admin has to manually send the money and then approve/reject it from
+// Admin > Reconciliation > Pending Withdrawals.
+const alertAdminsOfWithdrawal = async (user, account, amountNGN) => {
+  const admins = await User.find(
+    { role: { $in: ['admin', 'developer'] }, status: { $ne: 'suspended' } },
+    'email'
+  );
+  if (!admins.length) return;
+
+  const title = 'New withdrawal request';
+  const body = `${user.firstName} ${user.lastName} requested ₦${amountNGN.toLocaleString()} to ${account.bankName} ${account.accountNumber} (${account.accountName}). Send it manually, then approve in Reconciliation.`;
+
+  await Notification.insertMany(
+    admins.map((a) => ({ userId: a._id, title, body, type: 'system' }))
+  );
+
+  await Promise.all(
+    admins
+      .filter((a) => a.email?.address)
+      .map((a) =>
+        emailService
+          .sendAlertEmail(a.email.address, { subject: title, heading: title, message: body })
+          .catch((err) => console.error(`[withdraw] failed to email ${a.email.address}:`, err.message))
+      )
+  );
+};
+
 const withdraw = async (userId, { bankAccountId, amountNGN, pin }) => {
   const user = await User.findById(userId).select('+pinHash');
   if (!user) throw Object.assign(new Error('User not found'), { statusCode: 404 });
@@ -105,46 +136,17 @@ const withdraw = async (userId, { bankAccountId, amountNGN, pin }) => {
     session.endSession();
   }
 
-  try {
-    const result = await Paystack.initiateTransfer({
-      amountKobo, recipientCode: account.recipientCode, reference: tx.reference,
-      reason: `Paycen withdrawal — ${user.firstName} ${user.lastName}`,
-    });
+  // No automated payout provider — the business account's own payout
+  // balance isn't reliably funded (confirmed live: Paystack transfers kept
+  // failing with "Your balance is not enough to fulfil this request",
+  // unrelated to any user's wallet). An admin sends the money by hand to
+  // the account above, then approves or rejects it from Admin >
+  // Reconciliation > Pending Withdrawals (admin.service.js#approveWithdrawal
+  // / rejectWithdrawal) — the wallet's already debited above either way, so
+  // approving just finalizes the status and rejecting refunds it.
+  alertAdminsOfWithdrawal(user, account, amountNGN).catch((err) => console.error('[withdraw] admin alert failed:', err.message));
 
-    if (result.data?.status === 'success') {
-      await Transaction.findByIdAndUpdate(tx._id, {
-        status: 'success',
-        providerReference: result.data.transfer_code,
-        providerStatus: result.data.status,
-        providerResponse: result.data,
-      });
-      notify.createNotification(userId, {
-        title: 'Withdrawal Successful ✓',
-        body: `₦${amountNGN.toLocaleString()} sent to ${account.bankName} ${account.accountNumber}.`,
-        type: 'wallet', meta: { reference: tx.reference },
-      });
-      return { message: 'Withdrawal successful', reference: tx.reference, status: 'success' };
-    }
-
-    // "pending" or "otp" (business-side approval, not ours to automate
-    // around) — money isn't lost, just not final yet. transfer.success/
-    // failed/reversed webhook resolves it from here.
-    await Transaction.findByIdAndUpdate(tx._id, {
-      providerReference: result.data?.transfer_code,
-      providerStatus: result.data?.status,
-      providerResponse: result.data,
-    });
-    return { message: 'Withdrawal is processing', reference: tx.reference, status: 'pending' };
-  } catch (providerErr) {
-    const { balanceBefore: revBefore, balanceAfter: revAfter } = await walletService.credit(userId, amountKobo, null);
-    await Transaction.findByIdAndUpdate(tx._id, { status: 'failed', failureReason: providerErr.message, balanceAfter: revAfter });
-    await ledger.record({
-      transactionId: tx._id, userId, walletId: tx.walletId, entry: 'credit',
-      amount: amountKobo, balanceBefore: revBefore, balanceAfter: revAfter,
-      description: `Refund: withdrawal to ${account.bankName} ${account.accountNumber} failed`,
-    });
-    throw Object.assign(new Error(`${providerErr.message} — your wallet has been reversed.`), { statusCode: 502 });
-  }
+  return { message: 'Withdrawal request submitted — you\'ll receive payment within 24 hours', reference: tx.reference, status: 'pending' };
 };
 
 module.exports = { getBanks, verifyAccount, addBankAccount, getBankAccounts, deleteBankAccount, withdraw };

@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState, useCallback } from 'react';
 import toast from 'react-hot-toast';
-import { AlertTriangle, RefreshCw, Wallet, Landmark, BookOpen, PiggyBank, ChevronLeft, ChevronRight } from 'lucide-react';
+import { AlertTriangle, RefreshCw, Wallet, Landmark, BookOpen, PiggyBank, ChevronLeft, ChevronRight, Check, X } from 'lucide-react';
 import { adminApi } from '@/lib/api';
 import { formatNGN } from '@/lib/utils';
 import type { AdminTransactionRow, AdminLedgerEntry, AdminSavingsLockRow } from '@/types';
@@ -148,7 +148,9 @@ function PendingWithdrawals() {
   const [rows, setRows] = useState<AdminTransactionRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
-  const [reconcilingId, setReconcilingId] = useState<string | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [rejectingId, setRejectingId] = useState<string | null>(null);
+  const [rejectReason, setRejectReason] = useState('');
 
   const load = useCallback(() => {
     setLoading(true);
@@ -161,22 +163,36 @@ function PendingWithdrawals() {
 
   useEffect(() => { load(); }, [load]);
 
-  const reconcile = async (id: string) => {
-    setReconcilingId(id);
+  // No automated payout provider — send the money by hand to the account
+  // shown below, then approve here to finalize it (the wallet was already
+  // debited when the user requested it). Reject refunds the wallet instead.
+  const approve = async (id: string) => {
+    setBusyId(id);
     try {
-      const { data } = await adminApi.reconcileWithdrawal(id);
-      const outcome = data.data.outcome;
-      if (outcome === 'completed') toast.success('Withdrawal confirmed successful');
-      else if (outcome === 'refunded') toast.success('Withdrawal failed on Paystack — wallet refunded');
-      else if (outcome === 'still_pending') toast(`Still ${data.data.status} on Paystack's side — business approval needed there`, { icon: '⏳' });
-      else if (outcome === 'no_provider_reference') toast.error('Never reached Paystack — check manually');
-      else toast.success('Already processed');
+      await adminApi.approveWithdrawal(id);
+      toast.success('Marked as paid');
       load();
     } catch (e: unknown) {
-      const msg = (e as { response?: { data?: { message?: string } } }).response?.data?.message ?? 'Reconcile failed';
+      const msg = (e as { response?: { data?: { message?: string } } }).response?.data?.message ?? 'Approve failed';
       toast.error(msg);
     } finally {
-      setReconcilingId(null);
+      setBusyId(null);
+    }
+  };
+
+  const submitReject = async (id: string) => {
+    setBusyId(id);
+    try {
+      await adminApi.rejectWithdrawal(id, rejectReason.trim() || undefined);
+      toast.success('Withdrawal rejected — wallet refunded');
+      setRejectingId(null);
+      setRejectReason('');
+      load();
+    } catch (e: unknown) {
+      const msg = (e as { response?: { data?: { message?: string } } }).response?.data?.message ?? 'Reject failed';
+      toast.error(msg);
+    } finally {
+      setBusyId(null);
     }
   };
 
@@ -191,31 +207,62 @@ function PendingWithdrawals() {
       count={rows.length}
       countLabel="pending withdrawal"
     >
-      <div className="hidden lg:grid grid-cols-[110px_1fr_110px_1fr_100px_110px] gap-4 px-5 py-3 border-b border-slate-700/50">
-        {['Age', 'User', 'Amount', 'Bank', 'Ref', ''].map((h) => (
-          <p key={h} className="text-slate-500 text-xs font-semibold uppercase tracking-wide">{h}</p>
-        ))}
-      </div>
       {rows.map((tx) => (
-        <div key={tx._id}
-          className="grid grid-cols-1 lg:grid-cols-[110px_1fr_110px_1fr_100px_110px] gap-1 lg:gap-4 items-center px-5 py-3.5 border-b border-slate-700/30">
-          <p className="text-yellow-400 text-xs font-semibold">{ageLabel(tx.createdAt)}</p>
-          <div className="min-w-0">
-            {tx.userId ? (
-              <>
-                <p className="text-slate-200 text-sm font-medium truncate">{tx.userId.firstName} {tx.userId.lastName}</p>
-                <p className="text-slate-500 text-xs">{tx.userId.phone?.number}</p>
-              </>
-            ) : <p className="text-slate-500 text-sm">—</p>}
+        <div key={tx._id} className="px-5 py-4 border-b border-slate-700/30">
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div className="min-w-0">
+              <p className="text-yellow-400 text-xs font-semibold mb-1">{ageLabel(tx.createdAt)}</p>
+              {tx.userId ? (
+                <>
+                  <p className="text-slate-200 text-sm font-medium truncate">{tx.userId.firstName} {tx.userId.lastName}</p>
+                  <p className="text-slate-500 text-xs">{tx.userId.phone?.number}</p>
+                </>
+              ) : <p className="text-slate-500 text-sm">—</p>}
+            </div>
+            <div className="text-right">
+              <p className="text-slate-500 text-xs font-semibold uppercase tracking-widest mb-1">Send</p>
+              <p className="text-white text-lg font-bold">{formatNGN(tx.amount)}</p>
+              <p className="text-slate-600 text-xs font-mono">{tx.reference.slice(-10)}</p>
+            </div>
           </div>
-          <p className="text-white text-sm font-semibold">{formatNGN(tx.amount)}</p>
-          <p className="text-slate-300 text-sm truncate">{tx.meta?.bankName} · {tx.meta?.accountNumber}</p>
-          <p className="text-slate-600 text-xs font-mono truncate">{tx.reference.slice(-10)}</p>
-          <button onClick={() => reconcile(tx._id)} disabled={reconcilingId === tx._id}
-            className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg bg-brand-blue text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors w-fit">
-            <RefreshCw size={13} className={reconcilingId === tx._id ? 'animate-spin' : ''} />
-            Re-check
-          </button>
+
+          <div className="mt-3 bg-slate-900/60 border border-slate-700/40 rounded-xl px-4 py-3">
+            <p className="text-slate-500 text-xs font-semibold uppercase tracking-widest mb-1">To this account</p>
+            <p className="text-white font-bold">{tx.meta?.counterpartyName ?? '—'}</p>
+            <p className="text-slate-300 text-sm">{tx.meta?.bankName} · {tx.meta?.accountNumber}</p>
+          </div>
+
+          {rejectingId === tx._id ? (
+            <div className="mt-3 flex gap-2">
+              <input
+                type="text"
+                autoFocus
+                placeholder="Reason for rejection (optional)…"
+                value={rejectReason}
+                onChange={(e) => setRejectReason(e.target.value)}
+                className="flex-1 bg-slate-700 border border-slate-600 rounded-xl px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-brand-blue/60"
+              />
+              <button onClick={() => submitReject(tx._id)} disabled={busyId === tx._id}
+                className="px-4 py-2 rounded-xl text-sm font-semibold bg-red-500/20 border border-red-500/30 text-red-400 hover:bg-red-500/30 disabled:opacity-50 transition-colors">
+                Confirm
+              </button>
+              <button onClick={() => { setRejectingId(null); setRejectReason(''); }}
+                className="px-4 py-2 rounded-xl text-sm font-semibold text-slate-400 hover:text-white transition-colors">
+                Cancel
+              </button>
+            </div>
+          ) : (
+            <div className="mt-3 flex gap-2">
+              <button onClick={() => approve(tx._id)} disabled={busyId === tx._id}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold bg-green-500/20 border border-green-500/30 text-green-400 hover:bg-green-500/30 disabled:opacity-50 transition-colors">
+                <Check size={15} /> I&apos;ve sent it — mark paid
+              </button>
+              <button onClick={() => setRejectingId(tx._id)} disabled={busyId === tx._id}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 disabled:opacity-50 transition-colors">
+                <X size={15} /> Reject
+              </button>
+            </div>
+          )}
         </div>
       ))}
     </Panel>

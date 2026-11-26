@@ -211,6 +211,10 @@ export const adminApi = {
     api.get('/admin/withdrawals/pending'),
   reconcileWithdrawal: (id: string) =>
     api.post(`/admin/withdrawals/${id}/reconcile`),
+  approveWithdrawal: (id: string) =>
+    api.post(`/admin/withdrawals/${id}/approve`),
+  rejectWithdrawal: (id: string, reason?: string) =>
+    api.post(`/admin/withdrawals/${id}/reject`, { reason }),
   ledger: (params?: { page?: number; limit?: number; userId?: string; search?: string }) =>
     api.get('/admin/ledger', { params }),
   pendingKyc: () =>
