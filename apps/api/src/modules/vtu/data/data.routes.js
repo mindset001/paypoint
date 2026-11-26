@@ -16,4 +16,12 @@ router.post('/', authenticate, [
   body('pin').isLength({ min: 4, max: 6 }).isNumeric().withMessage('PIN required'),
 ], validate, ctrl.buy);
 
+router.post('/bulk', authenticate, [
+  body('network').isIn(['MTN', 'Airtel', 'Glo', '9mobile']).withMessage('Invalid network'),
+  body('catalog').optional().isString(),
+  body('planId').notEmpty().withMessage('Plan ID required'),
+  body('phones').isArray({ min: 2, max: 50 }).withMessage('Provide between 2 and 50 phone numbers'),
+  body('pin').isLength({ min: 4, max: 6 }).isNumeric().withMessage('PIN required'),
+], validate, ctrl.bulkBuy);
+
 module.exports = router;

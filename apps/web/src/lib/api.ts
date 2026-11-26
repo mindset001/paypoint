@@ -91,6 +91,8 @@ export const servicesApi = {
 export const airtimeApi = {
   buy: (network: string, phone: string, amount: number, pin: string) =>
     api.post('/airtime', { network, phone, amount, pin }),
+  bulkBuy: (network: string, recipients: { phone: string; amount: number }[], pin: string) =>
+    api.post('/airtime/bulk', { network, recipients, pin }),
 };
 
 // ── Data ─────────────────────────────────────────────────────────────
@@ -100,6 +102,8 @@ export const dataApi = {
     api.get(`/data/plans/${network}`, { params: catalog ? { catalog } : undefined }),
   buy: (network: string, catalog: string | undefined, phone: string, planId: string, amount: number, pin: string) =>
     api.post('/data', { network, catalog, phone, planId, amount, pin }),
+  bulkBuy: (network: string, catalog: string | undefined, planId: string, phones: string[], pin: string) =>
+    api.post('/data/bulk', { network, catalog, planId, phones, pin }),
 };
 
 // ── Cable ────────────────────────────────────────────────────────────

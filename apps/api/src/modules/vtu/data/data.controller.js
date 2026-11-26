@@ -22,4 +22,11 @@ const buy = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-module.exports = { getCatalogs, getPlans, buy };
+const bulkBuy = async (req, res, next) => {
+  try {
+    const data = await service.bulkBuy(req.user._id, req.body);
+    return success(res, data, 'Bulk data purchase processed');
+  } catch (err) { next(err); }
+};
+
+module.exports = { getCatalogs, getPlans, buy, bulkBuy };

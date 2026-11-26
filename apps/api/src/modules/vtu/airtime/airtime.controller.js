@@ -8,4 +8,11 @@ const buy = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-module.exports = { buy };
+const bulkBuy = async (req, res, next) => {
+  try {
+    const data = await service.bulkBuy(req.user._id, req.body);
+    return success(res, data, 'Bulk airtime purchase processed');
+  } catch (err) { next(err); }
+};
+
+module.exports = { buy, bulkBuy };

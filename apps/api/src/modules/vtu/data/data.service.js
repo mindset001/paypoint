@@ -192,4 +192,116 @@ const buy = async (userId, { network, catalog, phone, planId, pin }) => {
   }
 };
 
-module.exports = { getCatalogs, getPlans, getRawPlans, getAllNetworkCatalogs, buy };
+const MIN_BULK_RECIPIENTS = 2;
+const MAX_BULK_RECIPIENTS = 50;
+
+// Same plan for every phone number — one Transaction for the whole batch
+// (not one per recipient), each recipient's own outcome recorded in
+// meta.recipients, same pattern as airtime.service.js#bulkBuy. A recipient
+// that fails gets exactly one plan's price refunded, not the whole batch.
+const bulkBuy = async (userId, { network, catalog, planId, phones, pin }) => {
+  if (!Array.isArray(phones) || phones.length < MIN_BULK_RECIPIENTS || phones.length > MAX_BULK_RECIPIENTS) {
+    throw Object.assign(new Error(`Provide between ${MIN_BULK_RECIPIENTS} and ${MAX_BULK_RECIPIENTS} phone numbers`), { statusCode: 400 });
+  }
+  for (const phone of phones) {
+    if (!/^\+?[0-9]{10,14}$/.test(phone)) throw Object.assign(new Error(`Invalid phone number: ${phone}`), { statusCode: 400 });
+  }
+
+  const User = require('../../../models/User');
+  const user = await User.findById(userId).select('+pinHash');
+  if (!await user.comparePin(pin)) throw Object.assign(new Error('Invalid transaction PIN'), { statusCode: 403 });
+
+  const providerCode = resolveDataProviderCode(network, catalog);
+  const rawAmount = await getRawPackagePrice(providerCode, planId);
+
+  const unitKobo = await dataPlanPricing.getPriceKobo(planId, pricing.isReseller(user));
+  if (unitKobo == null) throw Object.assign(new Error('This plan is not currently available'), { statusCode: 400 });
+
+  const totalKobo = unitKobo * phones.length;
+  await fraud.checkVelocity(userId);
+
+  const session = await mongoose.startSession();
+  session.startTransaction();
+  let tx, wallet;
+  try {
+    const result = await walletService.debit(userId, totalKobo, session);
+    wallet = result.wallet;
+    const reference = otp.generateRef();
+
+    [tx] = await Transaction.create([{
+      reference, userId, walletId: wallet._id,
+      type: 'bulk_data', direction: 'debit', amount: totalKobo, status: 'pending',
+      balanceBefore: result.balanceBefore, balanceAfter: result.balanceAfter,
+      meta: {
+        network, dataBundle: planId,
+        recipients: phones.map((phone) => ({ phone, amount: unitKobo / 100, status: 'pending' })),
+      },
+      processedAt: new Date(),
+    }], { session });
+
+    await ledger.record({
+      transactionId: tx._id, userId, walletId: wallet._id, entry: 'debit',
+      amount: totalKobo, balanceBefore: result.balanceBefore, balanceAfter: result.balanceAfter,
+      description: `Bulk ${network} data (${planId}) to ${phones.length} numbers`,
+    }, session);
+
+    await session.commitTransaction();
+  } catch (err) {
+    await session.abortTransaction();
+    throw err;
+  } finally {
+    session.endSession();
+  }
+
+  const results = [];
+  let refundKobo = 0;
+
+  for (let i = 0; i < phones.length; i++) {
+    const phone = phones[i];
+    const unitRef = `${tx.reference}-${i + 1}`;
+    try {
+      const buyResult = await AidaPay.buy({ recipient: phone, providerCode, ref: unitRef, packageCode: planId });
+      const txn = buyResult.data?.data?.transaction_data;
+
+      const charged = Number(txn?.amount_paid ?? txn?.amount);
+      if (Number.isFinite(charged) && Math.abs(charged - rawAmount) > 0.5) {
+        console.error(`[aidapay] price mismatch on bulk ${network} data ${unitRef}: expected raw ₦${rawAmount}, AidaPay charged ₦${charged}`);
+      }
+
+      results.push({ phone, amount: unitKobo / 100, status: 'success', providerReference: txn?.transaction_hash });
+    } catch (err) {
+      results.push({ phone, amount: unitKobo / 100, status: 'failed', reason: err.message });
+      refundKobo += unitKobo;
+    }
+  }
+
+  const update = { 'meta.recipients': results };
+  if (refundKobo > 0) {
+    const refund = await walletService.credit(userId, refundKobo, null);
+    update.balanceAfter = refund.balanceAfter;
+    await ledger.record({
+      transactionId: tx._id, userId, walletId: tx.walletId, entry: 'credit',
+      amount: refundKobo, balanceBefore: refund.balanceBefore, balanceAfter: refund.balanceAfter,
+      description: `Refund: ${results.filter((r) => r.status === 'failed').length} of ${phones.length} bulk data sends failed`,
+    });
+  }
+
+  const successCount = results.filter((r) => r.status === 'success').length;
+  const allFailed = successCount === 0;
+  update.status = allFailed ? 'failed' : 'success';
+  if (allFailed) update.failureReason = 'All recipients failed';
+  await Transaction.findByIdAndUpdate(tx._id, update);
+
+  if (successCount > 0) {
+    referralService.creditReferralBonusIfQualifying(userId, tx._id).catch((err) => console.error('[referral]', err));
+    cashbackService.creditCashbackIfApplicable(userId, user.role, tx._id, totalKobo - refundKobo).catch((err) => console.error('[cashback]', err));
+  }
+
+  if (allFailed) {
+    throw Object.assign(new Error('All recipients failed — your wallet has been fully refunded.'), { statusCode: 502 });
+  }
+
+  return { message: `${successCount}/${phones.length} sent successfully`, reference: tx.reference, results };
+};
+
+module.exports = { getCatalogs, getPlans, getRawPlans, getAllNetworkCatalogs, buy, bulkBuy };

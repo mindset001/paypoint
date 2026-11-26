@@ -8,7 +8,7 @@ const transactionSchema = new mongoose.Schema(
     type: {
       type: String,
       enum: [
-        'airtime', 'data', 'cable', 'electricity', 'exam',
+        'airtime', 'data', 'bulk_airtime', 'bulk_data', 'cable', 'electricity', 'exam',
         'wallet_fund', 'wallet_transfer_debit', 'wallet_transfer_credit',
         'commission', 'cashback', 'referral_bonus', 'signup_bonus', 'refund', 'savings', 'withdrawal',
       ],
@@ -37,8 +37,20 @@ const transactionSchema = new mongoose.Schema(
       token: String,
       units: String,
       examType: String,
+      examPlan: String,
       examPin: String,
+      quantity: Number,
       marginAmount: Number, // kobo — chargedAmount minus AidaPay's raw cost, 0 for resellers
+      // Bulk airtime/data — one Transaction per batch, per-recipient outcome
+      // recorded here (see airtime.service.js#bulkBuy, data.service.js#bulkBuy)
+      recipients: [{
+        _id: false,
+        phone: String,
+        amount: Number, // naira, not kobo — matches what the UI already shows per recipient
+        status: { type: String, enum: ['pending', 'success', 'failed'] },
+        reason: String,
+        providerReference: String,
+      }],
       // Wallet funding
       provider: String,
       channel: String,
