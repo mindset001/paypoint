@@ -215,12 +215,14 @@ function SignupBonusCard() {
 type FeatureStatus = 'live' | 'coming_soon' | 'hidden';
 interface FeatureFlags {
   exam: FeatureStatus; reseller: FeatureStatus; savings: FeatureStatus; withdrawal: FeatureStatus;
+  ajo: FeatureStatus; esim: FeatureStatus;
   paystack: FeatureStatus; flutterwave: FeatureStatus; monnify: FeatureStatus;
   kyc_bvn: FeatureStatus; kyc_nin: FeatureStatus; kyc_number: FeatureStatus;
 }
 
 const DEFAULT_FEATURE_FLAGS: FeatureFlags = {
   exam: 'coming_soon', reseller: 'coming_soon', savings: 'live', withdrawal: 'live',
+  ajo: 'live', esim: 'coming_soon',
   paystack: 'live', flutterwave: 'coming_soon', monnify: 'coming_soon',
   kyc_bvn: 'live', kyc_nin: 'live', kyc_number: 'coming_soon',
 };
@@ -228,6 +230,8 @@ const DEFAULT_FEATURE_FLAGS: FeatureFlags = {
 const FEATURE_LABELS: Record<keyof FeatureFlags, { label: string; sub: string }> = {
   exam:        { label: 'Exam Pins',       sub: 'WAEC, NECO, NABTEB, JAMB purchases' },
   savings:     { label: 'Savings',         sub: 'Locking money away for a goal' },
+  ajo:         { label: 'Ajo',             sub: 'Solo and group contribution/savings circles' },
+  esim:        { label: 'eSIM',            sub: 'Travel data eSIMs — still coming_soon until a provider order is live-tested' },
   reseller:    { label: 'Reseller Program', sub: 'The "Become a Reseller" section on support' },
   withdrawal:  { label: 'Bank Withdrawal', sub: 'Moving wallet balance out to a bank account (Paystack transfer)' },
   paystack:    { label: 'Paystack',        sub: 'Card, bank transfer, USSD funding' },
@@ -239,7 +243,7 @@ const FEATURE_LABELS: Record<keyof FeatureFlags, { label: string; sub: string }>
 };
 
 const FEATURE_GROUPS: { key: keyof FeatureFlags }[][] = [
-  [{ key: 'exam' }, { key: 'savings' }, { key: 'withdrawal' }, { key: 'reseller' }],
+  [{ key: 'exam' }, { key: 'savings' }, { key: 'ajo' }, { key: 'esim' }, { key: 'withdrawal' }, { key: 'reseller' }],
   [{ key: 'paystack' }, { key: 'flutterwave' }, { key: 'monnify' }],
   [{ key: 'kyc_bvn' }, { key: 'kyc_nin' }, { key: 'kyc_number' }],
 ];

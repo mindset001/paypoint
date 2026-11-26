@@ -11,6 +11,7 @@ const DEFAULT_FLAGS = {
   exam: 'coming_soon',
   reseller: 'coming_soon',
   savings: 'live',
+  ajo: 'live',
   // Scaffolded end-to-end but no live eSIM provider is configured yet — see
   // providers/esim/esimAccess.client.js. Flip to 'live' once
   // ESIM_ACCESS_API_KEY is set and that client's placeholder wire format is

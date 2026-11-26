@@ -7,7 +7,7 @@ import { servicesApi } from '@/lib/api';
 
 // Services whose visibility is admin-controlled (Admin > Settings > Feature
 // Visibility) rather than always live — maps a tile's id to its flag key.
-const FEATURE_KEY_BY_SERVICE: Record<string, string> = { exam: 'exam', savings: 'savings', esim: 'esim' };
+const FEATURE_KEY_BY_SERVICE: Record<string, string> = { exam: 'exam', savings: 'savings', ajo: 'ajo', esim: 'esim' };
 
 // A compact icon-grid instead of the old full-width card list — that
 // layout stopped scaling once this list started growing past 6 items.
@@ -31,7 +31,7 @@ const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0, transiti
 // Mirrors the API's own defaults (apps/api/src/services/featureFlags.service.js)
 // so a tile doesn't flash the wrong state (e.g. "Coming Soon" for
 // already-live savings) in the gap before the real flags load.
-const DEFAULT_FLAGS = { exam: 'coming_soon', reseller: 'coming_soon', savings: 'live', esim: 'coming_soon' };
+const DEFAULT_FLAGS = { exam: 'coming_soon', reseller: 'coming_soon', savings: 'live', ajo: 'live', esim: 'coming_soon' };
 
 export default function ServicesPage() {
   const [featureFlags, setFeatureFlags] = useState<Record<string, string>>(DEFAULT_FLAGS);

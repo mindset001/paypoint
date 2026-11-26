@@ -203,7 +203,7 @@ export const adminApi = {
   getFeatureFlags: () =>
     api.get('/admin/settings/features'),
   updateFeatureFlags: (data: Partial<Record<
-    'exam' | 'reseller' | 'savings' | 'withdrawal' | 'paystack' | 'flutterwave' | 'monnify' | 'kyc_bvn' | 'kyc_nin' | 'kyc_number',
+    'exam' | 'reseller' | 'savings' | 'ajo' | 'esim' | 'withdrawal' | 'paystack' | 'flutterwave' | 'monnify' | 'kyc_bvn' | 'kyc_nin' | 'kyc_number',
     'live' | 'coming_soon' | 'hidden'
   >>) =>
     api.patch('/admin/settings/features', data),
