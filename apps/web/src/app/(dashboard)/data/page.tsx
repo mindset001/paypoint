@@ -3,7 +3,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
-import { ArrowLeft, Phone as PhoneIcon, UserCircle2 } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { ArrowLeft, Phone as PhoneIcon, UserCircle2, Wifi, Check } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { PinInput } from '@/components/ui/PinInput';
@@ -14,6 +15,18 @@ import type { Network } from '@/types';
 import { cn } from '@/lib/cn';
 import { PurchaseSuccess } from '@/components/receipt/PurchaseSuccess';
 import { RecentNumbers } from '@/components/vtu/RecentNumbers';
+import { NetworkSelector } from '@/components/vtu/NetworkSelector';
+
+const VALIDITY_BADGE: Record<string, string> = {
+  Daily: 'bg-amber-50 text-amber-600 dark:bg-amber-500/10',
+  Weekly: 'bg-blue-50 text-blue-600 dark:bg-blue-500/10',
+  Monthly: 'bg-green-50 text-green-600 dark:bg-green-500/10',
+  Longer: 'bg-purple-50 text-purple-600 dark:bg-purple-500/10',
+  Other: 'bg-surface-2 text-ink-muted',
+};
+
+const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.035 } } };
+const item = { hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0, transition: { duration: 0.2, ease: 'easeOut' as const } } };
 
 // 9mobile has no data-bundle product on AidaPay at all (confirmed against
 // their live provider list) — omitted here so it's never offered as a dead
@@ -138,12 +151,20 @@ export default function DataPage() {
 
   return (
     <div>
-      <div className="bg-gradient-to-br from-brand-blue to-blue-700 px-6 pt-14 md:pt-8 pb-8">
-        <button onClick={() => router.back()} className="text-white mb-4"><ArrowLeft size={22} /></button>
-        <div className="flex items-center gap-3">
-          <div className={cn('w-12 h-12 rounded-2xl flex items-center justify-center font-black text-base flex-shrink-0', networkColors[network])}>
+      <div className="bg-gradient-to-br from-brand-blue to-blue-700 px-6 pt-14 md:pt-8 pb-10 relative overflow-hidden">
+        <div className="absolute -right-8 -top-8 w-40 h-40 rounded-full bg-white/10 blur-2xl" />
+        <div className="absolute right-12 bottom-0 w-24 h-24 rounded-full bg-white/10 blur-xl" />
+        <button onClick={() => router.back()} className="text-white mb-4 relative"><ArrowLeft size={22} /></button>
+        <div className="flex items-center gap-3 relative">
+          <motion.div
+            key={network}
+            initial={{ scale: 0.7, opacity: 0.5 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.25 }}
+            className={cn('w-12 h-12 rounded-2xl flex items-center justify-center font-black text-base flex-shrink-0 ring-2 ring-white/40', networkColors[network])}
+          >
             {network.charAt(0)}
-          </div>
+          </motion.div>
           <div>
             <h1 className="text-white text-xl font-black">Buy Data Bundle</h1>
             <p className="text-blue-100 text-sm">{network}{currentCatalogLabel ? ` · ${currentCatalogLabel}` : ''}</p>
@@ -151,31 +172,20 @@ export default function DataPage() {
         </div>
       </div>
 
-      <div className="px-5 -mt-4 pb-8">
-        <div className="bg-surface rounded-3xl p-5 shadow-sm flex flex-col gap-5">
-          <div>
-            <label className="text-sm font-medium text-ink-muted mb-2 block">Network</label>
-            <div className="grid grid-cols-3 gap-2">
-              {availableNetworks.map((n) => (
-                <button key={n} onClick={() => setNetwork(n)}
-                  className={cn('py-2 rounded-xl text-xs font-bold border-2 transition-all',
-                    network === n ? 'border-brand-blue bg-blue-50 dark:bg-blue-500/10 text-brand-blue' : 'border-line text-ink-muted')}>
-                  {n}
-                </button>
-              ))}
-            </div>
-          </div>
+      <div className="px-5 -mt-5 pb-8">
+        <div className="bg-surface rounded-3xl p-5 shadow-lg shadow-black/5 flex flex-col gap-5">
+          <NetworkSelector networks={availableNetworks} value={network} onChange={setNetwork} />
 
           {catalogs.length > 1 && (
             <div>
               <label className="text-sm font-medium text-ink-muted mb-2 block">Bundle Type</label>
               <div className={cn('grid gap-2', catalogs.length === 2 ? 'grid-cols-2' : 'grid-cols-3')}>
                 {catalogs.map((c) => (
-                  <button key={c.key} type="button" onClick={() => setCatalog(c.key)}
+                  <motion.button key={c.key} type="button" whileTap={{ scale: 0.95 }} onClick={() => setCatalog(c.key)}
                     className={cn('py-2 px-2 rounded-xl text-xs font-bold border-2 transition-all',
-                      catalog === c.key ? 'border-brand-blue bg-blue-50 dark:bg-blue-500/10 text-brand-blue' : 'border-line text-ink-muted')}>
+                      catalog === c.key ? 'border-brand-blue bg-blue-50 dark:bg-blue-500/10 text-brand-blue shadow-sm' : 'border-line text-ink-muted')}>
                     {c.label}
-                  </button>
+                  </motion.button>
                 ))}
               </div>
               {catalog === 'fibrex' && (
@@ -221,24 +231,39 @@ export default function DataPage() {
 
                 {loadingPlans ? (
                   <div className="grid grid-cols-2 gap-2">
-                    {Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-16" />)}
+                    {Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-20" />)}
                   </div>
                 ) : plans.length === 0 ? (
                   <p className="text-sm text-ink-muted text-center py-4">No plans available</p>
                 ) : filteredPlans.length === 0 ? (
                   <p className="text-sm text-ink-muted text-center py-4">No {validityFilter.toLowerCase()} plans for this bundle</p>
                 ) : (
-                  <div className="grid grid-cols-2 gap-2 max-h-56 overflow-y-auto hide-scrollbar">
-                    {filteredPlans.map((p) => (
-                      <button type="button" key={p.planId} onClick={() => setSelectedPlan(p)}
-                        className={cn('p-3 rounded-xl border-2 text-left transition-all',
-                          selectedPlan?.planId === p.planId ? 'border-brand-blue bg-blue-50 dark:bg-blue-500/10' : 'border-line')}>
-                        <p className="text-xs font-bold text-ink">{p.name}</p>
-                        <p className="text-xs text-ink-muted">{p.validity}</p>
-                        <p className="text-sm font-black text-brand-blue mt-1">₦{(p.amount).toLocaleString()}</p>
-                      </button>
-                    ))}
-                  </div>
+                  <motion.div variants={stagger} initial="hidden" animate="show" key={`${network}-${catalog}`}
+                    className="grid grid-cols-2 gap-2 max-h-72 overflow-y-auto hide-scrollbar">
+                    {filteredPlans.map((p) => {
+                      const selected = selectedPlan?.planId === p.planId;
+                      return (
+                        <motion.button variants={item} whileTap={{ scale: 0.96 }} type="button" key={p.planId} onClick={() => setSelectedPlan(p)}
+                          className={cn('relative p-3 rounded-2xl border-2 text-left transition-all',
+                            selected ? 'border-brand-blue bg-blue-50 dark:bg-blue-500/10 shadow-md shadow-brand-blue/10' : 'border-line hover:border-brand-blue/30')}>
+                          {selected && (
+                            <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}
+                              className="absolute top-2 right-2 w-4 h-4 rounded-full bg-brand-blue text-white flex items-center justify-center">
+                              <Check size={10} strokeWidth={3} />
+                            </motion.div>
+                          )}
+                          <div className="w-7 h-7 rounded-lg bg-surface-2 flex items-center justify-center text-ink-muted mb-1.5">
+                            <Wifi size={14} />
+                          </div>
+                          <p className="text-xs font-bold text-ink pr-4 leading-tight">{p.name}</p>
+                          <span className={cn('inline-block text-[10px] font-bold px-1.5 py-0.5 rounded-full mt-1', VALIDITY_BADGE[p.validity] ?? VALIDITY_BADGE.Other)}>
+                            {p.validity}
+                          </span>
+                          <p className="text-sm font-black text-brand-blue mt-1.5">₦{(p.amount).toLocaleString()}</p>
+                        </motion.button>
+                      );
+                    })}
+                  </motion.div>
                 )}
               </div>
 
@@ -246,9 +271,12 @@ export default function DataPage() {
             </form>
           ) : (
             <div className="flex flex-col items-center gap-4 py-2">
-              <div className="text-center mb-2">
-                <p className="text-ink-muted text-sm">Sending <strong>{selectedPlan?.name}</strong> to</p>
-                <p className="font-bold text-ink">{phone} ({network})</p>
+              <div className={cn('w-16 h-16 rounded-2xl flex items-center justify-center font-black text-xl', networkColors[network])}>
+                {network.charAt(0)}
+              </div>
+              <div className="text-center mb-1">
+                <p className="text-ink-muted text-sm">Sending <strong className="text-ink">{selectedPlan?.name}</strong> to</p>
+                <p className="font-bold text-ink">{phone} · {network}</p>
               </div>
               <PinInput length={4} onComplete={handlePinComplete} label="Enter Transaction PIN" />
               {loading && <div className="w-6 h-6 border-2 border-brand-blue border-t-transparent rounded-full animate-spin" />}

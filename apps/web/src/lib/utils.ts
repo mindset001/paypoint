@@ -42,6 +42,15 @@ export const networkColors: Record<string, string> = {
   '9mobile': 'bg-green-400 text-white',
 };
 
+// Header-gradient counterpart to networkColors, for pages whose hero banner
+// tints toward whichever network is currently selected (airtime, data).
+export const networkGradients: Record<string, string> = {
+  MTN: 'from-yellow-400 to-orange-400',
+  Airtel: 'from-red-500 to-red-700',
+  Glo: 'from-green-500 to-green-700',
+  '9mobile': 'from-emerald-400 to-teal-600',
+};
+
 export const getErrorMessage = (error: unknown): string => {
   if (error && typeof error === 'object' && 'response' in error) {
     const axiosError = error as { response?: { data?: { message?: string } } };
