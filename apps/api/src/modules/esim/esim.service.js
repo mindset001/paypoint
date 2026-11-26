@@ -25,18 +25,23 @@ const getPricingInputs = async () => {
 const priceToNGNKobo = (priceUSD, rate, markupPercent) =>
   Math.round(priceUSD * rate * (1 + markupPercent / 100) * 100);
 
-// Normalizes whatever shape the provider's package-list response has into
-// what the frontend needs. Field names here are UNCONFIRMED (see
-// esimAccess.client.js) — adjust once the real response shape is known.
-const normalizePackage = (raw, rate, markupPercent) => ({
-  packageCode: raw.packageCode,
-  name: raw.name,
-  countryCode: raw.locationCode,
-  dataAllowanceMB: raw.volume,
-  validityDays: raw.duration,
-  priceUSD: raw.price,
-  priceNGNKobo: priceToNGNKobo(raw.price, rate, markupPercent),
-});
+// Normalizes eSIM Access's real /package/list response (confirmed live:
+// `volume` is bytes — 3221225472 on a package literally named "3GB" — and
+// `price` is USD in units of 1/10,000, e.g. 16000 -> $1.60; that divisor is
+// inferred from being the only one that produces sane prices, not from
+// documentation — see esimAccess.client.js's header comment).
+const normalizePackage = (raw, rate, markupPercent) => {
+  const priceUSD = raw.price / 10000;
+  return {
+    packageCode: raw.packageCode,
+    name: raw.name,
+    countryCode: raw.locationCode,
+    dataAllowanceMB: Math.round(raw.volume / (1024 * 1024)),
+    validityDays: raw.duration,
+    priceUSD,
+    priceNGNKobo: priceToNGNKobo(priceUSD, rate, markupPercent),
+  };
+};
 
 const getPackages = async (countryCode) => {
   if (!EsimAccess.isConfigured()) {
@@ -44,7 +49,7 @@ const getPackages = async (countryCode) => {
   }
   const { rate, markupPercent } = await getPricingInputs();
   const result = await EsimAccess.listPackages({ countryCode });
-  const packages = result?.data ?? result?.packageList ?? [];
+  const packages = result?.obj?.packageList ?? [];
   return packages.map((p) => normalizePackage(p, rate, markupPercent));
 };
 
@@ -65,7 +70,7 @@ const buy = async (userId, { packageCode, pin }) => {
   // every other buy flow in this app).
   const { rate, markupPercent } = await getPricingInputs();
   const result = await EsimAccess.listPackages({});
-  const packages = result?.data ?? result?.packageList ?? [];
+  const packages = result?.obj?.packageList ?? [];
   const raw = packages.find((p) => p.packageCode === packageCode);
   if (!raw) throw Object.assign(new Error('Package not found'), { statusCode: 404 });
   const pkg = normalizePackage(raw, rate, markupPercent);
@@ -111,7 +116,14 @@ const buy = async (userId, { packageCode, pin }) => {
   // pattern as every provider-dependent purchase in this app.
   try {
     const orderResult = await EsimAccess.orderPackage({ packageCode: pkg.packageCode, transactionId: tx._id });
-    const data = orderResult?.data ?? orderResult;
+    // Response shape for this endpoint is INFERRED, not live-tested (see
+    // esimAccess.client.js) — every other confirmed endpoint nests its
+    // payload under `obj`, sometimes as a list (packageList/esimList), so
+    // this defensively checks obj.esimList[0] before falling back to obj
+    // itself holding the order fields directly (the vendor's own flat
+    // marketing sample). Re-check this against the real response on the
+    // first live order.
+    const data = orderResult?.obj?.esimList?.[0] ?? orderResult?.obj ?? orderResult;
 
     order.providerOrderNo = data.orderNo;
     order.iccid = data.iccid;
@@ -168,8 +180,10 @@ const refreshStatus = async (userId, id) => {
   const order = await getEsim(userId, id);
   if (!order.iccid) throw Object.assign(new Error('This eSIM has no ICCID yet'), { statusCode: 400 });
 
+  // Confirmed shape (live-tested): {obj: {esimList: [...], pager}} — a
+  // paginated list even when filtered to one iccid.
   const result = await EsimAccess.getEsimStatus(order.iccid);
-  const data = result?.data ?? result;
+  const data = result?.obj?.esimList?.[0] ?? {};
 
   order.smdpStatus = data.smdpStatus ?? order.smdpStatus;
   order.lastUsageBytes = data.orderUsage ?? order.lastUsageBytes;
