@@ -7,6 +7,7 @@ const isAdmin = [authenticate, authorize('admin', 'developer')];
 router.get('/stats',                       ...isAdmin, ctrl.getStats);
 router.get('/stats/charts',                ...isAdmin, ctrl.getChartData);
 router.get('/aidapay/overview',            ...isAdmin, ctrl.getAidapayOverview);
+router.get('/esim/overview',               ...isAdmin, ctrl.getEsimOverview);
 router.get('/data-plans',                  ...isAdmin, ctrl.getDataPlansAdmin);
 router.patch('/data-plans/:planId',        ...isAdmin, ctrl.setDataPlanPrice);
 router.delete('/data-plans/:planId',       ...isAdmin, ctrl.removeDataPlanPrice);

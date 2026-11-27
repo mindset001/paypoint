@@ -183,6 +183,15 @@ const getAidapayOverview = async (req, res) => {
   }
 };
 
+const getEsimOverview = async (req, res) => {
+  try {
+    const data = await adminService.getEsimOverview();
+    return success(res, data, 'eSIM overview fetched');
+  } catch (err) {
+    return error(res, err.message, err.statusCode || 502);
+  }
+};
+
 const getDataPlansAdmin = async (req, res) => {
   try {
     const data = await adminService.getDataPlansAdmin();
@@ -458,6 +467,7 @@ module.exports = {
   sendAnnouncement,
   getAnnouncements,
   getAidapayOverview,
+  getEsimOverview,
   getDataPlansAdmin,
   setDataPlanPrice,
   removeDataPlanPrice,

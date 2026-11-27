@@ -5,11 +5,11 @@ import {
   ResponsiveContainer, AreaChart, Area, BarChart, Bar, LineChart, Line,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, Cell,
 } from 'recharts';
-import { Users, ArrowLeftRight, TrendingUp, AlertTriangle, Clock, CheckCircle, XCircle, ChevronRight, Coins, Wallet, RefreshCw } from 'lucide-react';
+import { Users, ArrowLeftRight, TrendingUp, AlertTriangle, Clock, CheckCircle, XCircle, ChevronRight, Coins, Wallet, Wifi, RefreshCw } from 'lucide-react';
 import { adminApi } from '@/lib/api';
 import { formatNGN, getErrorMessage } from '@/lib/utils';
 import { useAutoRefresh } from '@/hooks/useAutoRefresh';
-import type { AdminStats, AdminChartData, AidapayOverview } from '@/types';
+import type { AdminStats, AdminChartData, AidapayOverview, EsimOverview } from '@/types';
 
 function AidapayOverviewCard() {
   const [data, setData] = useState<AidapayOverview | null>(null);
@@ -74,6 +74,84 @@ function AidapayOverviewCard() {
               <AlertTriangle size={15} className="text-red-400 shrink-0" />
               <p className="text-red-300 text-sm">
                 AidaPay balance is low — fund the account or live VTU purchases will start failing.
+              </p>
+            </div>
+          )}
+        </>
+      )}
+    </section>
+  );
+}
+
+// eSIM Access is a straight prepaid wholesale balance (fund it, spend it per
+// order) — no separate "commission" concept exists on their platform, unlike
+// AidaPay's merchant-commission account, so this is a single stat. Balance
+// is natively USD; NGN is shown as a sub-line using the same rate the eSIM
+// purchase flow itself prices packages with.
+function EsimOverviewCard() {
+  const [data, setData] = useState<EsimOverview | null>(null);
+  const [err, setErr] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const load = useCallback(() => {
+    setRefreshing(true);
+    adminApi.esimOverview()
+      .then((r) => { setData(r.data.data); setErr(''); })
+      .catch((e) => setErr(getErrorMessage(e)))
+      .finally(() => { setLoading(false); setRefreshing(false); });
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+  useAutoRefresh(load);
+
+  const isLow = !!data?.configured && (data.balanceUSD ?? 0) < (data.lowBalanceThresholdUSD ?? 0);
+
+  return (
+    <section className="mb-8">
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-slate-400 text-xs font-semibold uppercase tracking-widest">eSIM Access Account</p>
+        <button onClick={load} className="flex items-center gap-2 text-slate-400 hover:text-white text-xs transition-colors">
+          <RefreshCw size={13} className={refreshing ? 'animate-spin' : ''} />
+          Refresh
+        </button>
+      </div>
+
+      {loading && (
+        <div className="grid grid-cols-2 gap-4">
+          <div className="h-24 bg-slate-800/40 rounded-2xl animate-pulse" />
+        </div>
+      )}
+
+      {!loading && err && (
+        <div className="flex items-center gap-2 text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 text-sm">
+          <AlertTriangle size={15} className="shrink-0" />
+          Couldn&apos;t reach eSIM Access: {err}
+        </div>
+      )}
+
+      {!loading && !err && data && !data.configured && (
+        <div className="flex items-center gap-2 text-slate-400 bg-slate-800/40 border border-slate-700/50 rounded-xl px-4 py-3 text-sm">
+          Not configured yet — set ESIM_ACCESS_CODE/ESIM_ACCESS_SECRET_KEY to enable.
+        </div>
+      )}
+
+      {!loading && !err && data?.configured && (
+        <>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <StatCard
+              label="Provider Balance"
+              value={`$${(data.balanceUSD ?? 0).toLocaleString()}`}
+              sub={formatNGN(data.balanceNGNKobo ?? 0)}
+              icon={Wifi}
+              color={isLow ? 'bg-red-500/20 text-red-400' : 'bg-cyan-500/20 text-cyan-400'}
+            />
+          </div>
+          {isLow && (
+            <div className="mt-3 flex items-center gap-2 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-2.5">
+              <AlertTriangle size={15} className="text-red-400 shrink-0" />
+              <p className="text-red-300 text-sm">
+                eSIM Access balance is low — fund the account or eSIM purchases will start failing.
               </p>
             </div>
           )}
@@ -212,6 +290,7 @@ export default function AdminOverviewPage() {
       )}
 
       <AidapayOverviewCard />
+      <EsimOverviewCard />
 
       {/* User stats */}
       <section className="mb-8">

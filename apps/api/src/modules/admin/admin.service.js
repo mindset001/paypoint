@@ -8,6 +8,8 @@ const walletService = require('../wallet/wallet.service');
 const Paystack = require('../../providers/paystack/paystack.client');
 const AidaPay = require('../../providers/aidapay/aidapay.client');
 const aidapayMonitor = require('../../services/aidapayMonitor.service');
+const EsimAccess = require('../../providers/esim/esimAccess.client');
+const settings = require('../../services/settings.service');
 const audit = require('../../services/audit.service');
 const cashbackService = require('../../services/cashback.service');
 const featureFlags = require('../../services/featureFlags.service');
@@ -281,6 +283,34 @@ const getAidapayOverview = async () => {
     balance: Math.round((d.balance ?? 0) * 100),
     commissionBalance: Math.round((d.commission_balance ?? 0) * 100),
     lowBalanceThreshold: aidapayMonitor.LOW_BALANCE_KOBO,
+  };
+};
+
+// ── eSIM Access provider account ──────────────────────────────────────────
+//
+// Unlike AidaPay (a merchant account that earns its own commission), eSIM
+// Access is a straight prepaid wholesale balance — fund it, spend it per
+// order, no separate "commission" concept exists on their platform
+// (confirmed live: their balance-query response is just { balance }, no
+// other account fields). Balance is in USD; converted to NGN here using
+// the same rate/markup settings esim.service.js prices packages with, so
+// the admin sees it in the currency the rest of the dashboard uses.
+const ESIM_LOW_BALANCE_USD = 20;
+
+const getEsimOverview = async () => {
+  if (!EsimAccess.isConfigured()) {
+    return { configured: false };
+  }
+  const [result, rate] = await Promise.all([
+    EsimAccess.getBalance(),
+    settings.get('esim.usdToNgnRate', 1600),
+  ]);
+  const balanceUSD = result.obj?.balance ?? 0;
+  return {
+    configured: true,
+    balanceUSD,
+    balanceNGNKobo: Math.round(balanceUSD * rate * 100),
+    lowBalanceThresholdUSD: ESIM_LOW_BALANCE_USD,
   };
 };
 
@@ -827,6 +857,7 @@ module.exports = {
   sendAnnouncement,
   getAnnouncements,
   getAidapayOverview,
+  getEsimOverview,
   getDataPlansAdmin,
   setDataPlanPrice,
   removeDataPlanPrice,

@@ -240,6 +240,8 @@ export const adminApi = {
     api.get('/admin/stats/charts'),
   aidapayOverview: () =>
     api.get('/admin/aidapay/overview'),
+  esimOverview: () =>
+    api.get('/admin/esim/overview'),
   dataPlans: () =>
     api.get('/admin/data-plans'),
   setDataPlanPrice: (planId: string, data: { customer: number; agent: number }) =>

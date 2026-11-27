@@ -98,6 +98,13 @@ export interface AidapayOverview {
   lowBalanceThreshold: number;
 }
 
+export interface EsimOverview {
+  configured: boolean;
+  balanceUSD?: number;
+  balanceNGNKobo?: number;
+  lowBalanceThresholdUSD?: number;
+}
+
 export interface AdminDataPlanRow {
   planId: string;
   name: string;
