@@ -3,7 +3,12 @@ const { body } = require('express-validator');
 const registerValidator = [
   body('firstName').trim().notEmpty().withMessage('First name is required'),
   body('lastName').trim().notEmpty().withMessage('Last name is required'),
-  body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
+  // No .normalizeEmail() — it dot-strips and +tag-strips Gmail addresses by
+  // default (e.g. "example.dev@gmail.com" -> "exampledev@gmail.com"), which
+  // silently diverged from the plain `email.toLowerCase()` key auth.service.js
+  // uses at OTP-verify time, making verification fail for exactly those
+  // addresses. auth.service.js already does its own consistent lowercasing.
+  body('email').isEmail().withMessage('Valid email is required'),
   body('phone')
     .matches(/^\+?[0-9]{10,14}$/)
     .withMessage('Valid phone number is required'),
