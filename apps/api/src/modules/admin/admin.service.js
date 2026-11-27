@@ -9,7 +9,7 @@ const Paystack = require('../../providers/paystack/paystack.client');
 const AidaPay = require('../../providers/aidapay/aidapay.client');
 const aidapayMonitor = require('../../services/aidapayMonitor.service');
 const EsimAccess = require('../../providers/esim/esimAccess.client');
-const settings = require('../../services/settings.service');
+const esimService = require('../esim/esim.service');
 const audit = require('../../services/audit.service');
 const cashbackService = require('../../services/cashback.service');
 const featureFlags = require('../../services/featureFlags.service');
@@ -301,9 +301,9 @@ const getEsimOverview = async () => {
   if (!EsimAccess.isConfigured()) {
     return { configured: false };
   }
-  const [result, rate] = await Promise.all([
+  const [result, { rate }] = await Promise.all([
     EsimAccess.getBalance(),
-    settings.get('esim.usdToNgnRate', 1600),
+    esimService.getPricingInputs(),
   ]);
   const balanceUSD = result.obj?.balance ?? 0;
   return {
@@ -312,6 +312,20 @@ const getEsimOverview = async () => {
     balanceNGNKobo: Math.round(balanceUSD * rate * 100),
     lowBalanceThresholdUSD: ESIM_LOW_BALANCE_USD,
   };
+};
+
+// The two numbers that set eSIM profit margin per sale: the USD→NGN rate
+// (any spread above the real market rate is itself extra margin, not just
+// currency conversion) and the flat markup on top of eSIM Access's raw
+// cost. Delegates to esim.service.js, which actually prices packages with
+// these same settings — single source of truth, no duplicated defaults.
+const getEsimPricingSettings = async () => esimService.getPricingSettings();
+
+const updateEsimPricingSettings = async ({ usdToNgnRate, markupPercent }, { adminId, ip } = {}) => {
+  const before = await esimService.getPricingSettings();
+  const after = await esimService.updatePricingSettings({ usdToNgnRate, markupPercent });
+  audit.record({ adminId, action: 'settings.esimPricing.update', before, after, ip });
+  return after;
 };
 
 // ── Data plan pricing ─────────────────────────────────────────────────────
@@ -858,6 +872,8 @@ module.exports = {
   getAnnouncements,
   getAidapayOverview,
   getEsimOverview,
+  getEsimPricingSettings,
+  updateEsimPricingSettings,
   getDataPlansAdmin,
   setDataPlanPrice,
   removeDataPlanPrice,

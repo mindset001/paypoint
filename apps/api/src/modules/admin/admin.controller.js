@@ -192,6 +192,25 @@ const getEsimOverview = async (req, res) => {
   }
 };
 
+const getEsimPricingSettings = async (req, res) => {
+  try {
+    const data = await adminService.getEsimPricingSettings();
+    return success(res, data, 'eSIM pricing settings fetched');
+  } catch (err) {
+    return error(res, err.message, 500);
+  }
+};
+
+const updateEsimPricingSettings = async (req, res) => {
+  try {
+    const { usdToNgnRate, markupPercent } = req.body;
+    const data = await adminService.updateEsimPricingSettings({ usdToNgnRate, markupPercent }, { adminId: req.user._id, ip: req.ip });
+    return success(res, data, 'eSIM pricing settings updated');
+  } catch (err) {
+    return error(res, err.message, err.statusCode || 400);
+  }
+};
+
 const getDataPlansAdmin = async (req, res) => {
   try {
     const data = await adminService.getDataPlansAdmin();
@@ -468,6 +487,8 @@ module.exports = {
   getAnnouncements,
   getAidapayOverview,
   getEsimOverview,
+  getEsimPricingSettings,
+  updateEsimPricingSettings,
   getDataPlansAdmin,
   setDataPlanPrice,
   removeDataPlanPrice,

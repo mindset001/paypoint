@@ -22,6 +22,39 @@ const getPricingInputs = async () => {
   return { rate, markupPercent };
 };
 
+// Admin-facing read/write pair — the two numbers that actually determine
+// margin on every eSIM sale (see priceToNGNKobo below): the USD→NGN rate
+// (a spread above the real market rate is itself extra margin, not just
+// currency conversion) and the flat markup on top of eSIM Access's raw cost.
+const getPricingSettings = async () => {
+  const { rate, markupPercent } = await getPricingInputs();
+  return { usdToNgnRate: rate, markupPercent };
+};
+
+const updatePricingSettings = async ({ usdToNgnRate, markupPercent }) => {
+  const current = await getPricingSettings();
+  const next = { ...current };
+
+  if (usdToNgnRate != null) {
+    const rate = Number(usdToNgnRate);
+    if (!Number.isFinite(rate) || rate <= 0) {
+      throw Object.assign(new Error('usdToNgnRate must be a positive number'), { statusCode: 400 });
+    }
+    next.usdToNgnRate = rate;
+  }
+  if (markupPercent != null) {
+    const markup = Number(markupPercent);
+    if (!Number.isFinite(markup) || markup < 0) {
+      throw Object.assign(new Error('markupPercent must be zero or greater'), { statusCode: 400 });
+    }
+    next.markupPercent = markup;
+  }
+
+  await settings.set('esim.usdToNgnRate', next.usdToNgnRate);
+  await settings.set('esim.markupPercent', next.markupPercent);
+  return next;
+};
+
 const priceToNGNKobo = (priceUSD, rate, markupPercent) =>
   Math.round(priceUSD * rate * (1 + markupPercent / 100) * 100);
 
@@ -237,4 +270,4 @@ const refreshStatus = async (userId, id) => {
   return order;
 };
 
-module.exports = { getCountries, getPackages, buy, getMyEsims, getEsim, refreshStatus };
+module.exports = { getCountries, getPackages, buy, getMyEsims, getEsim, refreshStatus, getPricingInputs, getPricingSettings, updatePricingSettings };

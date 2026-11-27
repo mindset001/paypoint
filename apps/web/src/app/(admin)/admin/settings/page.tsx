@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
-import { Gift, RefreshCw, Percent, Eye, UserPlus } from 'lucide-react';
+import { Gift, RefreshCw, Percent, Eye, UserPlus, Wifi } from 'lucide-react';
 import { adminApi } from '@/lib/api';
 import { getErrorMessage } from '@/lib/utils';
 
@@ -147,6 +147,75 @@ function CashbackCard() {
                 type="number" min={0} max={100} step="0.1"
                 value={values.agent}
                 onChange={(e) => setValues((v) => ({ ...v, agent: Number(e.target.value) }))}
+                className="w-full bg-slate-800 border border-slate-700 rounded-xl pl-4 pr-8 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-brand-blue/60 transition-colors"
+              />
+              <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 text-sm">%</span>
+            </div>
+          </div>
+          <button onClick={onSave} disabled={saving}
+            className="mt-1 w-full bg-brand-blue text-white font-bold py-3 rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+            {saving ? 'Saving…' : 'Save changes'}
+          </button>
+        </div>
+      )}
+    </SettingsCard>
+  );
+}
+
+interface EsimPricing { usdToNgnRate: number; markupPercent: number }
+
+function EsimPricingCard() {
+  const [values, setValues] = useState<EsimPricing>({ usdToNgnRate: 0, markupPercent: 0 });
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    adminApi.getEsimPricingSettings()
+      .then((r) => setValues(r.data.data))
+      .catch((e) => toast.error(getErrorMessage(e)))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const onSave = async () => {
+    setSaving(true);
+    try {
+      const r = await adminApi.updateEsimPricingSettings(values);
+      setValues(r.data.data);
+      toast.success('eSIM pricing updated');
+    } catch (e) {
+      toast.error(getErrorMessage(e));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <SettingsCard icon={Wifi} title="eSIM Pricing" sub="The USD→NGN rate and markup applied on top of eSIM Access's raw cost — both are where eSIM margin comes from.">
+      {loading ? (
+        <div className="space-y-3 animate-pulse">
+          {[...Array(2)].map((_, i) => <div key={i} className="h-11 bg-slate-700/50 rounded-xl" />)}
+        </div>
+      ) : (
+        <div className="flex flex-col gap-4">
+          <div>
+            <label className="block text-slate-400 text-xs font-semibold uppercase tracking-wide mb-1.5">USD → NGN rate</label>
+            <div className="relative">
+              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 text-sm">₦</span>
+              <input
+                type="number" min={1} step="1"
+                value={values.usdToNgnRate}
+                onChange={(e) => setValues((v) => ({ ...v, usdToNgnRate: Number(e.target.value) }))}
+                className="w-full bg-slate-800 border border-slate-700 rounded-xl pl-8 pr-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-brand-blue/60 transition-colors"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block text-slate-400 text-xs font-semibold uppercase tracking-wide mb-1.5">Markup</label>
+            <div className="relative">
+              <input
+                type="number" min={0} step="0.5"
+                value={values.markupPercent}
+                onChange={(e) => setValues((v) => ({ ...v, markupPercent: Number(e.target.value) }))}
                 className="w-full bg-slate-800 border border-slate-700 rounded-xl pl-4 pr-8 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-brand-blue/60 transition-colors"
               />
               <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 text-sm">%</span>
@@ -362,6 +431,7 @@ export default function AdminSettingsPage() {
           keys={FEATURE_GROUPS[2].map((g) => g.key)}
         />
         <CashbackCard />
+        <EsimPricingCard />
         <SignupBonusCard />
         <ReferralBonusCard />
       </div>

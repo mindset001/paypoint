@@ -205,6 +205,10 @@ export const adminApi = {
     api.get('/admin/settings/cashback'),
   updateCashbackSettings: (data: { customer: number; agent: number }) =>
     api.patch('/admin/settings/cashback', data),
+  getEsimPricingSettings: () =>
+    api.get('/admin/settings/esim-pricing'),
+  updateEsimPricingSettings: (data: { usdToNgnRate: number; markupPercent: number }) =>
+    api.patch('/admin/settings/esim-pricing', data),
   getFeatureFlags: () =>
     api.get('/admin/settings/features'),
   updateFeatureFlags: (data: Partial<Record<
